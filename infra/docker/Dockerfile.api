@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && rm -rf /var/lib/apt/lists/* \
+ && groupadd --system --gid 10001 jobwatch && useradd --system --uid 10001 --gid jobwatch --no-create-home jobwatch
+COPY apps/api/pyproject.toml ./
+COPY apps/api/cronsentinel ./cronsentinel
+COPY apps/api/alembic ./alembic
+COPY apps/api/alembic.ini ./
+# R39: regular (non-editable) install, and the process runs unprivileged.
+RUN pip install . && chown -R root:root /app && chmod -R a-w /app
+USER 10001:10001
+EXPOSE 8000 8010
+CMD ["uvicorn", "cronsentinel.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

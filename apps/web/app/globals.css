@@ -1,0 +1,96 @@
+/* R16: fonts are self-hosted via @fontsource (imported in app/layout.tsx) — no render-time call to
+   fonts.googleapis.com, so air-gapped / self-hosted deploys make no third-party request. */
+@tailwind base; @tailwind components; @tailwind utilities;
+
+/* R41 design system, R44 default: light is the default theme (set before paint by app/layout.tsx);
+   the WeCrew/Finspot dark tokens and Obsidian Gold are one click away and remembered per browser.
+   :root keeps the dark values only as the no-JavaScript fallback.
+   Surfaces step up in luminance: canvas → panel → raised → line. Cyan is reserved for the one
+   primary action and the "now" marker; status colours are desaturated so a wall of jobs reads calm
+   and only real problems carry weight. */
+:root, .dark {
+  --bg: 10 15 19;        /* #0A0F13 canvas */
+  --panel: 17 26 32;     /* #111A20 */
+  --raised: 23 36 44;    /* #17242C hover/selected/inputs */
+  --line: 30 48 56;      /* #1E3038 */
+  --ink: 227 234 238;    /* #E3EAEE */
+  --mute: 138 155 165;   /* #8A9BA5 — 6.6:1 on canvas */
+  --accent: 34 211 238;  /* #22D3EE cyan */
+  --on-accent: 4 22 27;  /* text on cyan */
+  --ok: 111 191 155;     /* #6FBF9B */
+  --bad: 217 112 112;    /* #D97070 */
+  --warn: 217 167 90;    /* #D9A75A */
+  --run: 122 167 224;    /* #7AA7E0 */
+  --glow: 34 211 238;
+}
+.light {
+  --bg: 245 248 250; --panel: 255 255 255; --raised: 238 243 246; --line: 220 228 232;
+  --ink: 14 26 32; --mute: 84 101 111;
+  --accent: 14 116 144;  /* #0E7490 — cyan darkened for 5.4:1 on white */
+  --on-accent: 255 255 255;
+  --ok: 31 128 86; --bad: 185 56 56; --warn: 160 98 0; --run: 37 99 190; --glow: 14 116 144;
+}
+/* Obsidian Gold — the CSM Silks palette, offered as a third theme (R44). Approximated from the
+   CSM Silks reference portal's design language; replace these values with the site's exact tokens
+   when available. Warm ivory text, gold accent, desaturated status colours kept legible. */
+.gold {
+  --bg: 11 11 13;        /* #0B0B0D obsidian */
+  --panel: 20 19 23;     /* #141317 */
+  --raised: 29 27 33;    /* #1D1B21 */
+  --line: 46 41 50;      /* #2E2932 */
+  --ink: 243 237 226;    /* #F3EDE2 ivory */
+  --mute: 166 157 142;   /* #A69D8E — 7.4:1 on obsidian */
+  --accent: 201 165 76;  /* #C9A54C gold */
+  --on-accent: 20 16 8;
+  --ok: 134 184 140; --bad: 214 120 110; --warn: 222 176 98; --run: 150 165 210;
+  --glow: 201 165 76;
+}
+.gold h1, .gold h2 { font-family: "Playfair Display", "Space Grotesk", Georgia, serif; letter-spacing: -0.005em; }
+html { color-scheme: dark; } html.light { color-scheme: light; }
+body { @apply bg-bg text-ink font-sans text-[13.5px] leading-[1.45] antialiased; }
+h1, h2, h3, .font-display { font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif; letter-spacing: -0.015em; }
+::selection { background: rgb(var(--accent) / .3); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+
+/* Status dot: the single visual grammar used everywhere for job/execution state. */
+.dot { @apply inline-block h-2 w-2 rounded-full align-middle; }
+.dot-healthy, .dot-success, .dot-recovered { background: rgb(var(--ok)); }
+.dot-failed, .dot-timeout { background: rgb(var(--bad)); }
+.dot-late, .dot-missed { background: rgb(var(--warn)); }
+.dot-running { background: rgb(var(--run)); animation: pulse 1.6s ease-in-out infinite; }
+.dot-paused, .dot-unknown, .dot-scheduled { background: rgb(var(--mute)); opacity: .5; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+/* Run strip: proportional history bars (the memorable element). */
+.strip { display: flex; gap: 2px; height: 22px; align-items: flex-end; }
+.strip > i { flex: 1 1 0; min-width: 3px; border-radius: 2px; background: rgb(var(--mute) / .25); transition: transform .12s; }
+.strip > i:hover { transform: scaleY(1.15); }
+.strip > i.success { background: rgb(var(--ok)); } .strip > i.failed, .strip > i.timeout { background: rgb(var(--bad)); }
+.strip > i.missed { background: rgb(var(--warn)); } .strip > i.running { background: rgb(var(--run)); }
+
+.row { @apply grid items-center gap-4 border-b border-line px-4 py-2.5; }
+.tbl { overflow-x: auto; }
+.tbl > .row[class*="px"], .tbl > * > .row[class*="px"] { min-width: 640px; }  /* only wide multi-column tables scroll; simple 1fr_auto lists stay fluid */
+.tbl > .row:last-child { border-bottom: 0; }
+.row:hover { background: rgb(var(--raised) / .6); }
+.th { @apply text-mute text-xs; }
+@media (max-width: 640px) { .mx-auto.max-w-\[1200px\] { padding-left: 1rem; padding-right: 1rem; } }
+.btn { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-line bg-panel px-3 py-1.5 text-sm text-ink transition-colors hover:border-mute/60 hover:bg-raised disabled:opacity-50; }
+.btn-primary { @apply border-accent bg-accent font-medium hover:bg-accent hover:opacity-90; color: rgb(var(--on-accent)); box-shadow: 0 0 0 1px rgb(var(--accent) / .2), 0 6px 24px -10px rgb(var(--glow) / .55); }
+.card { @apply rounded-lg border border-line bg-panel; }
+.input { @apply w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-mute/70 focus:border-accent focus:outline-none; }
+.kbd { @apply rounded border border-line bg-bg px-1.5 font-mono text-[11px] text-mute; }
+.skeleton { @apply animate-pulse rounded bg-line/60; }
+
+
+/* Schedule tape (landing hero + job page): expected slots vs what actually ran. */
+.tape-slot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 2px; }
+.tape-slot.ok { background: rgb(var(--ok)); }
+.tape-slot.late { background: rgb(var(--warn)); }
+.tape-slot.failed { background: rgb(var(--bad)); }
+.tape-slot.missed { width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; background: rgb(var(--bad) / .12); border: 2px dashed rgb(var(--bad)); box-shadow: 0 0 0 5px rgb(var(--bad) / .12); }
+.tape-slot.expected { background: transparent; border: 1.5px solid rgb(var(--mute) / .55); }
+.tape-now { position: absolute; top: -6px; bottom: -6px; width: 1px; background: rgb(var(--accent)); box-shadow: 0 0 12px rgb(var(--glow) / .8); }
+@keyframes tape-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.tape-reveal { animation: tape-in 1.4s cubic-bezier(.2,.7,.2,1) both; }
