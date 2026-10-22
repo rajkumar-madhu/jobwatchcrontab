@@ -17,7 +17,7 @@ on:
       - "apps/api/cronsentinel/ingest_main.py"
 jobs:
   chain:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # R72: ubuntu-latest moved to 26.04, which Playwright 1.56 has no Chromium build for
     services:
       postgres:
         image: postgres:16
