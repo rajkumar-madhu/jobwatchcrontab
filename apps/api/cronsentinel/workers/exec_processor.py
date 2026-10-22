@@ -16,7 +16,9 @@ log = structlog.get_logger()
 def handle_one(s, ev: dict) -> dict | None:
     """Pure-ish step, extracted so the integration harness can drive the pipeline without a loop."""
     res = process(s, ev)
-    if res and res["prev_status"] != res["new_status"]:
+    # R68: an unusual successful run usually leaves the status unchanged (healthy → healthy) but must
+    # still reach the rule engine, which fires the `anomaly` condition from the event's findings.
+    if res and (res["prev_status"] != res["new_status"] or res.get("anomalies")):
         return res
     return None
 

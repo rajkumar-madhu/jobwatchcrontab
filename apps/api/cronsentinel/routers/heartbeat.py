@@ -94,6 +94,7 @@ async def _emit(request: Request, token: str, body: HeartbeatBody):
         "server_ts": datetime.now(UTC).isoformat(), "duration_ms": body.duration_ms,
         "exit_code": body.exit_code, "host": body.host or _client_ip(request),
         "stdout_tail": body.stdout_tail, "stderr_tail": body.stderr_tail, "meta": body.meta,
+        "metrics": body.metrics,
     }
     js = request.app.state.js
     if js is not None:
@@ -178,7 +179,7 @@ async def _cronitor(api_key: str, monitor_key: str, request: Request):
     if state not in _CR_STATES:
         raise HTTPException(400, "state must be run, complete, fail, tick or ok")
     status = _CR_STATES[state]
-    duration_ms, meta = None, {}
+    duration_ms, meta, metrics = None, {}, {}
     for raw in q.getlist("metric"):
         k, sep, v = raw.partition(":") if ":" in raw else raw.partition("=")
         try:
@@ -188,7 +189,7 @@ async def _cronitor(api_key: str, monitor_key: str, request: Request):
         if k == "duration":
             duration_ms = int(val * 1000)
         else:
-            meta[f"metric.{k[:40]}"] = val
+            metrics[k.lower()[:40]] = val      # R54: real run metrics, evaluated by job assertions
     for k in ("env", "host"):
         if q.get(k):
             meta[k] = q.get(k)[:100]
@@ -197,7 +198,8 @@ async def _cronitor(api_key: str, monitor_key: str, request: Request):
     hb = HeartbeatBody(status=status, exit_code=int(code) if code and code.lstrip("-").isdigit() and abs(int(code)) <= 1024 else None,
                        duration_ms=duration_ms, stdout_tail=(q.get("message") or None) and q.get("message")[:2000],
                        host=(q.get("host") or None) and q.get("host")[:255], meta=meta,
-                       execution_id=f"cr-{series}"[:128] if series else None, sequence=0 if status == "start" else 1)
+                       execution_id=f"cr-{series}"[:128] if series else None, sequence=0 if status == "start" else 1,
+                       metrics=metrics)
     await _emit(request, f"{api_key}/{monitor_key}", hb)
     return Response("OK", media_type="text/plain")
 
@@ -210,3 +212,111 @@ async def cronitor_p(api_key: str, monitor_key: str, request: Request):
 @router.api_route("/cronitor/ping/{api_key}/{monitor_key}", methods=["GET", "POST", "HEAD"], include_in_schema=False)
 async def cronitor_ping_legacy(api_key: str, monitor_key: str, request: Request):
     return await _cronitor(api_key, monitor_key, request)
+
+
+# ---- R67: Sentry Crons-compatible check-ins -----------------------------------------------------
+# Jobs imported from Sentry keep "sentry:<project id>:<public key>:<monitor slug>" as their ping token
+# (hashed). Sentry's own paths are served under /sentry, so:
+#   HTTP check-ins  https://o1.ingest.sentry.io/api/<pid>/cron/<slug>/<key>/?status=ok
+#                →  https://<ingest>/sentry/api/<pid>/cron/<slug>/<key>/?status=ok
+#   SDKs            DSN https://<key>@o1.ingest.sentry.io/<pid>  →  https://<key>@<ingest>/sentry/<pid>
+# Formats are taken from Sentry's source (see cronsentinel/sentrycompat.py). Differences: unknown monitors
+# are never auto-created from monitor_config (HTTP answers 404; envelopes ignore them, as SDKs do not read
+# the response), and only check-in items are read from an envelope — errors, transactions and sessions
+# sent to this DSN are dropped, so give crons their own DSN or keep your app's DSN on Sentry.
+
+from fastapi.responses import JSONResponse  # noqa: E402
+
+from .. import sentrycompat as sc  # noqa: E402
+
+
+async def _sentry_body(request: Request) -> bytes:
+    raw = bytearray()
+    async for chunk in request.stream():
+        raw += chunk
+        if len(raw) > sc.MAX_BODY:
+            raise HTTPException(413, "body too large")
+    try:
+        return sc.decode_body(bytes(raw), request.headers.get("content-encoding"))
+    except sc.BadRequest as e:
+        raise HTTPException(e.status, e.detail) from None
+
+
+def _sentry_key(request: Request, path_key: str | None, dsn: str | None = None) -> str:
+    key = sc.key_from_request(request.headers, request.url.query, path_key) or sc.key_from_dsn(dsn)
+    if not key or not sc.KEY_RE.fullmatch(key):
+        raise HTTPException(401, "missing or malformed sentry_key")
+    return key
+
+
+async def _sentry_http(project_id: str, monitor_slug: str, request: Request, sentry_key: str | None = None):
+    if not sc.PROJECT_RE.fullmatch(project_id):
+        raise HTTPException(404, "unknown project")
+    key = _sentry_key(request, sentry_key)
+    if (request.headers.get("content-type") or "").startswith("application/json"):
+        try:
+            payload = json.loads(await _sentry_body(request) or b"{}")
+        except ValueError:
+            raise HTTPException(400, "body is not JSON") from None
+        if not isinstance(payload, dict):
+            raise HTTPException(400, "body must be a JSON object")
+    else:
+        payload = dict(request.query_params)
+    fields = sc.checkin_fields(payload)
+    if fields is None:
+        raise HTTPException(400, "status must be in_progress, ok or error")
+    slug = sc.slugify(monitor_slug)
+    if not slug:
+        raise HTTPException(400, "the monitor slug is empty or invalid")
+    await _emit(request, sc.token(project_id, key, slug), HeartbeatBody(**fields))
+    return Response(status_code=202)            # Relay answers 202 Accepted with no body
+
+
+for _p in ("/sentry/api/{project_id}/cron/{monitor_slug}/{sentry_key}", "/sentry/api/{project_id}/cron/{monitor_slug}/{sentry_key}/"):
+    router.add_api_route(_p, _sentry_http, methods=["GET", "POST"], include_in_schema=False)
+
+
+async def _sentry_http_nokey(project_id: str, monitor_slug: str, request: Request):
+    return await _sentry_http(project_id, monitor_slug, request)
+
+for _p in ("/sentry/api/{project_id}/cron/{monitor_slug}", "/sentry/api/{project_id}/cron/{monitor_slug}/"):
+    router.add_api_route(_p, _sentry_http_nokey, methods=["GET", "POST"], include_in_schema=False)
+
+
+async def sentry_envelope(project_id: str, request: Request):
+    if not sc.PROJECT_RE.fullmatch(project_id):
+        raise HTTPException(404, "unknown project")
+    try:
+        header, items = sc.parse_envelope(await _sentry_body(request))
+    except sc.BadRequest as e:
+        raise HTTPException(e.status, e.detail) from None
+    key = _sentry_key(request, None, header.get("dsn") if isinstance(header.get("dsn"), str) else None)
+    seen = 0
+    for ih, payload in items:
+        if ih.get("type") != "check_in":
+            continue
+        seen += 1
+        if seen > sc.MAX_CHECKINS_PER_ENVELOPE:
+            break
+        try:
+            p = json.loads(payload)
+        except ValueError:
+            continue
+        if not isinstance(p, dict):
+            continue
+        fields, slug = sc.checkin_fields(p), sc.slugify(str(p.get("monitor_slug") or ""))
+        if fields is None or not slug:
+            continue
+        try:
+            await _emit(request, sc.token(project_id, key, slug), HeartbeatBody(**fields))
+        except HTTPException as e:
+            if e.status_code == 429:            # SDKs honour X-Sentry-Rate-Limits per category
+                return JSONResponse({"detail": e.detail}, status_code=429,
+                                    headers={"Retry-After": "60", "X-Sentry-Rate-Limits": "60:monitor:organization"})
+            continue                            # unknown monitor: ignored, like any item we do not record
+    eid = header.get("event_id")
+    return JSONResponse({"id": eid} if isinstance(eid, str) and len(eid) <= 64 else {})
+
+
+for _p in ("/sentry/api/{project_id}/envelope/", "/sentry/api/{project_id}/envelope"):
+    router.add_api_route(_p, sentry_envelope, methods=["POST"], include_in_schema=False)

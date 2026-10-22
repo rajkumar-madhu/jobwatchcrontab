@@ -1,3 +1,802 @@
+# R72 — review fixes for R70/R71
+
+Eleven findings from the code review of R70 and R71, all fixed.
+
+## Fixes
+- **Heartbeat no longer fails on odd host facts.** `NaN`/`Infinity` in a fact (Python's JSON parser
+  accepts them) raised inside the heartbeat, rolled back the agent's own last-seen update and showed
+  the agent offline. Non-finite or absurd numbers are now dropped field by field.
+- **Log download works for any run id.** A non-ASCII or CR/LF execution id reached the
+  `Content-Disposition` header raw and 500'd. The ASCII filename is sanitised and a `filename*=UTF-8`
+  form carries the real name.
+- **Log viewer resets per run.** Selecting another run no longer inherits the previous run's stream
+  tab, search text and "errors only" filter (a successful run after a failed one showed an empty,
+  disabled stderr tab).
+- **`jobwatch-run` on older agents.** The daemon creates `/usr/local/bin/jobwatch-run` beside
+  `cs-run` on start when it is missing, so lines copied from the app work without an agent upgrade.
+- **Migration 0029** no longer creates `host_metrics_server_ts`; the primary key already serves
+  those reads. Databases that ran the earlier 0029 can `DROP INDEX host_metrics_server_ts`.
+- **Facts written only on change**: the heartbeat's `servers.facts` update is skipped when nothing
+  changed, and `facts_updated_at` means what it says.
+- **One online/offline rule.** `AgentOut` gained `state` and `heartbeat_interval_s`; the agents list
+  uses the same 3×-interval rule as the agent page instead of a fixed 5 minutes.
+- **Reported host marked.** For ping-only jobs the run header labels the host "(reported)" — it comes
+  from the run itself, not from a discovered server.
+- **Download errors are shown** next to the button instead of failing silently.
+- **Error highlighting** uses word boundaries; `errors: 0`, `0 errors`, `without errors` are no
+  longer tinted as errors, `BackupError:`-style class names still are.
+- `hostcontext.agent_state` is public (was `_agent_state`, used across modules).
+
+# R71 — website fixes from the product brief
+
+The live-site issues found in the October product brief, fixed in code.
+
+## What ships
+- **/pricing** redirects to the plans on the landing page (it returned 404). /security and /contact
+  pages ship since R69.
+- **Pricing note**: "Prices are placeholders until billing goes live" replaced with "Prices in US
+  dollars, excluding taxes. Card billing opens soon: start free today and choose a plan when it does —
+  your jobs and history stay." Change it again once billing is live.
+- **Product screenshots** frame the real host (`jobwatch.wecrew.in`) instead of `app.jobwatch.example`.
+- **`jobwatch-run`**: the run wrapper now installs under the brand name; `cs-run` stays as an alias so
+  existing crontab lines keep working. The site, the app and the docs show `jobwatch-run`. Discovery
+  recognises both. The Helm snippet points at the chart's real path (`infra/helm/cronsentinel-agent`).
+
+# R70 — the job page explains a failure: host context and a log viewer
+
+When a scheduled job fails, the job page now says what happened, where, and shows the evidence —
+the way an engineer debugs it in Datadog — without leaving JobWatch.
+
+## Upgrade notes
+- **Migration 0029**: `servers.facts` (JSONB) and `servers.facts_updated_at`; an index on
+  `host_metrics (server_id, ts DESC)`.
+- **Linux agent 0.2.0** sends host facts with its heartbeat. Older agents keep working; the Host
+  panel then shows metrics without the facts row until the agent is upgraded.
+- No new service. Regenerate `apps/web/openapi.json` and `lib/api-types.ts` as usual
+  (`GET /api/v1/executions/{id}` now has a response model).
+
+## What ships
+- **Why it failed** (job page, failed/timed-out/missed runs): the exit code with what it usually
+  means (`137` → OOM killer, `127` → command not found under cron's PATH, …), the host and how it
+  looked while the run was going (CPU, memory, disk, load, I/O wait; critical values called out),
+  the stderr lines that carry the cause, and a one-click Copilot question about that run. A missed
+  run says whether the agent on the host was online, so "cron did not start it" and "nobody could
+  see it" read differently.
+- **Host panel** (job page, right column): the server the job runs on — agent online/offline (3×
+  its heartbeat interval), version and last contact; CPU, memory, disk and load gauges with 24-hour
+  sparklines and threshold colours; OS, kernel, CPUs, memory, disk size, uptime, time zone, labels;
+  and the other jobs on the same host, failing first. Ping-only jobs see the host their last run
+  came from and how to get the rest.
+- **Log viewer**: stdout / stderr / both, find-in-output with highlighting, "errors only" with a
+  count, wrap toggle, line numbers, error and warning lines tinted, copy, and download as a file
+  (`GET /api/v1/executions/{id}/logs?stream=…`). "Host samples during this run" lists every sample
+  taken from five minutes before the start to five minutes after the end.
+- **Agent page** (`/agents/{id}`): facts, six 24-hour charts (one measure per chart), the jobs on
+  the server, rotate and revoke. The agents list links to it.
+- **API**: `GET /api/v1/jobs/{id}/host`, `GET /api/v1/agents/{id}`,
+  `GET /api/v1/executions/{id}/logs`; `GET /api/v1/executions/{id}` gained `host` (facts and
+  `metrics_during`), `exit_meaning` and `log_bytes`; `JobOut.server_id`. The heartbeat accepts a
+  whitelisted `host` object (`cronsentinel/hostcontext.py`).
+- **Agent**: `hostmetrics.CollectFacts` (os-release, /proc, statfs, DMI vendor for VM detection).
+
+## Fixes
+- `test_run_assertions` hard-coded a date that fell outside the processor's accepted clock-skew
+  window a week later; it now uses relative timestamps.
+
+# R69 — enterprise sign-in, a Datadog-style overview, and a full API reference
+
+The landing page, sign-up and sign-in, the dashboard overview and the API documentation were rebuilt
+for security-conscious buyers and for the people who live in the product every day.
+
+## Upgrade notes
+- **Migration 0028**: `organizations.require_mfa`, `org_invites` (hashed, single-use, 7-day links)
+  and `sales_inquiries` (the contact form).
+- **Keycloak**: the service account needs `view-users` and `manage-users` to enforce multi-factor
+  sign-in. Re-run `deploy/keycloak/import.sh`; it grants them and sets the 12-character password
+  policy (not username or email, last 3 remembered) and the TOTP policy. Without them the
+  "Require multi-factor sign-in" setting cannot be turned on, and sign-ins that cannot be checked are
+  refused, never allowed.
+- New optional build variable `NEXT_PUBLIC_SECURITY_EMAIL`: shown on /security for vulnerability
+  reports. Unset, reports go through the contact form.
+- No new service. The OpenAPI document gained summaries, roles and error responses; regenerate
+  `apps/web/openapi.json` and `lib/api-types.ts` as usual.
+
+## What ships
+- **Team and access** (Settings → Team, `routers/team.py`): invite by email with a role (link shown
+  once, stored as a hash, joins only that address, revocable), change roles, remove members; directory
+  (SCIM) members are marked and keep their group roles. Admins cannot create admins; owners cannot be
+  changed. The invite is honoured on sign-up and on sign-in.
+- **Multi-factor sign-in** (Settings → Sign-in security, owners): password members must add an
+  authenticator app; Google and GitHub sign-in are refused for that organization; the check fails
+  closed. SSO members get MFA from their identity provider.
+- **Sign-in and sign-up**: new two-panel layout listing real controls; SSO-first flow with the MFA
+  prompt explained; work-email advice; invitation mode ("Join Acme on JobWatch", read-only email,
+  clear message for used, revoked or expired links); a six-step onboarding with a Kubernetes install
+  command and an "Invite your team" step.
+- **Landing page**: enterprise hero and checklist, an Enterprise section (identity, data, operations,
+  cloud or self-hosted), a /security page (identity, data, application, audit, deployment; honest that
+  there is no SOC 2 or ISO audit yet), /contact (talk to sales; rate limited, honeypot, stored), updated
+  navigation and footer, FAQ on SSO, SCIM, MFA, SOC 2 and how Enterprise is bought.
+- **Overview, Datadog-style**: range picker (24h, 7d, 30d), live refresh, KPI tiles with sparklines
+  and change against the previous period, run outcomes, job states, job health map (by type or tag),
+  open incidents, needs attention, unusual runs (`GET /api/v1/analytics/unusual-runs`), slowest p95,
+  getting slower, SLA and running now.
+- **API reference** (`/docs/api`): rebuilt from the OpenAPI document into 23 areas and 127 endpoints.
+  Each endpoint has what it does, the minimum role, authentication, path and query parameters, the
+  request body with types, limits and allowed values, response attributes, every error it can return,
+  an example request in cURL, Python and Go (the language choice is shared and remembered, samples use
+  your saved hosts) and example responses. The overview covers authentication, roles, errors,
+  pagination, rate limits and versioning, and the OpenAPI 3.1 description can be downloaded.
+  `cronsentinel/apidocs.py` holds the written summaries and a test fails if a new endpoint lacks one.
+- **Docs**: new guide "Team, invitations and multi-factor sign-in"; security overview updated.
+
+## Tests
+Backend 1,046 passed (new: apidocs 7, team 6, auth flow 6, Keycloak admin 2, unusual-runs feed 1,
+migrations); web unit 21; Playwright 128 passed (16 new enterprise checks and 6 new API-reference checks,
+desktop and phone).
+
+# R68 — unusual runs: slow, instant or empty runs caught without writing rules
+
+A run can exit 0 and still be wrong. Run checks (R54) catch that when someone writes the rule. JobWatch
+now also learns each job's normal duration and metrics from its own history and flags runs far outside
+them, such as a backup that took 3 seconds instead of 20 minutes or wrote 1.2 KB instead of 4 GB.
+
+## Upgrade notes
+- **Migration 0027**: `jobs.anomaly_sensitivity` (`off|low|normal|high`, default `normal`) and
+  `jobs.anomaly_action` (`warn|fail`, default `warn`).
+- Safe for existing jobs: in warn mode nothing notifies anyone until you add an alert rule with the
+  new condition **Unusual run** (`anomaly`). Findings appear on runs straight away.
+- No new service.
+
+## What ships
+- **Detection** (`cronsentinel/anomaly.py`, pure):
+  - Each successful run is compared with the job's last 50 successful runs that were not themselves
+    flagged, so a broken job never becomes the new normal. Nothing is judged before 10 runs.
+  - "Usual" is the median and spread is the median absolute deviation, so one past outlier does not
+    move the baseline.
+  - Findings: **slow** (≥ 1.5× and ≥ 30 s longer), **fast** (≤ ¼ of usual, for jobs of 20 s or more),
+    **low metric** (≤ ½ of usual) and **high metric** (≥ 2×, or any value where it is usually 0).
+    Each must also be 6, 4.5 or 3 deviations out (sensitivity low, normal, high).
+  - Every finding comes with a plain message, e.g. "size_bytes was 1.2 KB; usually 4.3 GB — suspiciously small".
+- **Processor:** a run that broke a run check is not also judged. **Fail** mode records an unusual run
+  as failed, so normal failure rules, incidents and escalations apply. **Warn** keeps it successful and
+  puts the findings on the status event.
+- **Exec-processor** publishes warn-mode findings even when the job's status did not change.
+- **Rule engine:**
+  - New condition `anomaly`. An anomaly-only event fires no other rule, does not count towards
+    flapping and does not rerun the recovery clean-up.
+  - Each unusual run notifies once; its dedup key includes the run. Maintenance windows silence it
+    like any alert.
+- **Alerts:** subject `◆ [MEDIUM] UNUSUAL RUN · <job> on <host> — unusual run: …`, plus an **Unusual** row in
+  Slack, Teams, Discord, PagerDuty and the other channels.
+- **API:** `anomaly_sensitivity` and `anomaly_action` on create, update and read. Runs carry `anomalies`
+  (kind, field, value, typical, runs, message).
+- **Web:**
+  - Job page: an **Unusual runs** section (sensitivity, and warn or fail). An **Unusual** chip in the run
+    list. The run detail says what was unusual and how many runs it was compared with.
+  - Alerting: the condition **Unusual run (learned from history)**.
+- **Docs:** new page `docs/UNUSUAL_RUNS.md` (/docs/unusual-runs), linked from Run checks.
+- **Kubernetes:** annotations `jobwatch.io/unusual-runs` (`off|low|normal|high`) and
+  `jobwatch.io/unusual-runs-action` (`warn|fail`). As with the other annotations, a present one wins,
+  an absent one leaves app edits alone, and invalid values show as warnings on the Kubernetes page.
+  No agent change is needed; the agent already forwards every `jobwatch.io/*` key.
+- **Terraform / OpenTofu:** `jobwatch_job` gains `unusual_runs` (default `normal`) and
+  `unusual_runs_action` (default `warn`). They work on create, update, import and drift detection.
+
+## Fixed
+- Job page, existing bugs found while checking this round:
+  - On phones, the run-detail column made the page 17 px wider than the screen.
+  - On desktop, the run list's 640 px scrolling minimum hid its Took and Exit columns.
+- UI mock: run ids repeated across jobs, so opening a run on one job showed another job's run.
+
+## Tested
+- Unit: 37 tests for detection. They cover each finding, the floors, sensitivity, outlier resistance
+  and history cap, plus a false-alarm check over 20 seeds. Simulated over 100,000 ordinary runs: no
+  flags at ±10 % runtime variation, about 1 in 7,000 at ±30 %.
+- Integration: 5 tests through ingest, the processor, the exec-processor's publish decision and the
+  rule engine. They cover warn and fail, off, run checks taking precedence, no other rule firing,
+  per-run dedup, no incident, and the alert subject.
+- Real stack: 12 normal pings, then a 1.2 KB backup, through ingest → NATS → exec-processor → rule
+  engine → Celery notifier delivered one webhook with condition `anomaly` and the reason in its title.
+- Mutation checks: every behaviour-changing mutation is caught (publish decision, guard against other
+  rules, per-run dedup, baseline exclusion, fail mode, alert reason, absolute floor). A spread floor that
+  no test could catch turned out to be dead code behind the ratio floors and was removed.
+- Kubernetes annotations: 1 new unit test and 1 new integration test (create, update, absent keeps the
+  app value, invalid value warns).
+- Terraform provider built with Go and run end to end with OpenTofu 1.8.5 against a live API: all 14
+  checks passed, including the new attributes on create, in-place update, drift repair and import.
+- Backend 994 passed / 0 failed. Full stack 9/9. Playwright 106 passed / 0 failed. Production build and typecheck clean.
+
+# R67 — Sentry Crons import and Sentry-compatible check-ins
+
+Teams on Sentry Crons can move to JobWatch by changing one host: the DSN their SDK uses for crons, or
+the base of their HTTP check-in URLs.
+
+## Upgrade notes
+- No migration. New Python dependency `brotli` (sentry-python compresses with brotli when it is installed).
+- New ingest paths under `/sentry/`; if a proxy in front of ingest allow-lists paths, add `/sentry/api/`.
+
+## What ships
+- **Import** (`POST /api/v1/import/sentry`, Jobs → Import → Sentry Crons; `cronsentinel/importers/sentry.py`):
+  - Reads every monitor in the organization, following Sentry's cursor paging, and only follows paging
+    links that point back to the same Sentry host.
+  - Maps crontab and interval schedules, check-in margin, max runtime, time zone and disabled status.
+    Sentry's defaults apply when a value is unset. Muted monitors, failure thresholds above 1 and
+    several environments are listed in the notes.
+  - With `project:read`, it reads each project's first active client key. Jobs then keep Sentry's
+    check-in credential (project ID, key, slug), stored hashed. Without it, jobs get new ping URLs.
+    Warnings name projects with no readable key or with several active keys.
+  - Works with sentry.io, de.sentry.io and self-hosted Sentry. The auth token is never stored. The
+    SSRF guard applies to the base URL.
+- **Check-ins** (`cronsentinel/sentrycompat.py`, routes in `routers/heartbeat.py`):
+  - HTTP: `/sentry/api/<project>/cron/<slug>[/<key>]/`, GET or POST. Fields come from the query string
+    or a JSON body: `status`, `check_in_id`, `duration`, `environment`. The key can come from the path,
+    `X-Sentry-Auth`, `Authorization` or `?sentry_key=`. Answers `202`, as Relay does.
+  - SDK envelopes: `/sentry/api/<project>/envelope/`, with gzip, deflate or brotli bodies.
+    Decompressed size is capped at 2 MB. Only `check_in` items are read; errors, transactions and
+    sessions are dropped. Unknown monitors are skipped. Over-limit answers carry
+    `X-Sentry-Rate-Limits: 60:monitor:organization`.
+  - Slugs are matched the way Sentry matches them. `check_in_id` pairs a start with its end.
+- **Source of truth:** formats were taken from Sentry's own source (getsentry/relay and
+  getsentry/sentry), not only its docs. The slug tests reuse Relay's own test table.
+
+## Fixed
+- `lib/api-types.ts` was stale after R66: five on-call responses were typed `unknown`, which CI's
+  types-are-current check would have failed. Regenerated.
+- Import page: the selected source tab looked the same as the others. `.btn` sits outside the utility
+  layer, so a selected style on the element lost; it is now a `.btn[aria-selected=true]` rule. The
+  results table no longer squeezes on phones: it scrolls inside its card, and badges and cron
+  expressions no longer wrap.
+
+## Tested
+- Unit: 39 protocol tests (slugify table, auth, envelopes, gzip/deflate/brotli, decompression bombs).
+- Integration: 13 tests against a stand-in Sentry API written from Sentry's serializers and paging
+  code. They cover the import, HTTP check-ins, hand-built envelopes, rate limiting, and the real
+  sentry-python SDK (gzip and brotli) with only the DSN host changed.
+- Real stack: a gzip envelope through ingest → NATS → exec-processor was recorded as a successful run.
+- Mutation checks: every mutation that changes behaviour (brotli, key case, check-in pairing,
+  DSN-header key, revoked keys, paging host, bomb cap, disabled → paused) is caught.
+- Playwright: Sentry import flow, desktop and mobile.
+- Not tested against a live Sentry organization: that needs a real auth token.
+
+# R66 — on-call schedules and escalation policies
+
+JobWatch now decides who gets paged and keeps paging until someone acknowledges, instead of only
+handing off to PagerDuty or Opsgenie.
+
+## Upgrade notes
+- **Migration 0026**: `oncall_schedules`, `oncall_layers`, `oncall_overrides`, `escalation_policies`,
+  `escalation_steps`, `escalation_runs` (row-level security); plan features `oncall` and `escalation`
+  on Team and Business.
+- No new service: the escalation loop runs in the outbound-exporter worker (every 15 s).
+
+## What ships
+- **Schedules** (`cronsentinel/oncall.py`):
+  - **Layers:** rotations daily, weekly or every N hours over an ordered list of people, from a handoff
+    time. Daily and weekly handoffs keep local time across daylight saving.
+  - **Restrictions:** a layer can be limited to weekdays and a time of day, including overnight windows,
+    which belong to the day they start. The highest active layer wins.
+  - **Overrides** beat every layer.
+  - **"Who is on call now"** and a merged timeline of upcoming shifts.
+- **Escalation policies** (`cronsentinel/escalation.py`):
+  - **Steps:** each step pages whoever is on call in some schedules and/or named people, then waits
+    1–1440 minutes for an acknowledgement before the next step.
+  - **Repeat** 0–9 times, then the run is "exhausted".
+  - **Delivery** through an existing email, Slack, Teams, Discord, Telegram or webhook channel. Email
+    goes to the paged people's own addresses. Every page carries the full alert context and an
+    acknowledge link.
+- **Wiring:**
+  - A new channel kind `escalation` (or **Route alerts here** on a policy) lets alert rules page on-call.
+  - One escalation per incident (or per job and condition); a repeated alert never starts a second one.
+  - **Stopping:** acknowledging the page (which also acknowledges its incident) or the incident stops
+    paging; a resolved incident or a recovered job stops it too.
+  - A schedule with nobody on call is recorded in the page history and the policy moves on.
+- **API** `/api/v1/oncall/…`: schedules (layers, overrides, `?days=` timeline), policies,
+  escalations, acknowledge, people, policy → channel. Everything is audited.
+- **On-call page** (sidebar): paging now with Acknowledge (page links highlight theirs), schedules with
+  who is on call and upcoming shifts, overrides, new schedule/policy forms.
+- Docs: "On-call schedules and escalation". `/compare`: the "behind" item is now the honest remaining
+  gap: no phone calls, SMS or mobile app.
+
+## Fixed along the way
+- **Deleting an alert channel that a policy delivers through** returned a 500 (a database
+  constraint). It now answers 409 and names the policy. Found by the router sweep once its seed included a policy.
+- `test_slot_inside_a_recorded_gap_is_unobserved_not_missed` asserted that its slot was the only one in
+  the shared test database. A JobWatch-side gap is platform-wide, so other tests' slots counted too.
+  It now checks its own slot exactly and that the gap counted it.
+- Test fixtures now use full-length random emails (4–6 hex characters collided across runs).
+
+## Verification
+- 13 unit tests for who is on call: rotations, the daylight-saving handoff, business-hours over 24/7, a
+  Friday-night window into Saturday, overrides, the merged timeline, validation.
+- 9 integration tests through the real notifier and engine: step 1 at once, nothing before the delay,
+  step 2 after it, exhausted afterwards; acknowledging stops paging and acknowledges the incident; an
+  incident acknowledged elsewhere and a recovered job stop paging; repeats; nobody on call; no double
+  paging for a repeated alert; roles, validation, plan gate; Route alerts here really pages; a
+  delivery channel in use cannot be deleted. Mutation-checked: without the stop-on-acknowledged rule or
+  the one-run-per-alert guard, tests fail.
+- Router sweep now seeds a member, channel, schedule and policy, so on-call routes run against real rows.
+- Backend 895 passed / 0 failed; full stack 6/6 with a clean outbound-exporter log; Playwright 96 / 0;
+  all pages fit 390 px in light and dark.
+
+---
+
+# R65 — Kubernetes: configure monitoring with annotations; CronJob time zones honoured
+
+## Upgrade notes
+- **Migration 0025**: `k8s_cronjobs.annotation_warnings`, `k8s_cronjobs.time_zone`.
+- **Upgrade the Kubernetes agent** to report time zones and annotations; older agents keep working as before.
+
+## What ships
+- **`jobwatch.io/*` annotations** on a CronJob (`cronsentinel/k8sannotations.py`): `name`, `grace`,
+  `expected-runtime` (`90`, `10m`, `1h30m`; up to 7 days), `tags`, `run-checks` (`;`-separated),
+  `description`, `ignore`.
+  - **A present annotation is the source of truth**: it is reapplied on every discovery. An absent one
+    leaves app edits alone.
+  - **Invalid values are not applied**, and each produces a warning shown next to the CronJob.
+  - **`ignore`** keeps a new CronJob unmonitored (listed as *not monitored*). On a monitored one it
+    pauses the job and keeps its history; removing it resumes monitoring.
+  - **A name already taken** by another job is not applied; a warning says so. Before, `ON CONFLICT`
+    could have attached the CronJob to the other job.
+- **Bug fixed: `spec.timeZone` was ignored**, so a `0 2 * * *` CronJob in `Asia/Kolkata` was expected at
+  02:00 UTC. The agent now reports it; the job gets the zone and its next run in it.
+- **When a CronJob's schedule or time zone changes**, pending runs generated for the old one are
+  dropped and generation restarts from now (before, they could be reported missed).
+- **Agent privacy**: only `jobwatch.io/*` annotations are sent (at most 20, values capped). Others,
+  such as `last-applied-configuration`, can contain secrets and never leave the cluster.
+- **Kubernetes page**: time zone under the schedule, annotation warnings, a *not monitored* badge.
+- **Bug fixed on phones**: the CronJob table's fixed columns took ~626 of its 640 px minimum width,
+  leaving the CronJob name and failure-reason columns at almost zero. CronJob names were invisible on
+  phones. The table now has a 960 px minimum and scrolls; badges no longer get cut off by long names.
+- Docs: Kubernetes guide gains "Configure monitoring on the CronJob".
+
+## Verification
+- Kubernetes agent built against client-go v0.31.3 (through GitHub mirrors in a throwaway copy); `go vet`
+  clean; all tests pass, including a new one confirming a `last-applied-configuration` annotation
+  containing a password is not reported.
+- 3 parser unit tests; 5 integration tests through the real discovery endpoint: annotations configure a
+  new job and 02:00 Kolkata lands at 20:30 UTC; present annotations win while absent ones keep app edits;
+  invalid values (and an unknown time zone) warn without applying; ignore skips, pauses, then resumes;
+  a time-zone change drops old pending runs. Mutation-checked: forcing UTC fails the time-zone test.
+- Backend 829 passed / 0 failed; Playwright 90 passed / 0 failed (the new phone test found the
+  zero-width column bug); all pages fit 390 px in light and dark.
+
+---
+
+# R64 — Terraform / OpenTofu provider
+
+`integrations/terraform-provider-jobwatch` (Go, HashiCorp plugin framework v1.13): manage JobWatch as
+code. Works with Terraform and OpenTofu.
+
+## What ships
+- **`jobwatch_job`**: name, description, schedule, timezone, grace, expected runtime, tags, run checks,
+  paused, workspace (defaults to the first; changing it replaces the job). Computed **`ping_url`
+  (sensitive)** and `ping_token_hint`. Import by job id.
+- **`jobwatch_maintenance_window`**: name, start/end (RFC 3339, any offset), timezone, repeat none /
+  daily / weekly with weekdays, scope by tags / job ids / environment ids. No in-place edit (the API
+  has none): any change replaces the window. Import by id.
+- **Clean plans by design**:
+  - run checks that differ only in spacing are equal (JobWatch collapses spaces);
+  - the same instant written with another offset is not a change;
+  - weekday case and order are kept;
+  - recurrence is read back from the stored rule, so real drift shows;
+  - an imported job keeps an empty `ping_url` instead of planning an unknown one.
+- Provider config: `api_url`, `api_key` (sensitive), or `JOBWATCH_API_URL` / `JOBWATCH_API_KEY`.
+- **API additions:**
+  - `ping_url` in job create/rotate responses (when `INGEST_PUBLIC_URL` is set; never on reads);
+  - `GET /api/v1/alerts/maintenance/{id}`, which works after a window ended (the list hides those,
+    which would have made Terraform recreate finished windows).
+- Docs: `/docs/terraform` and the provider README. The landing page's integrations grid gains "As code".
+- CI: a `terraform-provider` job runs `go mod tidy`, `go vet`, `go test` and builds the provider.
+- **Not yet done:** publishing to the Terraform and OpenTofu registries (needs a signed release and a
+  registry account). Until then, install from a filesystem mirror or `dev_overrides`.
+
+## Verification
+- **End to end with OpenTofu 1.8.5** (`e2e/run.sh`, kept in the repo) against the real API and database,
+  the provider installed from a filesystem mirror. 12 checks: apply; a **clean plan** right after (with
+  a spaced run check, `+05:30` times, lowercase weekday); ping URL captured; update in place; weekday change
+  replaces the window and deletes the old one; removed attribute cleared; clean plan; drift made in the
+  app detected; re-apply repairs it; **clean plan after import**; destroy removes both.
+- The first runs found three bugs: a wrong workspaces path in the client, a pointless update after
+  import (run-check spacing), and `ping_url` planned as unknown after import. All three are fixed, and
+  the script covers them.
+- Go: `go vet` clean, `gofmt` clean, unit tests for the plan-stability helpers.
+- Backend 821 passed / 0 failed (new: `ping_url` only alongside the token; get window by id after it
+  ended); Playwright 88 passed / 0 failed.
+- Build note: the sandbox fetched Go modules through GitHub mirrors (`golang.org`, `google.golang.org`,
+  `gopkg.in` blocked), via a throwaway copy with `replace` lines; the committed `go.mod` has none, and
+  `go.sum` is generated by CI.
+
+---
+
+# R63 — maintenance windows finished, and three broken exporter queries fixed
+
+## Upgrade notes
+- **Migration 0024**: `maintenance_windows` gains `name`, `tz`, `created_by`, `created_at` and an
+  end-after-start check (`NOT VALID`, so existing rows are not re-checked).
+- No new services.
+
+## Maintenance windows (existed in part; now complete)
+Bugs found in what existed:
+- **Recurring windows were accepted but ignored.** `rrule` was stored, but the alert engine had a
+  `TODO: rrule expansion` and the reconciler only checked the first start/end. A weekly window covered
+  its first occurrence only; from the second week, runs inside it were marked missed and alerted.
+- Recurring windows **disappeared from the list** a week after their first occurrence.
+- **Public status pages listed every window in the organization**, including ones covering only
+  internal jobs, and did not expand recurring ones.
+- The engine (Python) and reconciler (SQL) matched scope separately; deletes were not audited; no UI.
+
+What ships:
+- **`cronsentinel/maintenance.py`**, one definition for the engine, the reconciler and status pages:
+  once / daily / weekly-on-days recurrence expanded **in the window's time zone** (keeps local time
+  across daylight saving; on the repeated hour when clocks go back, the first one is used); scope =
+  all jobs, job ids, tags or environments; up to 14 days (daily up to 24 hours).
+- **API**: name, time zone, `repeat`/`weekdays`/`until` (or an advanced RRULE, DAILY/WEEKLY only),
+  validation (422 with the reason), `active_now`, `current_end`, next occurrence, **End now** for one-off
+  windows, audited create/end/delete.
+- **Alerting page → Maintenance windows**: list (repeat, scope, time zone, next occurrence, Active now),
+  schedule form (weekdays shown for weekly), End now, Delete.
+- **Status pages** show only windows covering the page's public jobs, with expanded upcoming dates.
+- **Docs**: new "Maintenance windows" page in /docs (Alerts and checks).
+
+## Outbound exporter: three queries against columns that do not exist
+Found while investigating the flaky full-stack test: the outbound-exporter log had an error every 15
+seconds. The incident poll selected `incident_events.created_at` (the column is `ts`) and
+`incidents.acked_by` (now the acknowledging event's actor); the agent poll selected `agents.host` (the
+column is `host_id`). **Incident and agent-status signals had never reached signal destinations.** Unit
+tests mocked these polls; a new test runs all three against the real schema.
+
+## The flaky full-stack test, explained
+`test_6_a_missed_run_is_detected…` failed intermittently (R53 once, R63 twice). Logs from a failing run
+showed no errors; the cause is the test's budget. A run binds to the nearest open slot up to 90 s
+**before** it is due (`processor.attach_slot`), so a heartbeat can fill the next minute's slot and the
+first slot that can go unfilled is up to two minutes away. Worst case ≈ 120 s + a 30 s reconciler
+interval + tick time; the test allowed 150 s on the assumption of one minute. Now 240 s, with the
+reasoning in the test. Product behaviour unchanged (early binding tolerates clock skew).
+
+## Verification
+- 8 unit tests (recurrence incl. daylight saving and the repeated hour, scope, validation) and 7
+  integration tests: **a weekly window created four weeks ago still skips this week's run** (the bug),
+  scoped windows skip only their jobs, the engine suppresses inside a recurring window, API
+  create/list/end/delete with audit, status pages show only relevant windows, and creating a
+  window that already ended (a 500 found by the router smoke test, fixed). Mutation-checked: with
+  recurrence ignored again, the regression and engine tests fail.
+- 2 tests run the exporter's polls against the real schema.
+- Backend 817 passed / 0 failed; Playwright 88 passed / 0 failed; full stack 6/6 on three consecutive
+  runs (180–212 s each), outbound-exporter log clean.
+
+---
+
+# R62 — the agent installer is served by JobWatch: one real install command
+
+Closes the gap found while writing the docs (R59): the app showed
+`curl -fsSL https://<server>/install.sh | … --server https://<ingest> …`, a placeholder command, and the
+installer's download location defaulted to `downloads.example.com`.
+
+## What ships
+- **`GET https://<ingest>/agent/install.sh`** (`cronsentinel/agentinstall.py`): the repository's
+  `install.sh` with its three default lines filled in: `AGENT_DOWNLOAD_BASE`, `AGENT_VERSION` and
+  `INGEST_PUBLIC_URL`. Served from the ingest host because every server that runs the agent must reach
+  it anyway. `Cache-Control: no-store`.
+- **The app's command is real:** `curl -fsSL https://<ingest>/agent/install.sh | sudo bash -s -- --token csb_…`
+  (no `--server`: the served script defaults to this deployment's ingest host). When it cannot be
+  served, Servers & agents shows the token, the reason, and a link to the release-install fallback.
+- **`install.sh`** has a marked defaults block (`DEFAULT_SERVER`, `DEFAULT_VERSION`, `DEFAULT_BASE`) and
+  accepts `CS_SERVER`; run from a release it behaves as before. Checksum verification is unchanged.
+- **Safety:** the script runs as root, so values are validated before they are written into it (plain
+  `https://` URLs; a tag-like version). Anything else, or unset values, → **503** and no script.
+- **Deploy:** the API image contains the installer (`AGENT_INSTALL_SCRIPT`); `deploy.yml` sets
+  `AGENT_DOWNLOAD_BASE` to the repository's GitHub releases and `AGENT_VERSION` to the deployed tag,
+  where the release job already uploads the binaries and `SHA256SUMS`; `deploy/smoke.sh` checks that the
+  installer is served with this deployment's server. Helm values and `.env.example` list both settings.
+- Docs: the Linux agent guide's install section is the one-line command (release install kept as a
+  fallback note); the self-hosting guide documents the settings.
+
+## Verification
+- 9 unit tests: served script has the defaults and still verifies checksums, is valid shell
+  (`bash -n`), refuses when unconfigured, and refuses five injection attempts (`$(…)` in the download
+  URL, `http://`, `;` and `$(id)` in the version, backticks in the ingest URL); the install command; the
+  repository script keeps its defaults block.
+- **End to end, as root:** the served script against a fake HTTPS release server with its own
+  certificate and a stubbed `systemctl`: downloaded from `<base>/<version>/`, both checksums verified,
+  enrolled with `--server <ingest>` taken from the served defaults (no flag passed), service enabled.
+  Then the binary was tampered with after `SHA256SUMS`: "checksum verification failed — not installing",
+  no binary, link or unit installed, no enrollment.
+- Backend 798 passed / 0 failed (a first run had 10 fixture errors while the database was recovering;
+  the rerun and three repeats of the affected files were clean); Playwright 84 passed / 0 failed.
+
+---
+
+# R61 — /docs restyled after Datadog's documentation
+
+Datadog's docs structure, adapted to JobWatch (its own design, not Datadog's branding).
+
+## What ships
+- **Guides | API reference tabs** in a docs header bar, as Datadog splits Docs and API.
+- **"Use your JobWatch hosts" selector** (Datadog's site-selector idea): enter your ingest host (and
+  optionally app host) once; every code sample on every docs page uses it instead of
+  `ingest.example.com` / `<ingest>` / `app.example.com`. Remembered in this browser only; "Use the
+  examples" resets.
+- **Copy button** on every code block (with a screen-reader announcement).
+- **Collapsible sidebar tree**: groups fold; the current page's group is open.
+- **Breadcrumbs** (Docs / group / page) and **Further reading** at the end of each page (related
+  pages set in the docs manifest).
+- **Callouts** from GitHub-style Markdown (`> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`), used where
+  readers need them: ping URLs work like passwords (rotation takes effect immediately; checked: the
+  rotate endpoint clears the ingest cache), owners keep password sign-in under enforced SSO, timer
+  schedules need agent R53+, and the Datadog integration was verified against a recording copy of
+  its API, so check with a real key.
+- **Search-first docs home**: a large search box and popular links.
+- **`/llms.txt`**: a documentation index for AI agents (Datadog's docs publish one), generated at build
+  time from the same manifest.
+
+## Verification
+- Playwright 84 passed / 0 failed; new tests cover tabs, breadcrumbs, callouts, further reading, copy
+  buttons, the host selector rewriting samples across pages and resetting, and `/llms.txt`.
+- axe-core colour contrast on six docs pages in light, dark and gold: 0 violations.
+- All pages at 390 px in light and dark: no overflow or page errors.
+
+---
+
+# R60 — visual refresh: the "timetable" design system
+
+JobWatch is about time slots and whether expected runs happened, so the palette and details borrow
+from station departure boards and signage instead of generic SaaS teal-on-grey.
+
+## What changed
+- **Light (default):** navy ink `#14213D`, signage blue `#2346C8` for the primary action and the "now"
+  marker, and a **navy signage sidebar** (tokens re-scoped inside `.app-sidebar`, so every child
+  follows without per-element overrides).
+- **Dark:** night navy `#0D1424` instead of near-black, periwinkle accent `#8EA6FF`.
+- **Obsidian Gold:** the CSM Silks palette is unchanged; only the running colour was adjusted.
+- **Status colours** retuned per theme; **running is violet** so it never reads as a link.
+- **Type:** body 14 px (was 13.5), line-height 1.5; tabular numerals in tables, rows, durations and
+  counts so times line up like a timetable. Same families (Space Grotesk, IBM Plex Sans/Mono).
+- **Radius hierarchy:** controls 6 px, cards 10 px, overlays 14 px. Flat surfaces; shadow only for
+  floating elements. Inputs get a soft focus ring; the primary button lost its glow.
+- **Schedule tape:** one labelled "now" line (on the first row, inside the tape so the reveal
+  animation does not clip it).
+- **Removed decoration:** ALL-CAPS tracked labels (docs sidebar, docs index, integrations grid, "On
+  this page" are now sentence case), radial gradient washes behind the hero, the sign-in panel and
+  the closing band, and the glow on the highlighted pricing card (now a 2 px accent border).
+- **Landing screenshots** re-taken in the new design.
+
+## Accessibility fixes found by the audit
+- Disabled alert rules were faded to 50% opacity, making their text and even the active Enable
+  button unreadable (2.2–3.2:1). They now show a "Disabled" tag at full contrast.
+- Comparison-table notes (`text-mute/80`, 3.9:1) and the "No" icon (`text-mute/60`) now use full
+  `text-mute`.
+- The `⌘K` badge rendered white on the navy sidebar (the page-background token was not re-scoped).
+
+## Verification
+- Every text token checked numerically against WCAG 4.5:1 on canvas, panel and raised surfaces in all
+  three themes (lowest: light ok-green 5.4:1 on white).
+- axe-core colour-contrast audit of 10 rendered pages (app, landing, sign-in, sign-up, docs, compare)
+  in light, dark and gold: **0 violations** after the fixes above.
+- Playwright 78 passed / 0 failed; all 26 pages at 390 px in light and dark, no overflow or errors.
+- Before/after screenshots of five pages in both themes are in `visual-refresh/` with the release.
+
+---
+
+# R59 — documentation site at /docs
+
+## What ships
+- **`/docs`** in the web app (Docs is in the site navigation and footer): an index, 14 guides in five
+  groups, and an **API reference**. Sidebar with search (titles, summaries and section headings), an
+  on-page table of contents, previous/next links; light, dark and gold themes; phone layout.
+- **Single source of truth:** pages are rendered at **build time** from the repository's `docs/*.md`
+  (`apps/web/lib/docs.ts`), so the docs ship with every deploy and the running container needs no
+  files. Links between Markdown files become `/docs/...` links; tables scroll on phones; round labels
+  such as "(R54)" are stripped from public titles. The web Dockerfile now copies `docs/` for the build.
+- **API reference** generated from the same OpenAPI document the web client's types come from,
+  grouped by area, with methods, paths, query parameters and body markers.
+- **New guides:** Quick start, Pings and heartbeat API, Kubernetes, Import (Healthchecks.io, Cronitor),
+  Single sign-on, Security overview, How JobWatch works; **Linux agent rewritten**.
+- Published as-is: Alerts, Run checks, SCIM, Audit-log streaming, Datadog, Deploying.
+- **Not published:** the development log, product design document, rename notes, the R19 load-test
+  log, and the older `SECURITY.md` / `ARCHITECTURE.md` / `DEPLOYMENT.md` engineering notes (kept in
+  the repository). `SECURITY.md` was out of date (it says API keys are argon2-hashed; they have been
+  SHA-256 since R21, and its "open items" were fixed in R39), so the public security page was written
+  fresh from the current code.
+
+## Corrections made while writing the guides
+- The old `AGENT.md` said the agent had never been compiled or tested (it has been, since R39) and
+  described key hashing and the passive mode inaccurately; rewritten from the code.
+- **`install.sh` is not served by JobWatch** (the app shows it with a placeholder host). The release
+  now ships `install.sh` next to the agent binaries and `SHA256SUMS`, and the Linux agent guide gives
+  a working command against your GitHub release (`CS_DOWNLOAD_BASE` / `CS_AGENT_VERSION`).
+- Claims checked against code before publishing: UI labels (Install an agent / Get install command),
+  the Kubernetes agent does not report a time zone, CSRF applies to every cookie-authenticated request.
+
+## Verification
+- Production build generates every docs page statically.
+- Playwright 78 passed / 0 failed, including new docs tests: every page listed, **every internal docs
+  link answers 200**, headings/code/tables/table of contents render, round labels stripped, search
+  finds a page by its section heading, API reference lists endpoints.
+- All 26 pages at 390 px in light and dark: no horizontal overflow or page errors (the pings page
+  overflowed on long inline URLs; fixed by letting inline code wrap).
+
+---
+
+# R58 — Datadog: alerts as events, audit log to Datadog Logs, job metrics
+
+## Upgrade notes
+- **Migration 0023**: `metric_exports` (row-level security), audit stream kind `datadog_logs`, plan
+  features `datadog` and `metrics_export` on Team and Business (Enterprise has everything).
+- No new service: metrics export runs in the existing outbound-exporter worker.
+
+## What ships
+- **Shared client** `cronsentinel/datadog.py`: Datadog's nine sites (US1, US3, US5, EU1, AP1, AP2,
+  UK1, US1-FED, US2-FED, checked against Datadog's sites page); calls only `api.<site>` and
+  `http-intake.logs.<site>`, never a tenant-supplied URL; `DD-API-KEY` auth; key format validated.
+- **Alert channel `datadog`** (Events API): alert subject as title, alert details as text, alert_type
+  error/warning/success, tags for job, host, env, team, severity and condition; one aggregation key
+  per job so a failure and its recovery group together.
+- **Audit stream `datadog_logs`** (Logs intake), with the same in-order, at-least-once delivery.
+- **Job metrics export** (`cronsentinel/metricsexport.py`, Integrations → Datadog metrics):
+  `jobwatch.run.duration`, `jobwatch.run.completed`, `jobwatch.run.missed`, `jobwatch.job.failing`,
+  `jobwatch.job.reliability`, every minute, tagged job/env/team/host plus custom tags. A failed send
+  keeps the window (backoff), so an outage delays metrics instead of losing them; catch-up in 6-hour
+  slices; "Check API key" uses Datadog's validate endpoint.
+- **Landing page:** an integrations grid (29 integrations, names only; notes that some depend on the
+  plan). The Integrations page text no longer claims signal destinations are the only way data
+  leaves JobWatch.
+- `docs/DATADOG.md` covers setup, tags, metrics and an example monitor.
+
+## Verification
+- 6 integration tests against a recording mock of Datadog's API: alert event through the real
+  notifier (host per site, path, key header, alert type, tags, aggregation key, rich title);
+  audit log to the EU logs intake; metrics series names, values and tags with the window advancing;
+  an auth failure keeping the window (mutation-checked: advancing it anyway fails the test); access
+  and plan rules. Not run against a live Datadog account: use the in-app checks with a real key.
+- Backend 789 passed / 0 failed; Playwright 70 passed / 0 failed.
+
+---
+
+# R57 — stream the audit log to a SIEM
+
+The gap `/compare` named after R56: the audit log was only in the app and in exports.
+
+## Upgrade notes
+- **Migration 0022** adds `audit_streams` (row-level security) and the `audit_stream` plan feature on
+  Business (Enterprise already has everything).
+- No new service: delivery runs inside the existing **outbound-exporter** worker.
+
+## What ships
+- **Destinations** (owners only, Settings → Audit log streaming):
+  - **Signed webhook**: `{"source":"jobwatch","type":"audit","events":[…]}`, signed with
+    `X-JobWatch-Signature: sha256=HMAC(secret, body)`, batch ids in `X-JobWatch-Delivery`.
+  - **Splunk HTTP Event Collector**: newline-joined HEC events, `Authorization: Splunk <token>`,
+    optional index, `sourcetype=jobwatch:audit`, event time preserved.
+- **Delivery** (`cronsentinel/auditstream.py`): every 5 s, up to 500 events per request, oldest first;
+  each destination keeps a cursor, so it is **in order and at least once**. A failure leaves the
+  cursor in place and backs off (10 s doubling to 15 min); the error is shown with the next retry.
+  Several exporters never double-send (each stream row is locked while being worked).
+- Start from new events only, or include the last 30 days. HTTPS only; internal addresses refused by
+  the SSRF guard; TLS verified. Tokens and secrets are encrypted and never returned by the API.
+- **Send test event** reports success or the destination's error without moving the cursor.
+- Creating, pausing, resuming and removing a stream are themselves audited (and streamed).
+- `docs/AUDIT_STREAMING.md` documents the event format and how to verify signatures.
+- `/compare`: the audit-log row notes SIEM streaming; the "behind" list no longer names it.
+
+## Verification
+- 6 integration tests against a real local HTTP receiver: in-order signed delivery and cursor
+  advance; an outage (HTTP 503) keeps events, backs off, then delivers everything in order; Splunk
+  HEC format and auth header; only the org's own events plus 30-day backfill; two concurrent
+  exporters deliver once; owner-only, plan gate, https/private-address refusal, test endpoint.
+  Mutation-checked: without the row lock both exporters send the same batch.
+- Backend 769 passed / 0 failed; Playwright 70 passed / 0 failed.
+
+---
+
+# R56 — SCIM groups: directory groups map to JobWatch roles
+
+Item 4 of the research report (enterprise identity): SCIM covered people only, so everyone a
+directory provisioned got one default role. Groups now sync, and owners map groups to roles.
+
+## Upgrade notes
+- **Migration 0021** adds `scim_groups`, `scim_group_members` (row-level security like every tenant
+  table) and `scim_users.role_from_group`.
+- In your directory's JobWatch app, enable group push. No JobWatch configuration beyond mapping roles.
+
+## What ships
+- **SCIM `/Groups`** (was an empty stub): list (filters `displayName eq`, `externalId eq`,
+  `excludedAttributes=members`), get, create, replace, patch, delete; `ResourceTypes` and `Schemas`
+  now describe Group. Both PATCH dialects: Okta (`path: members`, `members[value eq "…"]`, `replace`
+  with a value object) and Entra ID (capitalised ops, `Remove` with a value list, `path: displayName`).
+  Members must be people provisioned to the org; unknown ids are ignored. Duplicate names → 409.
+- **Group → role mapping** (Settings → Single sign-on → Groups and roles; `PUT
+  /api/v1/sso/scim-groups/{id}/role`, **owner-only** because a mapping can grant admin): viewer to
+  admin, never owner. Rules:
+  - the highest role among a person's mapped groups wins; unmapped groups change nothing;
+  - **owners are never changed**;
+  - deactivated people keep no access; reactivated, they return with their groups' role;
+  - leaving every mapped group reverts a group-given role to the default role; a role set by hand
+    for someone in no mapped group is left alone;
+  - recomputed on every membership change, group deletion and mapping change.
+- **Audit:** every resulting role change is logged as `scim.role_sync` with from/to and the actor
+  (the directory's SCIM token or the owner who changed the mapping).
+- `/compare`: directory sync now says users and groups; the "behind" list names audit log streaming
+  to a SIEM as the remaining gap. `docs/SCIM.md` explains setup and rules.
+
+## Verification
+- 6 new integration tests: Okta push and mapping, Entra dialect with highest-role-wins and delete
+  reverting, owners and deactivated people untouched (and reactivation restoring the group role),
+  hand-set roles left alone, owner-only mapping and no owner role, unknown members and duplicates,
+  and audit entries with real actors. Mutation-checked: without the owner guard the owner test fails.
+  The first run caught an audit write with no actor for owner-made mappings; fixed.
+- Backend 745 passed / 0 failed; Playwright 70 passed / 0 failed.
+- As with users, not yet run against live Okta or Entra ID: run each vendor's SCIM validator on staging.
+
+---
+
+# R55 — alerts say which server, which job, which environment, and why
+
+Alert subjects were `✕ [HIGH] nightly-db-backup: failed`; the person paged had to open the dashboard
+to learn where it ran and what went wrong. Every alert now carries that context.
+
+## What ships
+- **Subject:** `✕ [HIGH] FAILED · nightly-db-backup on prod-db-01 (production) — exit 2 after 4m 12s`.
+  Where = the run's host or the job's server, or `in <cluster>/<namespace>` for Kubernetes; the reason
+  is the broken run check, "no run started for <slot in the job's time zone>", "still running after …",
+  "exit N after …" or "succeeded in …". Capped at 180 characters.
+- **Details** in every channel: job, status change, server or cluster/namespace/pod/node, environment,
+  workspace, team, tags, schedule, expected slot (missed/late), started/finished/duration/exit code,
+  failed run checks, metrics, last stderr line (redacted), incident, run id and a link to the job.
+- **Per-channel layout:** Slack attachment fields, Teams facts, Discord embed fields, email/Telegram
+  as labelled lines, PagerDuty `custom_details` + a link, Opsgenie `details`, and a `context` object
+  in signed webhook payloads.
+- One lookup per alert in the notifier (`cronsentinel/alerting/context.py`) from ids already in the
+  payload, so rule alerts, auto-resolves and test sends all get it; if the lookup fails, the basic
+  alert still goes out. Commands are deliberately excluded (credentials in arguments).
+- `docs/ALERTS.md` shows the subjects and fields.
+
+## Verification
+- 5 new integration tests: subject and body from real DB rows (server, environment, team, tags,
+  schedule in IST, duration, exit code, failed check, metrics, link), missed-run slot naming, the
+  180-character cap and test sends, the real notifier task passing context to a channel, and the
+  Slack/Teams/Discord structures. A `password=` in the stderr line is masked in the alert.
+- Backend 726 passed / 0 failed; full-stack alert chain through NATS and Celery 6/6.
+
+---
+
+# R54 — run checks: a run that exits 0 but did the wrong thing is a failure
+
+Item 3 of the next-round research report: the most-cited real-world failure is "the backup ran, exit
+code 0, and wrote an empty file". Jobs can now carry run checks (assertions), and runs report metrics.
+
+## Upgrade notes
+- **Migration 0020** adds `executions.metrics` (JSONB) and `jobs.assertions` (text array).
+- New Linux agent needed only for `$JOBWATCH_METRICS_FILE`; the heartbeat API and Cronitor paths work
+  with any agent.
+
+## What ships
+- **Run checks** (`cronsentinel/assertions.py`): `metric.<name> <op> <number>` and
+  `duration <op> <time>` (Cronitor's `metric.duration` spelling accepted). Up to 20 per job, validated
+  on create/update (422 with the reason). A metric named in a rule but not reported fails the rule.
+- **The processor evaluates them** when a run reports success: a broken rule turns the run into a
+  failure, stores the reasons in `meta.assertion_failures` (e.g. `metric.size_bytes > 0 (was 0)`), and
+  the job's state and alerts follow as for any failure. Failed runs are not re-checked.
+- **Metrics in from every path:** heartbeat JSON `metrics`; Cronitor `metric=name:value` (now stored as
+  real metrics instead of meta); agent events; and `cs-run`, which hands the job a private
+  `$JOBWATCH_METRICS_FILE` and attaches `name=value` lines from it to the final event.
+- **Cronitor import:** per-run assertions become run checks (enforced); `metric.duration < X` stays
+  the expected runtime; aggregate assertions are reported, not imported.
+- **Job page:** a "Run checks" panel to view and edit rules; a run shows its metrics, and a run that
+  broke a check shows "Exited successfully but failed its run checks" with each rule and value.
+- `GET /jobs/{id}/executions` returns `metrics` and `assertion_failures`; `docs/RUN_CHECKS.md` explains it.
+- Landing page backup card now mentions the size check.
+
+## Verification
+- Backend 721 passed / 0 failed (new: 16 grammar/evaluation unit tests; 6 integration tests covering
+  the empty backup, a script that stopped reporting, measured duration from start/finish, failed runs
+  not re-checked, agent-event metrics, API validation and clearing; Cronitor import now asserts the
+  imported rule is enforced). Mutation-checked: with evaluation disabled the empty-backup test fails.
+- Agent: `go vet` and tests, including a real `cs-run` run whose script writes the metrics file.
+- Full stack (NATS, workers): alert chain 6/6. Playwright 70 passed / 0 failed (new run-checks test).
+
+---
+
 # R53 — systemd timers get real schedules, so a timer that stops is a missed run
 
 Closes the gap found while writing the R52 landing page: the agent discovered systemd timers, but

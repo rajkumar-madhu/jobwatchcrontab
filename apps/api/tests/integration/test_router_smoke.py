@@ -70,8 +70,23 @@ def seeded(org, key):
             VALUES (:e,:o,:j,'success',now(),now())"""), {"e": ex, "o": org["id"], "j": job})
         inc = s.execute(text("""INSERT INTO incidents (org_id, severity, status, title, started_at, affected_job_ids)
             VALUES (:o,'high','open','smoke',now(),ARRAY[:j]::uuid[]) RETURNING id"""), {"o": org["id"], "j": job}).scalar()
+        # R66: on-call needs a member, a delivery channel, a schedule and a policy (Team plan feature)
+        from cronsentinel.crypto import encrypt_json
+        s.execute(text("UPDATE organizations SET plan='team' WHERE id=:o"), {"o": org["id"]})
+        user = s.execute(text("INSERT INTO users (keycloak_sub, email, name) VALUES (:k, :e, 'Smoke') RETURNING id"),
+                         {"k": uuid.uuid4().hex, "e": f"smoke-{uuid.uuid4().hex}@acme.test"}).scalar()
+        s.execute(text("INSERT INTO memberships (org_id, user_id, role) VALUES (:o, :u, 'sre')"), {"o": org["id"], "u": user})
+        ch = s.execute(text("INSERT INTO notification_channels (org_id, kind, name, config_enc, rate_per_min) VALUES (:o,'webhook','smoke-pages',:c,60) RETURNING id"),
+                       {"o": org["id"], "c": encrypt_json({"url": "https://x.test/p"})}).scalar()
+        sid = s.execute(text("INSERT INTO oncall_schedules (org_id, name, tz) VALUES (:o, 'smoke', 'UTC') RETURNING id"), {"o": org["id"]}).scalar()
+        s.execute(text("""INSERT INTO oncall_layers (org_id, schedule_id, position, name, rotation, handoff_at, members)
+                          VALUES (:o, :s, 0, 'r', 'daily', now(), ARRAY[CAST(:u AS uuid)])"""), {"o": org["id"], "s": sid, "u": str(user)})
+        pid = s.execute(text("INSERT INTO escalation_policies (org_id, name, delivery_channel_id) VALUES (:o, 'smoke', :c) RETURNING id"),
+                        {"o": org["id"], "c": ch}).scalar()
+        s.execute(text("""INSERT INTO escalation_steps (org_id, policy_id, position, delay_min, targets)
+                          VALUES (:o, :p, 0, 5, CAST(:t AS jsonb))"""), {"o": org["id"], "p": pid, "t": f'[{{"type": "user", "id": "{user}"}}]'})
     return {"org_id": str(org["id"]), "workspace_id": str(ws), "job_id": str(job), "execution_id": ex,
-            "other_id": ex, "incident_id": str(inc)}
+            "other_id": ex, "incident_id": str(inc), "user_id": str(user), "channel_id": str(ch), "sid": str(sid), "pid": str(pid)}
 
 
 # Path params that must resolve to something; anything not listed gets a random uuid (404 expected).
@@ -96,6 +111,9 @@ EXTERNAL = {
     "/api/v1/sso",        # R43: PUT fetches the IdP's discovery document and calls the Keycloak Admin API
     "/api/v1/import/healthchecks",   # R48: calls the Healthchecks API; covered by test_import_healthchecks.py
     "/api/v1/import/cronitor",       # R50: calls the Cronitor API; covered by test_import_cronitor.py
+    "/api/v1/import/sentry",         # R67: calls the Sentry API; covered by test_import_sentry.py
+    "/api/v1/audit-streams",         # R57: validates and contacts the SIEM URL; covered by test_audit_streams.py
+    "/api/v1/metric-exports",        # R58: Datadog; covered by test_datadog.py
 }
 # R44: SCIM uses its own per-org bearer token, not API keys/cookies; covered by tests/integration/test_scim.py
 SCIM = {"/scim/v2/ServiceProviderConfig", "/scim/v2/ResourceTypes", "/scim/v2/Schemas", "/scim/v2/Users",
@@ -103,7 +121,8 @@ SCIM = {"/scim/v2/ServiceProviderConfig", "/scim/v2/ResourceTypes", "/scim/v2/Sc
 # Public by design — no auth expected.
 PUBLIC = {"/healthz", "/readyz", "/metrics", "/public/status/{slug}", "/auth/logout",
           "/api/v1/integrations/schema"} | {"/auth/login", "/auth/callback", "/api/v1/billing/webhook", "/auth/sso",
-                                          "/auth/signup", "/auth/providers", "/auth/discover"} | SCIM   # R51: public sign-in routes
+                                          "/auth/signup", "/auth/providers", "/auth/discover",
+                                          "/auth/invite/{token}", "/public/contact"} | SCIM   # R69: invite preview and contact form are public by design   # R51: public sign-in routes
 # Writes that are destructive or need a body we cannot synthesise generically.
 SKIP_AUTHED_CALL = {
     "/auth/orgs", "/auth/switch/{org_id}", "/auth/session",
@@ -120,6 +139,10 @@ BODIES = {
     ("POST", "/api/v1/sso/scim-tokens"): lambda s: {"name": "smoke"},
     ("POST", "/api/v1/jobs"): lambda s: {"workspace_id": s["workspace_id"], "name": f"n{uuid.uuid4().hex[:6]}", "schedule_expr": "*/5 * * * *", "grace_s": 60},
     ("POST", "/api/v1/status-pages"): lambda s: {"title": "p", "slug": f"s{uuid.uuid4().hex[:6]}", "job_ids": []},
+    ("POST", "/api/v1/org/invites"): lambda s: {"email": f"smoke-{uuid.uuid4().hex[:6]}@smoke.test", "role": "viewer"},
+    ("PATCH", "/api/v1/org/members/{user_id}"): lambda s: {"role": "viewer"},
+    ("POST", "/public/contact"): lambda s: {"name": "Smoke Test", "email": "smoke@smoke.test", "company": "Smoke", "website": "x"},   # honeypot filled: accepted, not stored
+    ("PUT", "/api/v1/org/security"): lambda s: {"require_mfa": False},
     ("POST", "/api/v1/workspaces"): lambda s: {"name": f"w{uuid.uuid4().hex[:6]}"},
     ("POST", "/api/v1/api-keys"): lambda s: {"name": "k", "role": "viewer"},
     ("POST", "/api/v1/agents/bootstrap-token"): lambda s: {"kind": "linux"},
@@ -132,6 +155,16 @@ BODIES = {
     ("POST", "/api/v1/incidents/{incident_id}/notes"): lambda s: {"body": "note"},
     ("PATCH", "/api/v1/jobs/{job_id}"): lambda s: {"description": "renamed"},  # NOTE: name is not patchable by design
     ("PATCH", "/api/v1/alerts/rules/{rule_id}"): lambda s: {"enabled": False},
+    # R66: on-call
+    ("POST", "/api/v1/oncall/schedules"): lambda s: {"name": f"s{uuid.uuid4().hex[:6]}", "tz": "UTC",
+        "layers": [{"rotation": "daily", "handoff_at": "2026-10-01T09:00:00Z", "members": [s["user_id"]]}]},
+    ("PUT", "/api/v1/oncall/schedules/{sid}"): lambda s: {"name": f"s{uuid.uuid4().hex[:6]}", "tz": "UTC",
+        "layers": [{"rotation": "weekly", "handoff_at": "2026-10-01T09:00:00Z", "members": [s["user_id"]]}]},
+    ("POST", "/api/v1/oncall/schedules/{sid}/overrides"): lambda s: {"user_id": s["user_id"], "starts_at": "2026-10-10T00:00:00Z", "ends_at": "2026-10-10T08:00:00Z"},
+    ("POST", "/api/v1/oncall/policies"): lambda s: {"name": f"p{uuid.uuid4().hex[:6]}", "delivery_channel_id": s["channel_id"],
+        "steps": [{"delay_min": 5, "targets": [{"type": "user", "id": s["user_id"]}]}]},
+    ("PUT", "/api/v1/oncall/policies/{pid}"): lambda s: {"name": f"p{uuid.uuid4().hex[:6]}", "delivery_channel_id": s["channel_id"],
+        "steps": [{"delay_min": 5, "targets": [{"type": "user", "id": s["user_id"]}]}]},
 }
 
 

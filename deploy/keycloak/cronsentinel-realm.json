@@ -82,10 +82,23 @@
       "clientRoles": {
         "realm-management": [
           "manage-identity-providers",
-          "view-identity-providers"
+          "view-identity-providers",
+          "view-users",
+          "manage-users"
         ]
       }
     }
   ],
-  "registrationEmailAsUsername": true
+  "registrationEmailAsUsername": true,
+  "passwordPolicy": "length(12) and notUsername and notEmail and passwordHistory(3)",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+  "otpSupportedApplications": [
+    "totpAppGoogleName",
+    "totpAppMicrosoftAuthenticatorName",
+    "totpAppFreeOTPName"
+  ]
 }

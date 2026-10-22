@@ -1,14 +1,18 @@
 package agent
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -78,6 +82,15 @@ func Run(ctx context.Context, cfg Config, push func(Event) error, jobToken, fing
 	cmd.Stderr = io.MultiWriter(os.Stderr, se)
 	cmd.Stdin = os.Stdin
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// R54: the job can report metrics by appending "name=value" lines to $JOBWATCH_METRICS_FILE.
+	// The file is private to the user running the job (0600) and removed afterwards.
+	metricsPath := ""
+	if f, ferr := os.CreateTemp("", "jobwatch-metrics-*"); ferr == nil {
+		metricsPath = f.Name()
+		f.Close()
+		defer os.Remove(metricsPath)
+		cmd.Env = append(os.Environ(), "JOBWATCH_METRICS_FILE="+metricsPath)
+	}
 	t0 := time.Now()
 	err := cmd.Start()
 	if err != nil {
@@ -112,6 +125,7 @@ func Run(ctx context.Context, cfg Config, push func(Event) error, jobToken, fing
 				e.DurationMS = &dur
 				e.StdoutTail = string(bytes.ToValidUTF8(so.buf, []byte("?")))
 				e.StderrTail = string(bytes.ToValidUTF8(se.buf, []byte("?")))
+				e.Metrics = ReadMetrics(metricsPath)
 			})
 			return code
 		}
@@ -119,3 +133,42 @@ func Run(ctx context.Context, cfg Config, push func(Event) error, jobToken, fing
 }
 
 var startMono = time.Now()
+
+var metricName = regexp.MustCompile(`^[a-z][a-z0-9_]{0,39}$`)
+
+// ReadMetrics parses "name=value" (or "name value", "name: value") lines: at most 20 metrics and the
+// first 64 KiB of the file; malformed lines are skipped. A missing or empty file yields nil.
+func ReadMetrics(path string) map[string]float64 {
+	if path == "" {
+		return nil
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+	out := map[string]float64{}
+	sc := bufio.NewScanner(io.LimitReader(f, 64<<10))
+	for sc.Scan() && len(out) < 20 {
+		line := strings.TrimSpace(sc.Text())
+		k, v, ok := strings.Cut(line, "=")
+		if !ok {
+			if k, v, ok = strings.Cut(line, ":"); !ok {
+				k, v, ok = strings.Cut(line, " ")
+			}
+		}
+		k = strings.ToLower(strings.TrimSpace(k))
+		if !ok || !metricName.MatchString(k) {
+			continue
+		}
+		n, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
+		if err != nil || math.IsNaN(n) || math.IsInf(n, 0) {
+			continue
+		}
+		out[k] = n
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}

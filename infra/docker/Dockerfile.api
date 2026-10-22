@@ -7,6 +7,9 @@ COPY apps/api/pyproject.toml ./
 COPY apps/api/cronsentinel ./cronsentinel
 COPY apps/api/alembic ./alembic
 COPY apps/api/alembic.ini ./
+# R62: the Linux agent installer, served (with this deployment's defaults) at <ingest>/agent/install.sh
+COPY agents/linux-agent/packaging/install.sh /app/agent/install.sh
+ENV AGENT_INSTALL_SCRIPT=/app/agent/install.sh
 # R39: regular (non-editable) install, and the process runs unprivileged.
 RUN pip install . && chown -R root:root /app && chmod -R a-w /app
 USER 10001:10001

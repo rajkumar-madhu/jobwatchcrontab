@@ -90,7 +90,7 @@ else
   "$KCADM" update realms/cronsentinel -s registrationAllowed=false
 fi
 
-echo "== R43: SSO admin client (identity providers only) =="
+echo "== R43/R69: admin client (identity providers; users for MFA checks) =="
 # The realm update above does not create clients/users on an existing realm, so ensure them here.
 ACID=$("$KCADM" get clients -r cronsentinel -q clientId=jobwatch-admin --fields id --format csv --noquotes | tail -1)
 if [[ -z "$ACID" ]]; then
@@ -98,7 +98,11 @@ if [[ -z "$ACID" ]]; then
   ACID=$("$KCADM" get clients -r cronsentinel -q clientId=jobwatch-admin --fields id --format csv --noquotes | tail -1)
 fi
 "$KCADM" add-roles -r cronsentinel --uusername service-account-jobwatch-admin --cclientid realm-management \
-  --rolename manage-identity-providers --rolename view-identity-providers
+  --rolename manage-identity-providers --rolename view-identity-providers \
+  --rolename view-users --rolename manage-users          # R69: check second factors, require authenticator setup
+echo "== R69: password and authenticator-app policy =="
+"$KCADM" update realms/cronsentinel -s 'passwordPolicy=length(12) and notUsername and notEmail and passwordHistory(3)' \
+  -s otpPolicyType=totp -s otpPolicyDigits=6 -s otpPolicyPeriod=30
 ADMIN_SECRET=$("$KCADM" get "clients/$ACID/client-secret" -r cronsentinel --fields value --format csv --noquotes 2>/dev/null || true)
 if [[ -z "$ADMIN_SECRET" ]]; then
   "$KCADM" create "clients/$ACID/client-secret" -r cronsentinel >/dev/null

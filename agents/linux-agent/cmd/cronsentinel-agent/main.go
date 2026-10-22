@@ -67,7 +67,7 @@ func hostID() string {
 }
 
 func main() {
-	if strings.HasSuffix(os.Args[0], "cs-run") { // symlink alias: cs-run [--job TOKEN] -- cmd
+	if strings.HasSuffix(os.Args[0], "cs-run") || strings.HasSuffix(os.Args[0], "jobwatch-run") { // symlink aliases: jobwatch-run (R71, the documented name) and cs-run (kept for existing crontabs)
 		os.Exit(cmdExec(os.Args[1:]))
 	}
 	if len(os.Args) < 2 {
@@ -201,7 +201,36 @@ func spoolAnnotate(hostID string) func([]byte, uint32) []byte {
 // after that; the start→terminal pair still arrives together and in order.
 func spoolSettled(fi os.FileInfo) bool { return time.Since(fi.ModTime()) > 45*time.Second }
 
+// ensureRunAlias creates /usr/local/bin/jobwatch-run next to an existing cs-run link when it is
+// missing. R72: the UI and docs show `jobwatch-run`, but agents installed before R71 only got
+// `cs-run`; a crontab line copied from the app would exit 127 on those hosts. The daemon runs as
+// root under systemd, so it can add the link itself and an agent upgrade is not needed. Failure is
+// logged once and otherwise ignored — the alias is a convenience, not a dependency.
+func ensureRunAlias() {
+	const dir = "/usr/local/bin"
+	want := dir + "/jobwatch-run"
+	if _, err := os.Lstat(want); err == nil {
+		return
+	}
+	self, err := os.Executable()
+	if err != nil {
+		return
+	}
+	if real, err := filepath.EvalSymlinks(self); err == nil {
+		self = real
+	}
+	if filepath.Dir(self) != dir { // only the packaged install; a dev build elsewhere leaves the system alone
+		return
+	}
+	if err := os.Symlink(self, want); err != nil {
+		log.Printf("could not create %s: %v (wrap jobs with cs-run)", want, err)
+		return
+	}
+	log.Printf("created %s -> %s", want, self)
+}
+
 func cmdRun() {
+	ensureRunAlias()
 	cfg, err := agent.Load(configPath)
 	if err != nil {
 		log.Fatal(err)
@@ -294,7 +323,7 @@ func cmdRun() {
 			if err := client.SendMetrics(ctx, mm); err != nil {
 				log.Printf("metrics failed: %v", err)
 			}
-			_ = client.Heartbeat(ctx, cfg.MetricsEvery)
+			_ = client.Heartbeat(ctx, cfg.MetricsEvery, hostmetrics.CollectFacts("/"))
 		}
 	}()
 
@@ -309,7 +338,7 @@ func cmdRun() {
 			for ctx.Err() == nil {
 				err := journal.Watch(ctx,
 					func(st journal.Start) {
-						if strings.Contains(st.Cmd, "cronsentinel-agent exec") || strings.Contains(st.Cmd, "cs-run") {
+						if strings.Contains(st.Cmd, "cronsentinel-agent exec") || strings.Contains(st.Cmd, "cs-run") || strings.Contains(st.Cmd, "jobwatch-run") {
 							return // wrapped jobs report themselves
 						}
 						fp := discovery.Fingerprint(cfg.HostID, st.User, st.Cmd, "")

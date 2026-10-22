@@ -38,6 +38,11 @@ export function SsoSettings({ role }: { role?: string }) {
   const [newTok, setNewTok] = useState<string | null>(null);
   const mkTok = useMutation({ mutationFn: () => mutate("/api/v1/sso/scim-tokens", "post", { body: { name: "Directory sync" } }),
     onSuccess: (r: any) => { setNewTok(r?.token ?? null); qc.invalidateQueries({ queryKey: ["scim-tokens"] }); } });
+  // R56: directory groups and the JobWatch role each one grants (owners only)
+  const groups = useQuery({ queryKey: ["scim-groups"], queryFn: () => api<{ id: string; display_name: string; role: string | null; members: number }[]>("/api/v1/sso/scim-groups"), enabled: isAdmin });
+  const mapRole = useMutation({ mutationFn: ({ id, role }: { id: string; role: string | null }) =>
+      mutate("/api/v1/sso/scim-groups/{group_id}/role", "put", { path: { group_id: id }, body: { role } as any }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["scim-groups"] }) });
   const rmTok = useMutation({ mutationFn: (id: string) => mutate("/api/v1/sso/scim-tokens/{token_id}", "delete", { path: { token_id: id } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["scim-tokens"] }) });
 
@@ -45,7 +50,7 @@ export function SsoSettings({ role }: { role?: string }) {
   if (q.error) return <ErrorBox error={q.error} />;
   if (!d) return <div className="skeleton h-24" />;
   const verified = d.domains.some((x) => x.verified_at);
-  const err = save.error || addDom.error || verify.error || rmDom.error || enforce.error || mkTok.error || rmTok.error;
+  const err = save.error || addDom.error || verify.error || rmDom.error || enforce.error || mkTok.error || rmTok.error || mapRole.error;
   return (
     <div className="space-y-6">
       <p className="text-mute">Let people sign in with your company identity provider. Anyone with an address in a verified domain joins this
@@ -115,6 +120,25 @@ export function SsoSettings({ role }: { role?: string }) {
               {role === "owner" && <button className="hover:text-bad" onClick={() => { if (confirm("Revoke this token? Directory sync stops until a new one is set.")) rmTok.mutate(t.id); }}>Revoke</button>}</span>
           </div>))}</div>
         <button className="btn mt-3" disabled={role !== "owner" || mkTok.isPending} onClick={() => mkTok.mutate()}>New SCIM token{role !== "owner" && " (owners only)"}</button>
+        <div className="mt-5 border-t border-line pt-4">
+          <h4 className="text-sm font-medium">Groups and roles</h4>
+          <p className="mt-1 text-xs text-mute">Groups pushed by your directory. Give a group a role and everyone in it gets that role; a person in several
+            mapped groups gets the highest one. Owners are never changed by directory sync.</p>
+          {groups.data?.length ? (
+            <div className="mt-2 divide-y divide-line">{groups.data.map((g) => (
+              <div key={g.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="min-w-0"><span className="font-medium">{g.display_name}</span> <span className="whitespace-nowrap text-xs text-mute">{g.members} {g.members === 1 ? "person" : "people"}</span></span>
+                <div className="w-44 shrink-0">
+                  <select className="input py-1 text-xs" aria-label={`Role for ${g.display_name}`} value={g.role ?? ""} disabled={role !== "owner" || mapRole.isPending}
+                    onChange={(e) => mapRole.mutate({ id: g.id, role: e.target.value || null })}>
+                    <option value="">No role change</option>
+                    {["viewer", "developer", "sre", "devops", "admin"].map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              </div>))}</div>
+          ) : <p className="mt-2 text-xs text-mute">No groups yet. Assign groups to the JobWatch app in your directory and push them.</p>}
+          {role !== "owner" && <p className="mt-2 text-xs text-mute">Only owners can change group roles.</p>}
+        </div>
       </div>
     </div>
   );

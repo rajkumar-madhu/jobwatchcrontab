@@ -1,4 +1,5 @@
 "use client";
+import { MaintenanceWindows } from "@/components/maintenance-windows";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, mutate } from "@/lib/api";
@@ -12,9 +13,11 @@ const KINDS: Record<string, { label: string; fields: [string, string][] }> = {
   // R42: on-call tools. Alerts stay open there until the job recovers, then JobWatch resolves them.
   pagerduty: { label: "PagerDuty", fields: [["routing_key", "Integration key (Events API v2)"], ["region", "Region: us or eu (default us)"], ["dashboard_url", "JobWatch URL for links (optional)"]] },
   opsgenie: { label: "Opsgenie", fields: [["api_key", "API integration key"], ["region", "Region: us or eu (default us)"]] },
+  // R58: Datadog Events — alerts appear in the Datadog event stream, tagged by job, host, env and team
+  datadog: { label: "Datadog", fields: [["api_key", "Datadog API key"], ["site", "Site (default datadoghq.com; e.g. datadoghq.eu, us5.datadoghq.com)"]] },
   email: { label: "Email (SMTP)", fields: [["host", "SMTP host"], ["port", "Port"], ["username", "Username"], ["password", "Password"], ["from", "From"], ["to", "To (comma-separated)"]] },
 };
-const CONDITIONS: [string, string][] = [["failed", "Job failed"], ["missed", "Job missed its schedule"], ["late", "Job is late"], ["runtime_exceeded", "Ran longer than expected"], ["consecutive_failures", "N failures in a row"], ["sla_breach", "Success rate below SLA"], ["recovered", "Job recovered"]];
+const CONDITIONS: [string, string][] = [["failed", "Job failed"], ["missed", "Job missed its schedule"], ["late", "Job is late"], ["runtime_exceeded", "Ran longer than expected"], ["consecutive_failures", "N failures in a row"], ["sla_breach", "Success rate below SLA"], ["anomaly", "Unusual run (learned from history)"], ["recovered", "Job recovered"]];
 
 export default function AlertingPage() {
   const qc = useQueryClient();
@@ -67,11 +70,12 @@ export default function AlertingPage() {
           <div className="mt-3 flex gap-2"><button className="btn btn-primary" disabled={!nr.name || nr.channel_ids.length === 0} onClick={() => addRule.mutate()}>Save rule</button><button className="btn" onClick={() => setNr(null)}>Cancel</button></div></div>}
         {rules.isLoading ? <Skeleton rows={2} /> : rules.data!.length === 0 ? <Empty title="No rules" hint="Without a rule, failures still open incidents but nobody is notified." /> :
           <div className="tbl card">{rules.data!.map((r) => (
-            <div key={r.id} className={`row grid-cols-[1fr_180px_120px_100px_150px] ${r.enabled ? "" : "opacity-50"}`}><span className="font-medium">{r.name}</span><span className="text-mute">{CONDITIONS.find(([k]) => k === r.condition)?.[1]}</span>
+            <div key={r.id} className="row grid-cols-[1fr_180px_120px_100px_150px]"><span className={r.enabled ? "font-medium" : "font-medium text-mute"}>{r.name}{!r.enabled && <span className="ml-2 rounded border border-line px-1.5 py-0.5 text-[11px] font-normal text-mute">Disabled</span>}</span><span className="text-mute">{CONDITIONS.find(([k]) => k === r.condition)?.[1]}</span>
               <span className="text-xs text-mute">{r.scope?.tags?.length ? `tags: ${r.scope.tags.join(", ")}` : "all jobs"}</span><span className="text-xs capitalize">{r.severity}</span>
               <div className="flex gap-1"><button className="btn" onClick={() => toggle.mutate({ id: r.id, enabled: !r.enabled })}>{r.enabled ? "Disable" : "Enable"}</button><button className="btn text-bad" onClick={() => confirm("Delete rule?") && delRule.mutate(r.id)}>Delete</button></div></div>))}</div>}
       </section>
 
+      <MaintenanceWindows />
       <section>
         <h2 className="mb-2 text-sm font-medium">Recent deliveries</h2>
         {ledger.data?.length === 0 ? <p className="text-sm text-mute">Nothing sent yet.</p> : <div className="tbl card">{ledger.data?.map((l) => (

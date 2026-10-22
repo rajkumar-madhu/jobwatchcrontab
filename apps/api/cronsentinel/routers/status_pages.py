@@ -61,11 +61,23 @@ def public_status(slug: str):
             {"o": pg.org_id, "ids": [str(i) for i in pg.job_ids]}).all()
         inc = s.execute(text("SELECT title, severity::text, status::text, started_at, resolved_at FROM incidents WHERE org_id=:o AND affected_job_ids && CAST(:ids AS uuid[]) AND started_at >= now() - interval '30 days' ORDER BY started_at DESC LIMIT 20"),
                         {"o": pg.org_id, "ids": [str(i) for i in pg.job_ids]}).all()
-        mw = s.execute(text("SELECT starts_at, ends_at FROM maintenance_windows WHERE org_id=:o AND ends_at >= now() ORDER BY starts_at LIMIT 5"), {"o": pg.org_id}).all()
+        # R63: only windows covering this page's public jobs (the page used to list every window in the
+        # organization, internal ones included), with recurring windows expanded to real dates.
+        from datetime import UTC, datetime, timedelta
+
+        from .. import maintenance
+        meta = s.execute(text("SELECT id, tags, environment_id FROM jobs WHERE org_id=:o AND id = ANY(CAST(:ids AS uuid[])) AND public_visibility<>'none'"),
+                         {"o": pg.org_id, "ids": [str(i) for i in pg.job_ids]}).all()
+        now = datetime.now(UTC)
+        occ = []
+        for w in maintenance.load(s, pg.org_id):
+            if any(w.covers(m.id, m.tags, m.environment_id) for m in meta):
+                occ += [{"name": w.name, "starts_at": st, "ends_at": en} for st, en in w.occurrences(now, now + timedelta(days=14))]
+        mw = sorted(occ, key=lambda o: o["starts_at"])[:5]
     overall = "operational"
     for j in jobs:
         if j.status in ("failed", "timeout", "missed"): overall = "degraded"
         elif j.status == "late" and overall == "operational": overall = "delayed"
     return {"title": pg.title, "overall": overall, "jobs": [{"name": j.name, "status": j.status, "last_run_at": j.last_run_at, "uptime_90d": float(j.uptime_90d) if j.uptime_90d is not None else None,
                                                             "recent": j.recent or [], "show_duration": j.public_visibility == "status_and_duration"} for j in jobs],
-            "incidents": [dict(r._mapping) for r in inc], "maintenance": [dict(r._mapping) for r in mw]}
+            "incidents": [dict(r._mapping) for r in inc], "maintenance": mw}

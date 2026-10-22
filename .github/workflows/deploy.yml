@@ -136,6 +136,8 @@ jobs:
             --set-string "env.API_PUBLIC_URL=https://${{ vars.DOMAIN }}" \
             --set-string "env.WEB_PUBLIC_URL=https://${{ vars.DOMAIN }}" \
             --set-string "env.INGEST_PUBLIC_URL=https://${{ vars.INGEST_DOMAIN }}" \
+            --set-string "env.AGENT_DOWNLOAD_BASE=https://github.com/${{ github.repository }}/releases/download" \
+            --set-string "env.AGENT_VERSION=${TAG}" \
             --set-string "env.KEYCLOAK_ISSUER=${{ vars.KEYCLOAK_ISSUER }}" \
             --atomic --wait --timeout 15m
           rm -f /tmp/secret-values.yaml

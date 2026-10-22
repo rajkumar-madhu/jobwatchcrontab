@@ -16,6 +16,8 @@ from sqlalchemy import text
 from ..celery_app import celery
 from ..config import settings
 from ..crypto import decrypt_json
+from .. import datadog
+from . import context as alert_context
 from . import oncall
 from ..db import system_session
 
@@ -26,11 +28,9 @@ _EMOJI = {"failed": "✕", "missed": "⚠", "late": "⚠", "timeout": "⏱", "re
 
 
 def _fmt(p: dict) -> tuple[str, str]:
-    icon = _EMOJI.get(p["condition"], "•")
-    title = f"{icon} [{p['severity'].upper()}] {p['job_name']}: {p['new_status']}"
-    body = (f"Job: {p['job_name']}\nStatus: {p['prev_status']} → {p['new_status']}\nCondition: {p['condition']}\n"
-            f"Time: {p['ts']}\nIncident: {p.get('incident_id') or '-'}\nExecution: {p.get('execution_id') or '-'}")
-    return title, body
+    """R55: subject and body come from alert_context (server, environment, reason, run facts)."""
+    c = p.get("context") or {}
+    return alert_context.subject(p, c), alert_context.body(p, c)
 
 
 def _send_email(cfg, title, body):
@@ -49,17 +49,24 @@ def _send_email(cfg, title, body):
 def _send_slack(cfg, title, body, p):
     color = {"critical": "#dc2626", "high": "#ea580c", "medium": "#d97706", "low": "#2563eb"}[p["severity"]]
     if p["condition"] == "recovered": color = "#16a34a"
-    netguard.post(cfg["webhook_url"], json={"text": title, "attachments": [{"color": color, "text": body}]}, timeout=10).raise_for_status()
+    rows = alert_context.details(p, p.get("context") or {})
+    fields = [{"title": k, "value": v, "short": len(v) < 40 and k not in ("Last error", "Failed checks", "Open in JobWatch")} for k, v in rows]
+    netguard.post(cfg["webhook_url"], json={"text": title, "attachments": [{"color": color, "fallback": body, "fields": fields}]},
+                  timeout=10).raise_for_status()
 
 
 def _send_teams(cfg, title, body, p):
     netguard.post(cfg["webhook_url"], json={"@type": "MessageCard", "@context": "http://schema.org/extensions", "summary": title,
                                           "themeColor": "dc2626" if p["new_status"] in ("failed", "missed", "timeout") else "16a34a",
-                                          "title": title, "text": body.replace("\n", "<br>")}, timeout=10).raise_for_status()
+                                          "title": title, "sections": [{"facts": [{"name": k, "value": v} for k, v in
+                                                                                 alert_context.details(p, p.get("context") or {})]}]},
+                  timeout=10).raise_for_status()
 
 
 def _send_discord(cfg, title, body, p):
-    netguard.post(cfg["webhook_url"], json={"content": f"**{title}**\n```{body}```"}, timeout=10).raise_for_status()
+    rows = alert_context.details(p, p.get("context") or {})
+    netguard.post(cfg["webhook_url"], json={"content": f"**{title}**"[:2000], "embeds": [{
+        "fields": [{"name": k, "value": v[:1024], "inline": len(v) < 40} for k, v in rows][:25]}]}, timeout=10).raise_for_status()
 
 
 def _send_telegram(cfg, title, body, p):
@@ -75,9 +82,17 @@ def _send_webhook(cfg, title, body, p):
     netguard.post(cfg["url"], content=raw, headers=headers, timeout=10).raise_for_status()
 
 
+def _escalation_is_routed_earlier(cfg, title, body, p):
+    """'escalation' channels start an on-call escalation (send_notification handles them before any
+    sender is chosen). Reaching this means that routing broke; fail loudly instead of dropping a page."""
+    raise RuntimeError("escalation channels must be routed to the escalation engine")
+
+
 _SENDERS = {"email": lambda c, t, b, p: _send_email(c, t, b), "slack": _send_slack, "teams": _send_teams,
             "discord": _send_discord, "telegram": _send_telegram, "webhook": _send_webhook,
-            "pagerduty": oncall.send_pagerduty, "opsgenie": oncall.send_opsgenie}   # R42
+            "pagerduty": oncall.send_pagerduty, "opsgenie": oncall.send_opsgenie,   # R42
+            "datadog": lambda c, t, b, p: datadog.send_event(c, t, b, p),           # R58
+            "escalation": _escalation_is_routed_earlier}                            # R66
 # TODO: sms (provider TBD)
 
 
@@ -95,7 +110,30 @@ def send_notification(self, org_id: str, channel_id: str, dedup_key: str, incide
             s.execute(text("INSERT INTO notification_ledger (org_id, incident_id, channel_id, dedup_key, status, error) VALUES (:o, :i, :c, :k, 'rate_limited', NULL)"),
                       {"o": org_id, "i": incident_id, "c": channel_id, "k": dedup_key})
             return
+        if ch.kind == "escalation":                        # R66: page whoever is on call
+            from .. import escalation
+            pid = decrypt_json(ch.config_enc).get("policy_id")
+            if payload.get("test"):
+                err = escalation.test_page(s, org_id, pid, payload)
+                status = "failed" if err else "sent"
+            elif payload.get("condition") == "recovered":
+                if payload.get("job_id"):
+                    escalation.resolve_for_job(s, org_id, payload["job_id"])
+                status, err = "sent", None
+            else:
+                key = f"incident:{payload['incident_id']}" if payload.get("incident_id") else f"job:{payload.get('job_id')}:{payload.get('condition')}"
+                escalation.start(s, org_id, pid, payload, key)
+                escalation.tick(s)                         # page the first step now, not on the next tick
+                status, err = "sent", None
+            s.execute(text("INSERT INTO notification_ledger (org_id, incident_id, channel_id, dedup_key, status, error) VALUES (:o, :i, :c, :k, :st, :e)"),
+                      {"o": org_id, "i": incident_id, "c": channel_id, "k": dedup_key, "st": status, "e": err})
+            return
         cfg = decrypt_json(ch.config_enc)
+        # R55: who/where/why for every channel — looked up once here from ids already in the payload
+        try:
+            payload = {**payload, "context": alert_context.build(s, org_id, payload)}
+        except Exception:
+            log.warning("alert context lookup failed; sending the basic alert", exc_info=True)
         title, body = _fmt(payload)
         try:
             _SENDERS[ch.kind](cfg, title, body, payload)

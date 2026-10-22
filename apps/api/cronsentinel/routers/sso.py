@@ -24,7 +24,7 @@ from .. import netguard
 from ..auth import Principal, _inet, audit, require_role
 from ..crypto import decrypt_json, encrypt_json
 from ..db import tenant_session
-from ..schemas import ScimTokensOut, SsoOut
+from ..schemas import ScimGroupOut, ScimTokensOut, SsoOut
 
 router = APIRouter(prefix="/api/v1/sso", tags=["sso"])
 
@@ -260,3 +260,35 @@ def revoke_scim_token(token_id: UUID, request: Request, p: Principal = Depends(r
         n = s.execute(text("UPDATE org_scim_tokens SET revoked_at=now() WHERE id=:i AND revoked_at IS NULL"), {"i": str(token_id)}).rowcount
         if not n: raise HTTPException(404)
         audit(s, p, "scim.token_revoke", "scim_token", str(token_id), ip=request.client.host if request.client else None)
+
+
+# ---- R56: SCIM groups → roles -------------------------------------------------------------------
+
+class GroupRoleIn(BaseModel):
+    role: str | None = Field(default=None, pattern="^(viewer|developer|sre|devops|admin)$")
+
+
+@router.get("/scim-groups", response_model=list[ScimGroupOut])
+def scim_groups(p: Principal = Depends(require_role("admin"))):
+    with tenant_session(p.org_id) as s:
+        return [dict(r._mapping) for r in s.execute(text("""
+            SELECT g.id, g.display_name, g.role, count(m.user_id) AS members, g.updated_at
+            FROM scim_groups g LEFT JOIN scim_group_members m ON m.group_id = g.id
+            GROUP BY g.id ORDER BY g.display_name""")).all()]
+
+
+@router.put("/scim-groups/{group_id}/role")
+def set_group_role(group_id: UUID, body: GroupRoleIn, request: Request, p: Principal = Depends(require_role("owner"))):
+    """Owner-only: a mapping can grant admin to everyone in a directory group."""
+    from . import scim
+    with tenant_session(p.org_id) as s:
+        g = s.execute(text("UPDATE scim_groups SET role=CAST(:r AS member_role), updated_at=now() WHERE id=:g RETURNING id, display_name"),
+                      {"r": body.role, "g": str(group_id)}).first()
+        if not g: raise HTTPException(404)
+        members = [r.user_id for r in s.execute(text("SELECT user_id FROM scim_group_members WHERE group_id=:g"), {"g": str(group_id)}).all()]
+        audit(s, p, "scim.group_role", "scim_group", str(group_id), {"group": g.display_name, "role": body.role},
+              request.client.host if request.client else None)
+    from ..db import system_session
+    with system_session() as s:          # recompute reads org_sso and memberships the same way SCIM calls do
+        scim.recompute_roles(s, p.org_id, members, principal=p)
+    return {"id": str(group_id), "role": body.role, "members_updated": len(members)}

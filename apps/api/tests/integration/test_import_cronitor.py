@@ -59,7 +59,7 @@ def test_mapping_rules():
     j = m["job"]
     assert m["status"] == "imported" and j["schedule_expr"] == "0 2 * * *" and j["tz"] == "Asia/Kolkata"
     assert j["grace_s"] == 1800 and j["expected_runtime_s"] == 7200 and j["tags"] == ["prod", "db"]
-    assert m["token"] == f"{TK}/nightly-backup" and "metric.count > 0" in m["note"]
+    assert m["token"] == f"{TK}/nightly-backup" and j["assertions"] == ["metric.count > 0"]     # R54: enforced now
     assert cr.map_monitor({"key": "x", "type": "job"}, None)["job"]["grace_s"] == 60          # Cronitor job default
     assert cr.map_monitor({"key": "x", "type": "heartbeat"}, None)["job"]["grace_s"] == 0
     assert cr.map_monitor(fake.MONITORS[4], TK)["status"] == "skipped"                       # type check
@@ -129,6 +129,13 @@ def test_import_then_ping_with_cronitor_paths(fake_cronitor, clients, org):
                        content=b"ignored").status_code == 200
     rows = _execs(org["id"], "Nightly backup")
     assert [x.status for x in rows] == ["success", "failed"], rows      # run + complete paired by series
+    # R54: the imported "metric.count > 0" is enforced — a complete with count 0 is a failure
+    ingest.get(base, params=[("state", "complete"), ("metric", "count:0")])
+    from cronsentinel.db import system_session
+    with system_session() as s:
+        last = s.execute(text("""SELECT e.status::text, e.metrics, e.meta->'assertion_failures' AS af FROM executions e JOIN jobs j ON j.id=e.job_id
+            WHERE j.org_id=:o AND j.name='Nightly backup' ORDER BY e.server_received_ts DESC LIMIT 1"""), {"o": org["id"]}).first()
+    assert last.status == "failed" and last.metrics == {"count": 0.0} and last.af == ["metric.count > 0 (was 0)"]
     assert rows[0].duration_ms == 12500 and rows[1].exit_code == 2
     assert ingest.get(f"/cronitor/p/{TK}/no-such-monitor").status_code == 404
     assert ingest.get("/cronitor/p/wrong-key/nightly-backup").status_code == 404     # the key is part of the credential

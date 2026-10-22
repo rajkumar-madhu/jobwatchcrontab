@@ -11,10 +11,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Jobs */
+        /**
+         * List jobs
+         * @description Jobs in the organization, ordered by name. Filter by state, workspace or tag. Paginated: pass `next_cursor` from one page as `cursor` to get the next; it is `null` on the last page.
+         */
         get: operations["list_jobs_api_v1_jobs_get"];
         put?: never;
-        /** Create Job */
+        /**
+         * Create a job
+         * @description Creates a job and returns it with its ping URL. The ping URL contains a secret token and is returned **only in this response**; store it where the job runs. Schedules accept cron expressions, systemd `OnCalendar` expressions or a fixed interval.
+         */
         post: operations["create_job_api_v1_jobs_post"];
         delete?: never;
         options?: never;
@@ -29,16 +35,45 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Job */
+        /**
+         * Get a job
+         * @description One job with its schedule, current state, last run and alerting settings.
+         */
         get: operations["get_job_api_v1_jobs__job_id__get"];
         put?: never;
         post?: never;
-        /** Delete Job */
+        /**
+         * Delete a job
+         * @description Deletes the job and its run history. Its ping URL stops working immediately.
+         */
         delete: operations["delete_job_api_v1_jobs__job_id__delete"];
         options?: never;
         head?: never;
-        /** Update Job */
+        /**
+         * Update a job
+         * @description Changes only the fields you send. Changing the schedule takes effect for the next expected run.
+         */
         patch: operations["update_job_api_v1_jobs__job_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/host": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a job's host
+         * @description The server the job runs on: agent state, host facts (OS, kernel, CPUs, memory, disk, uptime), the latest sample, 24 hours of CPU, memory, load and disk, and the other jobs on that server. Ping-only jobs have no server; `last_host` is the host name the latest run reported.
+         */
+        get: operations["job_host_api_v1_jobs__job_id__host_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/jobs/{job_id}/rotate-token": {
@@ -51,8 +86,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rotate Token
-         * @description R39: a leaked ping URL can be replaced without deleting the job and losing its history.
+         * Rotate a ping token
+         * @description Replaces the job's ping URL, for example after it leaked, without losing the job's history. The old URL stops working at once; the new one is returned only in this response.
          */
         post: operations["rotate_token_api_v1_jobs__job_id__rotate_token_post"];
         delete?: never;
@@ -68,7 +103,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Next Runs */
+        /**
+         * Preview upcoming runs
+         * @description The next `n` times the job is expected to run, in UTC, computed from its schedule and time zone.
+         */
         get: operations["next_runs_api_v1_jobs__job_id__next_runs_get"];
         put?: never;
         post?: never;
@@ -85,7 +123,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Job Executions */
+        /**
+         * List a job's runs
+         * @description The job's most recent runs, newest first.
+         */
         get: operations["job_executions_api_v1_jobs__job_id__executions_get"];
         put?: never;
         post?: never;
@@ -104,7 +145,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Preview Schedule */
+        /**
+         * Preview a schedule
+         * @description Validates a schedule expression without creating a job and returns its next run times and a plain-language description.
+         */
         post: operations["preview_schedule_api_v1_jobs_schedule_preview_post"];
         delete?: never;
         options?: never;
@@ -119,8 +163,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Execution */
+        /**
+         * Get a run
+         * @description One run with its timing, outcome, exit code, redacted output, reported metrics and any unusual-run findings.
+         */
         get: operations["get_execution_api_v1_executions__execution_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/executions/{execution_id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a run's output
+         * @description The run's stdout, stderr or both as a text file. The agent keeps the last 32 KiB of each stream, redacted.
+         */
+        get: operations["download_logs_api_v1_executions__execution_id__logs_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -136,7 +203,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Compare */
+        /**
+         * Compare two runs
+         * @description Differences between two runs of the same job: duration, exit code, metrics and output lines that appear in only one of them.
+         */
         get: operations["compare_api_v1_executions__execution_id__compare__other_id__get"];
         put?: never;
         post?: never;
@@ -153,7 +223,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Me */
+        /**
+         * Get the current identity
+         * @description Who the request is authenticated as: the user or API key, the organization and the role.
+         */
         get: operations["me_api_v1_me_get"];
         put?: never;
         post?: never;
@@ -170,10 +243,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Workspaces */
+        /**
+         * List workspaces
+         * @description Workspaces group jobs inside the organization.
+         */
         get: operations["list_workspaces_api_v1_workspaces_get"];
         put?: never;
-        /** Create Workspace */
+        /** Create a workspace */
         post: operations["create_workspace_api_v1_workspaces_post"];
         delete?: never;
         options?: never;
@@ -188,10 +264,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Keys */
+        /**
+         * List API keys
+         * @description Keys with their role, creator and last use. The key itself is never returned again.
+         */
         get: operations["list_keys_api_v1_api_keys_get"];
         put?: never;
-        /** Create Key */
+        /**
+         * Create an API key
+         * @description Creates a key with a role. The key is returned **only in this response**; it is stored as a hash.
+         */
         post: operations["create_key_api_v1_api_keys_post"];
         delete?: never;
         options?: never;
@@ -209,7 +291,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke Key */
+        /**
+         * Revoke an API key
+         * @description The key stops working immediately.
+         */
         delete: operations["revoke_key_api_v1_api_keys__key_id__delete"];
         options?: never;
         head?: never;
@@ -223,7 +308,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Audit Logs */
+        /**
+         * List audit events
+         * @description Sign-ins, role changes, invitations, configuration changes and deletions, newest first, with actor, time and source address.
+         */
         get: operations["audit_logs_api_v1_audit_logs_get"];
         put?: never;
         post?: never;
@@ -240,7 +328,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Overview */
+        /**
+         * Get the overview
+         * @description Counts by state, recent failures and open incidents: the data behind the dashboard's overview.
+         */
         get: operations["overview_api_v1_analytics_overview_get"];
         put?: never;
         post?: never;
@@ -257,10 +348,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Channels */
+        /**
+         * List alert channels
+         * @description Channels alerts can be sent to. Credentials are never returned.
+         */
         get: operations["list_channels_api_v1_alerts_channels_get"];
         put?: never;
-        /** Create Channel */
+        /**
+         * Create an alert channel
+         * @description Adds a channel: email, Slack, Microsoft Teams, PagerDuty, Opsgenie, webhook and others. Credentials are encrypted at rest and cannot be read back.
+         */
         post: operations["create_channel_api_v1_alerts_channels_post"];
         delete?: never;
         options?: never;
@@ -277,7 +374,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Test Channel */
+        /**
+         * Send a test alert
+         * @description Sends a sample alert through the channel now and reports whether the provider accepted it.
+         */
         post: operations["test_channel_api_v1_alerts_channels__channel_id__test_post"];
         delete?: never;
         options?: never;
@@ -295,7 +395,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Channel */
+        /**
+         * Delete an alert channel
+         * @description Deletes the channel. Rules that only targeted it stop sending.
+         */
         delete: operations["delete_channel_api_v1_alerts_channels__channel_id__delete"];
         options?: never;
         head?: never;
@@ -309,10 +412,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Rules */
+        /**
+         * List alert rules
+         * @description Rules that decide which events alert, and where.
+         */
         get: operations["list_rules_api_v1_alerts_rules_get"];
         put?: never;
-        /** Create Rule */
+        /**
+         * Create an alert rule
+         * @description Sends matching events (failed, missed, late, recovered, unusual run and others) for matching jobs to one or more channels.
+         */
         post: operations["create_rule_api_v1_alerts_rules_post"];
         delete?: never;
         options?: never;
@@ -330,11 +439,14 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Rule */
+        /** Delete an alert rule */
         delete: operations["delete_rule_api_v1_alerts_rules__rule_id__delete"];
         options?: never;
         head?: never;
-        /** Toggle Rule */
+        /**
+         * Enable or disable a rule
+         * @description Turns the rule on or off without deleting it.
+         */
         patch: operations["toggle_rule_api_v1_alerts_rules__rule_id__patch"];
         trace?: never;
     };
@@ -345,10 +457,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Maintenance */
+        /**
+         * List maintenance windows
+         * @description Windows that are active, upcoming, or ended in the last 7 days. Recurring windows stay listed while they still have occurrences.
+         */
         get: operations["list_maintenance_api_v1_alerts_maintenance_get"];
         put?: never;
-        /** Create Maintenance */
+        /**
+         * Create a maintenance window
+         * @description Holds back alerts for chosen jobs, tags or the whole organization for a period, once or on a recurring schedule. Runs are still recorded.
+         */
         post: operations["create_maintenance_api_v1_alerts_maintenance_post"];
         delete?: never;
         options?: never;
@@ -363,11 +481,35 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get a maintenance window
+         * @description One window by id, whatever its dates.
+         */
+        get: operations["get_maintenance_api_v1_alerts_maintenance__mw_id__get"];
         put?: never;
         post?: never;
-        /** Delete Maintenance */
+        /** Delete a maintenance window */
         delete: operations["delete_maintenance_api_v1_alerts_maintenance__mw_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alerts/maintenance/{mw_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End a maintenance window
+         * @description Ends a one-off window now, for example when work finished early. Recurring windows are deleted instead.
+         */
+        post: operations["end_maintenance_api_v1_alerts_maintenance__mw_id__end_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -380,7 +522,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Ledger */
+        /**
+         * List sent alerts
+         * @description Every alert sent or suppressed, newest first, with the channel, outcome and reason.
+         */
         get: operations["ledger_api_v1_alerts_ledger_get"];
         put?: never;
         post?: never;
@@ -397,7 +542,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Incidents */
+        /**
+         * List incidents
+         * @description Incidents, newest first. Filter by `status` (`open`, `acknowledged`, `resolved`).
+         */
         get: operations["list_incidents_api_v1_incidents_get"];
         put?: never;
         post?: never;
@@ -414,7 +562,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Incident */
+        /**
+         * Get an incident
+         * @description One incident with the jobs involved and its timeline.
+         */
         get: operations["get_incident_api_v1_incidents__incident_id__get"];
         put?: never;
         post?: never;
@@ -433,7 +584,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ack */
+        /**
+         * Acknowledge an incident
+         * @description Marks the incident as being handled and stops further escalation.
+         */
         post: operations["ack_api_v1_incidents__incident_id__ack_post"];
         delete?: never;
         options?: never;
@@ -450,7 +604,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Resolve */
+        /**
+         * Resolve an incident
+         * @description Closes the incident. A new failure opens a new incident.
+         */
         post: operations["resolve_api_v1_incidents__incident_id__resolve_post"];
         delete?: never;
         options?: never;
@@ -467,7 +624,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Add Note */
+        /**
+         * Add a note
+         * @description Adds a note to the incident's timeline.
+         */
         post: operations["add_note_api_v1_incidents__incident_id__notes_post"];
         delete?: never;
         options?: never;
@@ -484,7 +644,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bootstrap Token */
+        /**
+         * Create an enrollment token
+         * @description A short-lived token an agent uses once to enroll. Returned only in this response.
+         */
         post: operations["bootstrap_token_api_v1_agents_bootstrap_token_post"];
         delete?: never;
         options?: never;
@@ -499,8 +662,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Agents */
+        /**
+         * List agents
+         * @description Server and cluster agents with their version and last contact.
+         */
         get: operations["list_agents_api_v1_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an agent
+         * @description One agent with its server's facts, the latest host sample, 24 hours of samples and the jobs discovered on it.
+         */
+        get: operations["get_agent_api_v1_agents__agent_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -518,7 +704,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rotate */
+        /**
+         * Rotate an agent key
+         * @description Issues a new key for the agent. The old key stops working after the agent picks up the new one.
+         */
         post: operations["rotate_api_v1_agents__agent_id__rotate_post"];
         delete?: never;
         options?: never;
@@ -535,7 +724,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Revoke */
+        /**
+         * Revoke an agent
+         * @description The agent's key stops working immediately.
+         */
         post: operations["revoke_api_v1_agents__agent_id__revoke_post"];
         delete?: never;
         options?: never;
@@ -550,7 +742,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search */
+        /**
+         * Search run output
+         * @description Full-text search over redacted run output. Filter by job, stream, host, outcome and time range.
+         */
         get: operations["search_api_v1_logs_search_get"];
         put?: never;
         post?: never;
@@ -568,11 +763,70 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Sso Start
-         * @description R43: "Sign in with SSO" — find the org that verified this email's domain and send the user
-         *     straight to its identity provider.
+         * Start single sign-on
+         * @description Finds the organization that verified the email's domain and redirects to its identity provider.
          */
         get: operations["sso_start_auth_sso_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discover sign-in options
+         * @description What the sign-in page should offer for an email address. Reveals only whether a domain uses single sign-on.
+         */
+        get: operations["discover_auth_discover_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Start sign-up
+         * @description Redirects to the identity provider's registration, or to the company's identity provider for a domain with single sign-on.
+         */
+        get: operations["signup_auth_signup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List sign-in providers
+         * @description Social providers the sign-in page may offer.
+         */
+        get: operations["providers_auth_providers_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -588,7 +842,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Login */
+        /**
+         * Start sign-in
+         * @description Redirects to the identity provider.
+         */
         get: operations["login_auth_login_get"];
         put?: never;
         post?: never;
@@ -605,7 +862,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Callback */
+        /**
+         * Complete sign-in
+         * @description OpenID Connect callback. Creates the session cookie.
+         */
         get: operations["callback_auth_callback_get"];
         put?: never;
         post?: never;
@@ -624,7 +884,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Logout */
+        /**
+         * Sign out
+         * @description Ends the browser session.
+         */
         post: operations["logout_auth_logout_post"];
         delete?: never;
         options?: never;
@@ -639,7 +902,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Session */
+        /**
+         * Get the browser session
+         * @description The signed-in user, their organizations and the CSRF token.
+         */
         get: operations["session_auth_session_get"];
         put?: never;
         post?: never;
@@ -659,8 +925,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create Org
-         * @description Onboarding step 1: create workspace/org for the signed-in user; becomes owner.
+         * Create an organization
+         * @description First step of onboarding: creates an organization with the signed-in user as owner.
          */
         post: operations["create_org_auth_orgs_post"];
         delete?: never;
@@ -678,7 +944,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Switch Org */
+        /**
+         * Switch organization
+         * @description Changes the organization of the browser session.
+         */
         post: operations["switch_org_auth_switch__org_id__post"];
         delete?: never;
         options?: never;
@@ -693,10 +962,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Pages */
+        /** List status pages */
         get: operations["list_pages_api_v1_status_pages_get"];
         put?: never;
-        /** Create Page */
+        /**
+         * Create a status page
+         * @description A public page at `/status/{slug}` showing the health of the jobs you choose.
+         */
         post: operations["create_page_api_v1_status_pages_post"];
         delete?: never;
         options?: never;
@@ -714,7 +986,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Page */
+        /** Delete a status page */
         delete: operations["delete_page_api_v1_status_pages__page_id__delete"];
         options?: never;
         head?: never;
@@ -728,7 +1000,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Public Status */
+        /**
+         * Get a public status page
+         * @description The data behind a public status page. No authentication.
+         */
         get: operations["public_status_public_status__slug__get"];
         put?: never;
         post?: never;
@@ -745,7 +1020,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Clusters */
+        /**
+         * List clusters
+         * @description Clusters reporting through the Kubernetes agent.
+         */
         get: operations["list_clusters_api_v1_clusters_get"];
         put?: never;
         post?: never;
@@ -762,7 +1040,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Cluster Cronjobs */
+        /**
+         * List a cluster's CronJobs
+         * @description CronJobs discovered in the cluster and the jobs they map to.
+         */
         get: operations["cluster_cronjobs_api_v1_clusters__cluster_id__cronjobs_get"];
         put?: never;
         post?: never;
@@ -779,12 +1060,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Dependencies */
+        /**
+         * List dependencies
+         * @description Every declared "job A depends on job B" edge.
+         */
         get: operations["dependencies_api_v1_dependencies_get"];
         put?: never;
-        /** Add Dependency */
+        /**
+         * Add a dependency
+         * @description Declares that a job depends on another. When the upstream job fails, alerts for the downstream job say so.
+         */
         post: operations["add_dependency_api_v1_dependencies_post"];
-        /** Remove Dependency */
+        /** Remove a dependency */
         delete: operations["remove_dependency_api_v1_dependencies_delete"];
         options?: never;
         head?: never;
@@ -798,7 +1085,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Impact */
+        /**
+         * Get a job's impact
+         * @description Jobs that depend on this one, directly or indirectly.
+         */
         get: operations["impact_api_v1_jobs__job_id__impact_get"];
         put?: never;
         post?: never;
@@ -816,8 +1106,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Topology
-         * @description Org → (Server → User → Job) and Org → (Cluster → Namespace → CronJob). Statuses roll up worst-first.
+         * Get the topology
+         * @description Organization → server → user → job, and organization → cluster → namespace → CronJob. States roll up worst-first.
          */
         get: operations["topology_api_v1_topology_get"];
         put?: never;
@@ -835,8 +1125,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Series */
+        /**
+         * Get run outcomes over time
+         * @description Succeeded, failed and missed runs per bucket (`hour` or `day`) for the last `days` days.
+         */
         get: operations["series_api_v1_analytics_series_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/unusual-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List unusual runs
+         * @description The most recent runs that succeeded but were far outside their job's history (duration or a reported metric), newest first.
+         */
+        get: operations["unusual_runs_api_v1_analytics_unusual_runs_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -852,7 +1165,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Per Job */
+        /**
+         * Get per-job statistics
+         * @description Success rate, run count, failures and duration percentiles per job for the last `days` days. Sort by `failures`, `p95`, `trend` or `success_rate`.
+         */
         get: operations["per_job_api_v1_analytics_jobs_get"];
         put?: never;
         post?: never;
@@ -869,7 +1185,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Mttr */
+        /**
+         * Get time to detect and recover
+         * @description Average time from a failure to its alert and from an incident opening to its resolution.
+         */
         get: operations["mttr_api_v1_analytics_mttr_get"];
         put?: never;
         post?: never;
@@ -886,7 +1205,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Report */
+        /**
+         * Get a reliability report
+         * @description A summary for a `period` (week or month) suitable for sharing: success rate, incidents, worst jobs and SLA attainment.
+         */
         get: operations["report_api_v1_analytics_report_get"];
         put?: never;
         post?: never;
@@ -905,7 +1227,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ask */
+        /**
+         * Ask the copilot
+         * @description Answers a question about your jobs using redacted, pseudonymised telemetry. Suggested commands are returned as text; nothing is executed. Limited to 20 questions per minute per user.
+         */
         post: operations["ask_api_v1_copilot_ask_post"];
         delete?: never;
         options?: never;
@@ -920,7 +1245,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** History */
+        /**
+         * List copilot history
+         * @description Your recent questions and answers.
+         */
         get: operations["history_api_v1_copilot_history_get"];
         put?: never;
         post?: never;
@@ -937,7 +1265,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Suggestions */
+        /**
+         * Get suggested questions
+         * @description Questions worth asking now, based on recent failures.
+         */
         get: operations["suggestions_api_v1_copilot_suggestions_get"];
         put?: never;
         post?: never;
@@ -954,7 +1285,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Status */
+        /**
+         * Get plan and usage
+         * @description The current plan, its limits and usage.
+         */
         get: operations["status_api_v1_billing_get"];
         put?: never;
         post?: never;
@@ -973,7 +1307,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Checkout */
+        /**
+         * Start a checkout
+         * @description Returns a hosted checkout URL for the chosen plan.
+         */
         post: operations["checkout_api_v1_billing_checkout_post"];
         delete?: never;
         options?: never;
@@ -990,7 +1327,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Portal */
+        /**
+         * Open the billing portal
+         * @description Returns a URL to the hosted billing portal for invoices and payment methods.
+         */
         post: operations["portal_api_v1_billing_portal_post"];
         delete?: never;
         options?: never;
@@ -1006,8 +1346,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Signal Schema
-         * @description Published contract for consumers (AEGIS reads this, not the DB).
+         * Get the signal schema
+         * @description The published contract of the events sent to signal destinations. Public.
          */
         get: operations["signal_schema_api_v1_integrations_schema_get"];
         put?: never;
@@ -1025,10 +1365,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Destinations */
+        /** List signal destinations */
         get: operations["list_destinations_api_v1_integrations_destinations_get"];
         put?: never;
-        /** Create Destination */
+        /**
+         * Create a signal destination
+         * @description Sends job events (state changes, runs, incidents) to an HTTPS endpoint, signed with a shared secret.
+         */
         post: operations["create_destination_api_v1_integrations_destinations_post"];
         delete?: never;
         options?: never;
@@ -1044,10 +1387,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update Destination */
+        /** Update a signal destination */
         put: operations["update_destination_api_v1_integrations_destinations__dest_id__put"];
         post?: never;
-        /** Delete Destination */
+        /** Delete a signal destination */
         delete: operations["delete_destination_api_v1_integrations_destinations__dest_id__delete"];
         options?: never;
         head?: never;
@@ -1064,8 +1407,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Test Destination
-         * @description Synchronous test: sends a job.state_changed sample and reports the outcome.
+         * Test a signal destination
+         * @description Sends a sample `job.state_changed` event now and reports the outcome.
          */
         post: operations["test_destination_api_v1_integrations_destinations__dest_id__test_post"];
         delete?: never;
@@ -1081,7 +1424,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Deliveries */
+        /**
+         * List deliveries
+         * @description Recent deliveries to signal destinations with status codes and retries.
+         */
         get: operations["deliveries_api_v1_integrations_deliveries_get"];
         put?: never;
         post?: never;
@@ -1098,7 +1444,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Monitoring Gaps */
+        /**
+         * List monitoring gaps
+         * @description Periods when JobWatch itself was not watching your schedules, and how many expected runs could not be checked. Shown so you never mistake our outage for your jobs being fine.
+         */
         get: operations["monitoring_gaps_api_v1_platform_monitoring_gaps_get"];
         put?: never;
         post?: never;
@@ -1115,7 +1464,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Export Org */
+        /**
+         * Export organization data
+         * @description Everything stored for the organization as JSON: jobs, runs, incidents, alerting configuration and audit log. Secrets are excluded.
+         */
         get: operations["export_org_api_v1_org_export_get"];
         put?: never;
         post?: never;
@@ -1135,7 +1487,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Org */
+        /**
+         * Delete the organization
+         * @description Permanently deletes the organization and all its data. Cannot be undone.
+         */
         delete: operations["delete_org_api_v1_org__delete"];
         options?: never;
         head?: never;
@@ -1149,12 +1504,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Sso */
+        /**
+         * Get single sign-on settings
+         * @description The identity provider configuration, verified domains and enforcement. Secrets are never returned.
+         */
         get: operations["get_sso_api_v1_sso_get"];
-        /** Put Sso */
+        /**
+         * Configure single sign-on
+         * @description Sets the SAML 2.0 or OpenID Connect identity provider.
+         */
         put: operations["put_sso_api_v1_sso_put"];
         post?: never;
-        /** Delete Sso */
+        /**
+         * Remove single sign-on
+         * @description Removes the identity provider. Members sign in with passwords or social providers again.
+         */
         delete: operations["delete_sso_api_v1_sso_delete"];
         options?: never;
         head?: never;
@@ -1170,7 +1534,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Add Domain */
+        /**
+         * Add a domain
+         * @description Adds an email domain and returns the DNS TXT record that proves you own it.
+         */
         post: operations["add_domain_api_v1_sso_domains_post"];
         delete?: never;
         options?: never;
@@ -1187,7 +1554,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verify Domain */
+        /**
+         * Verify a domain
+         * @description Checks the DNS TXT record. People with verified-domain emails sign in through your identity provider.
+         */
         post: operations["verify_domain_api_v1_sso_domains__domain_id__verify_post"];
         delete?: never;
         options?: never;
@@ -1205,7 +1575,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Domain */
+        /** Remove a domain */
         delete: operations["delete_domain_api_v1_sso_domains__domain_id__delete"];
         options?: never;
         head?: never;
@@ -1220,7 +1590,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set Enforce */
+        /**
+         * Enforce single sign-on
+         * @description Requires single sign-on for everyone except owners, who keep a password as a break-glass path. Existing password sessions of other members end.
+         */
         put: operations["set_enforce_api_v1_sso_enforce_put"];
         post?: never;
         delete?: never;
@@ -1236,12 +1609,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Scim Tokens */
+        /** List SCIM tokens */
         get: operations["scim_tokens_api_v1_sso_scim_tokens_get"];
         put?: never;
         /**
-         * Create Scim Token
-         * @description Owner-only: a SCIM token can remove every non-owner member of the org.
+         * Create a SCIM token
+         * @description A bearer token for your identity provider's SCIM 2.0 client at `/scim/v2`. Returned only in this response. Owner only: a SCIM token can remove every non-owner member.
          */
         post: operations["create_scim_token_api_v1_sso_scim_tokens_post"];
         delete?: never;
@@ -1260,8 +1633,48 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke Scim Token */
+        /** Revoke a SCIM token */
         delete: operations["revoke_scim_token_api_v1_sso_scim_tokens__token_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sso/scim-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List directory groups
+         * @description Groups pushed by your identity provider and the role each maps to.
+         */
+        get: operations["scim_groups_api_v1_sso_scim_groups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sso/scim-groups/{group_id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Map a group to a role
+         * @description Members of the directory group get this role. Owner only: a mapping can grant admin to a whole group.
+         */
+        put: operations["set_group_role_api_v1_sso_scim_groups__group_id__role_put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1276,7 +1689,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Import Healthchecks */
+        /**
+         * Import from Healthchecks.io
+         * @description Creates a job for each check. Ping URLs keep working when you change only the host. The API key is used for this request only.
+         */
         post: operations["import_healthchecks_api_v1_import_healthchecks_post"];
         delete?: never;
         options?: never;
@@ -1294,9 +1710,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Import Cronitor
-         * @description R50. Neither key is stored: the API key is used for this request only; the telemetry key exists
-         *     afterwards only inside each job's hashed ping token.
+         * Import from Cronitor
+         * @description Creates a job for each monitor. Neither key is stored; existing telemetry URLs keep working on the ingest host.
          */
         post: operations["import_cronitor_api_v1_import_cronitor_post"];
         delete?: never;
@@ -1305,24 +1720,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/healthz": {
+    "/api/v1/import/sentry": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Healthz */
-        get: operations["healthz_healthz_get"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Import from Sentry Crons
+         * @description Creates a job for each cron monitor. Sentry SDK check-ins keep working when you point the DSN at the ingest host. The auth token is used for this request only.
+         */
+        post: operations["import_sentry_api_v1_import_sentry_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/readyz": {
+    "/api/v1/audit-streams": {
         parameters: {
             query?: never;
             header?: never;
@@ -1330,12 +1748,262 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Readyz
-         * @description R8: `js is not None` stayed true after the broker went away, so the pod kept serving Ready
-         *     while nothing could be published. Report the live connection state instead, and fail the probe
-         *     when the broker is unreachable so traffic is shed rather than silently dropped.
+         * List audit streams
+         * @description Destinations that receive every audit event as it happens.
          */
-        get: operations["readyz_readyz_get"];
+        get: operations["list_streams_api_v1_audit_streams_get"];
+        put?: never;
+        /**
+         * Create an audit stream
+         * @description Streams audit events to Splunk (HTTP Event Collector), Datadog Logs or a signed webhook, in order and at least once.
+         */
+        post: operations["create_stream_api_v1_audit_streams_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-streams/{stream_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an audit stream */
+        delete: operations["delete_stream_api_v1_audit_streams__stream_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Pause or resume an audit stream
+         * @description Paused streams keep their position and catch up when resumed.
+         */
+        patch: operations["set_enabled_api_v1_audit_streams__stream_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/audit-streams/{stream_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test an audit stream
+         * @description Sends one synthetic event now and reports the result. The stream's position is not changed.
+         */
+        post: operations["test_stream_api_v1_audit_streams__stream_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/metric-exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List metric exports */
+        get: operations["list_exports_api_v1_metric_exports_get"];
+        put?: never;
+        /**
+         * Create a metric export
+         * @description Sends job metrics (run counts, durations, states) to Datadog.
+         */
+        post: operations["create_export_api_v1_metric_exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/metric-exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a metric export */
+        delete: operations["delete_export_api_v1_metric_exports__export_id__delete"];
+        options?: never;
+        head?: never;
+        /** Pause or resume a metric export */
+        patch: operations["set_enabled_api_v1_metric_exports__export_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/metric-exports/{export_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test a metric export
+         * @description Checks the Datadog API key.
+         */
+        post: operations["test_export_api_v1_metric_exports__export_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List on-call schedules
+         * @description Rotations with who is on call now.
+         */
+        get: operations["list_schedules_api_v1_oncall_schedules_get"];
+        put?: never;
+        /**
+         * Create an on-call schedule
+         * @description A rotation of members with a hand-off time and time zone.
+         */
+        post: operations["create_schedule_api_v1_oncall_schedules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/schedules/{sid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an on-call schedule
+         * @description One schedule with its layers, overrides and upcoming shifts.
+         */
+        get: operations["get_schedule_api_v1_oncall_schedules__sid__get"];
+        /**
+         * Replace an on-call schedule
+         * @description Replaces the whole schedule definition.
+         */
+        put: operations["replace_schedule_api_v1_oncall_schedules__sid__put"];
+        post?: never;
+        /** Delete an on-call schedule */
+        delete: operations["delete_schedule_api_v1_oncall_schedules__sid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/schedules/{sid}/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add an override
+         * @description Puts someone else on call for a period, for example to cover a holiday.
+         */
+        post: operations["add_override_api_v1_oncall_schedules__sid__overrides_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/schedules/{sid}/overrides/{oid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an override */
+        delete: operations["delete_override_api_v1_oncall_schedules__sid__overrides__oid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List escalation policies */
+        get: operations["list_policies_api_v1_oncall_policies_get"];
+        put?: never;
+        /**
+         * Create an escalation policy
+         * @description Steps that page a schedule or person, then the next step if nobody acknowledges in time.
+         */
+        post: operations["create_policy_api_v1_oncall_policies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/policies/{pid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace an escalation policy
+         * @description Replaces the whole policy definition.
+         */
+        put: operations["replace_policy_api_v1_oncall_policies__pid__put"];
+        post?: never;
+        /** Delete an escalation policy */
+        delete: operations["delete_policy_api_v1_oncall_policies__pid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/escalations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List escalations
+         * @description Escalations in progress and recently finished.
+         */
+        get: operations["list_escalations_api_v1_oncall_escalations_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1344,17 +2012,280 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/metrics": {
+    "/api/v1/oncall/escalations/{rid}/ack": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Metrics */
-        get: operations["metrics_metrics_get"];
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge an escalation
+         * @description Stops the escalation from paging the next step.
+         */
+        post: operations["ack_escalation_api_v1_oncall_escalations__rid__ack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List people for on-call
+         * @description Organization members who can be put on a rotation or paged by a step.
+         */
+        get: operations["people_api_v1_oncall_people_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/oncall/policies/{pid}/channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a channel for a policy
+         * @description Creates the alert channel that routes alerts to this policy, so alert rules can target it.
+         */
+        post: operations["policy_channel_api_v1_oncall_policies__pid__channel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List invitations
+         * @description Pending, accepted, expired and revoked invitations.
+         */
+        get: operations["list_invites_api_v1_org_invites_get"];
+        put?: never;
+        /**
+         * Invite a member
+         * @description Creates an invitation for an email address with a role. The response contains `invite_url` **once**; send it to the person. It works once, expires after 7 days and only joins that email address.
+         */
+        post: operations["create_invite_api_v1_org_invites_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/invites/{invite_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an invitation
+         * @description The invitation link stops working.
+         */
+        delete: operations["revoke_invite_api_v1_org_invites__invite_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/security": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get sign-in policy
+         * @description Whether multi-factor sign-in is required and whether this server can check it.
+         */
+        get: operations["get_security_api_v1_org_security_get"];
+        /**
+         * Set sign-in policy
+         * @description Require multi-factor sign-in for members who use a password. Google and GitHub sign-in are then refused for the organization. Returns `409` if the server's Keycloak admin client is not configured.
+         */
+        put: operations["put_security_api_v1_org_security_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List members
+         * @description Everyone in the organization with their role. Members provisioned over SCIM are marked `managed_by_directory`.
+         */
+        get: operations["list_members_api_v1_org_members_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/members/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a member
+         * @description Removes the person from the organization. Their account and other organizations are untouched. Owners cannot be removed.
+         */
+        delete: operations["remove_member_api_v1_org_members__user_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a member's role
+         * @description Admins can change roles up to developer…devops; only owners can make someone an admin. Owners cannot be changed here, and directory-managed members follow their SCIM groups.
+         */
+        patch: operations["change_role_api_v1_org_members__user_id__patch"];
+        trace?: never;
+    };
+    "/auth/invite/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview an invitation
+         * @description Who sent an invitation, to which organization and with which role. Rate limited per address.
+         */
+        get: operations["invite_preview_auth_invite__token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Contact sales
+         * @description The website's contact form. Rate limited per address.
+         */
+        post: operations["contact_sales_public_contact_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ping/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report a successful run
+         * @description The simplest integration: request this URL when the job finishes successfully.
+         *
+         *     ```sh
+         *     0 2 * * * /opt/backup.sh && curl -fsS -m 10 --retry 5 https://ingest.example.com/ping/<token>
+         *     ```
+         */
+        get: operations["ping_ping__token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/heartbeat/{token}/{status}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report a run event (GET)
+         * @description The same as the POST form, for tools that can only send GET requests.
+         */
+        get: operations["heartbeat_path_heartbeat__token___status__get"];
+        put?: never;
+        /**
+         * Report a run event
+         * @description `status` is `start`, `success` or `fail`. Send `start` before the job runs to measure duration and detect runs that hang. GET is also accepted.
+         */
+        post: operations["heartbeat_path_heartbeat__token___status__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/heartbeat/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a run with details
+         * @description Reports a run event with an exit code, duration, output (redacted before it is stored) and metrics. Metrics feed unusual-run detection.
+         */
+        post: operations["heartbeat_json_api_v1_heartbeat__token__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1365,32 +2296,49 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AgentOut */
-        AgentOut: {
+        /** AgentDetailOut */
+        AgentDetailOut: {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
             /** Kind */
             kind: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name?: string | null;
             /** Host Id */
             host_id?: string | null;
-            /** Version */
+            /**
+             * Version
+             * @description Version.
+             */
             version?: string | null;
             /** Status */
             status?: string | null;
-            /** Last Seen At */
+            /**
+             * Last Seen At
+             * @description When it last reported.
+             */
             last_seen_at?: string | null;
-            /** Skew Ms */
+            /**
+             * Skew Ms
+             * @description Difference between the reporting host's clock and JobWatch's, in milliseconds.
+             */
             skew_ms?: number | null;
-            /** Revoked At */
+            /**
+             * Revoked At
+             * @description When it was revoked.
+             */
             revoked_at?: string | null;
             /**
              * Created At
              * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
              */
             created_at: string;
             /**
@@ -1398,94 +2346,216 @@ export interface components {
              * @default 0
              */
             jobs?: number;
+            /**
+             * Heartbeat Interval S
+             * @default 60
+             */
+            heartbeat_interval_s?: number;
+            /**
+             * State
+             * @default never
+             */
+            state?: string;
+            context?: components["schemas"]["HostContextOut"] | null;
+        };
+        /** AgentOut */
+        AgentOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name?: string | null;
+            /** Host Id */
+            host_id?: string | null;
+            /**
+             * Version
+             * @description Version.
+             */
+            version?: string | null;
+            /** Status */
+            status?: string | null;
+            /**
+             * Last Seen At
+             * @description When it last reported.
+             */
+            last_seen_at?: string | null;
+            /**
+             * Skew Ms
+             * @description Difference between the reporting host's clock and JobWatch's, in milliseconds.
+             */
+            skew_ms?: number | null;
+            /**
+             * Revoked At
+             * @description When it was revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
+             */
+            created_at: string;
+            /**
+             * Jobs
+             * @default 0
+             */
+            jobs?: number;
+            /**
+             * Heartbeat Interval S
+             * @default 60
+             */
+            heartbeat_interval_s?: number;
+            /**
+             * State
+             * @default never
+             */
+            state?: string;
         };
         /** AlertRuleOut */
         AlertRuleOut: {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
             /**
              * Org Id
              * Format: uuid
+             * @description The organization's id.
              */
             org_id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /**
              * Scope
+             * @description Which jobs it applies to: by `job_ids`, `tags`, `workspace_ids` or `environment_ids`. Empty means every job.
              * @default {}
              */
             scope?: {
                 [key: string]: unknown;
             };
-            /** Condition */
+            /**
+             * Condition
+             * @description What triggers the rule: `failed`, `missed`, `late`, `runtime_exceeded`, `recovered`, `consecutive_failures`, `sla_breach` or `anomaly`.
+             */
             condition: string;
             /**
              * Params
+             * @description Parameters for the condition, for example `{"count": 3}` for `consecutive_failures`.
              * @default {}
              */
             params?: {
                 [key: string]: unknown;
             };
-            /** Severity */
+            /**
+             * Severity
+             * @description `critical`, `high`, `medium` or `low`.
+             */
             severity: string;
             /**
              * Channel Ids
+             * @description Channels to notify.
              * @default []
              */
             channel_ids?: string[];
-            /** Business Hours */
+            /**
+             * Business Hours
+             * @description Only notify during business hours.
+             */
             business_hours?: {
                 [key: string]: unknown;
             } | null;
-            /** Repeat Interval S */
+            /**
+             * Repeat Interval S
+             * @description Re-send while the problem lasts, every this many seconds (minimum 60). `null` sends once.
+             */
             repeat_interval_s?: number | null;
-            /** Enabled */
+            /**
+             * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
+             */
             enabled: boolean;
             /**
              * Created At
              * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
              */
             created_at: string;
         };
         /** ApiKeyIn */
         ApiKeyIn: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /**
              * Role
+             * @description Role: `viewer`, `developer`, `sre`, `devops`, `admin` or `owner`. Each role can do everything the ones before it can.
              * @default developer
              */
             role?: string;
         };
         /** AskIn */
         AskIn: {
-            /** Question */
+            /**
+             * Question
+             * @description Your question, in plain language.
+             */
             question: string;
-            /** Job Id */
+            /**
+             * Job Id
+             * @description The job's id.
+             */
             job_id?: string | null;
-            /** Incident Id */
+            /**
+             * Incident Id
+             * @description The incident's id.
+             */
             incident_id?: string | null;
         };
         /** BootstrapIn */
         BootstrapIn: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name?: string | null;
             /**
              * Ttl Hours
+             * @description Hours until the token expires.
              * @default 24
              */
             ttl_hours?: number;
         };
         /** ChannelIn */
         ChannelIn: {
-            /** Kind */
+            /**
+             * Kind
+             * @description Channel type: `email`, `slack`, `teams`, `discord`, `telegram`, `webhook`, `pagerduty`, `opsgenie`, `datadog` or `escalation`.
+             */
             kind: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
-            /** Config */
+            /**
+             * Config
+             * @description Settings for the channel type. Required keys — email: `host`, `from`, `to`; slack, teams, discord: `webhook_url`; telegram: `bot_token`, `chat_id`; webhook: `url`; pagerduty: `routing_key`; opsgenie, datadog: `api_key`; escalation: `policy_id`. Stored encrypted; never returned.
+             */
             config: {
                 [key: string]: unknown;
             };
@@ -1500,19 +2570,30 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description Channel type.
+             */
             kind: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Rate Per Min */
             rate_per_min: number;
-            /** Enabled */
+            /**
+             * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
+             */
             enabled: boolean;
             /**
              * Created At
              * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
              */
             created_at: string;
         };
@@ -1521,17 +2602,30 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
-            /** Scope */
+            /**
+             * Scope
+             * @description Which jobs it applies to: by `job_ids`, `tags`, `workspace_ids` or `environment_ids`. Empty means every job.
+             */
             scope?: string | null;
             /** Namespaces */
             namespaces?: string[] | null;
-            /** Last Seen At */
+            /**
+             * Last Seen At
+             * @description When it last reported.
+             */
             last_seen_at?: string | null;
-            /** Version */
+            /**
+             * Version
+             * @description Version.
+             */
             version?: string | null;
             /**
              * Cronjobs
@@ -1544,9 +2638,38 @@ export interface components {
              */
             failing?: number;
         };
+        /** ContactIn */
+        ContactIn: {
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Email
+             * @description Email address.
+             */
+            email: string;
+            /** Company */
+            company: string;
+            /** Team Size */
+            team_size?: string | null;
+            /**
+             * Interest
+             * @default []
+             */
+            interest?: string[];
+            /** Message */
+            message?: string | null;
+            /** Website */
+            website?: string | null;
+        };
         /** CreateOrg */
         CreateOrg: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
         };
         /** CronitorIn */
@@ -1563,16 +2686,19 @@ export interface components {
             telemetry_key?: string | null;
             /**
              * Base Url
+             * @description Base URL of the other service, for a self-hosted instance.
              * @default https://cronitor.io
              */
             base_url?: string;
             /**
              * Workspace Id
              * Format: uuid
+             * @description Workspace the job belongs to. `GET /api/v1/workspaces` lists them.
              */
             workspace_id: string;
             /**
              * Dry Run
+             * @description Report what would happen without changing anything.
              * @default true
              */
             dry_run?: boolean;
@@ -1587,11 +2713,13 @@ export interface components {
             /**
              * Job Id
              * Format: uuid
+             * @description The job's id.
              */
             job_id: string;
             /**
              * Depends On Job Id
              * Format: uuid
+             * @description The upstream job.
              */
             depends_on_job_id: string;
         };
@@ -1600,11 +2728,13 @@ export interface components {
             /**
              * Job Id
              * Format: uuid
+             * @description The job's id.
              */
             job_id: string;
             /**
              * Depends On Job Id
              * Format: uuid
+             * @description The upstream job.
              */
             depends_on_job_id: string;
         };
@@ -1626,30 +2756,47 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Status */
             status: string;
-            /** Last Run At */
+            /**
+             * Last Run At
+             * @description When the last run started.
+             */
             last_run_at?: string | null;
         };
         /** DestinationIn */
         DestinationIn: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /**
              * Kind
              * @default webhook
              */
             kind?: string;
-            /** Url */
+            /**
+             * Url
+             * @description HTTPS URL. Private and internal addresses are refused.
+             */
             url: string;
-            /** Secret */
+            /**
+             * Secret
+             * @description Shared secret used to sign deliveries (HMAC-SHA256). Never returned.
+             */
             secret?: string | null;
             /**
              * Headers
+             * @description Extra HTTP headers to send.
              * @default {}
              */
             headers?: {
@@ -1657,44 +2804,100 @@ export interface components {
             };
             /** Subject Prefix */
             subject_prefix?: string | null;
-            /** Token */
+            /**
+             * Token
+             * @description Secret token. Returned only in this response.
+             */
             token?: string | null;
             /**
              * Event Types
+             * @description Event types to send. Empty means all.
              * @default []
              */
             event_types?: string[];
             /**
              * Workspace Ids
+             * @description Workspaces it applies to.
              * @default []
              */
             workspace_ids?: string[];
             /**
              * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
              * @default true
              */
             enabled?: boolean;
         };
         /** DomainIn */
         DomainIn: {
-            /** Domain */
+            /**
+             * Domain
+             * @description Email domain, for example `example.com`.
+             */
             domain: string;
+        };
+        /** EnabledIn */
+        EnabledIn: {
+            /**
+             * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
+             */
+            enabled: boolean;
         };
         /** EnforceIn */
         EnforceIn: {
-            /** Enforce */
+            /**
+             * Enforce
+             * @description Require single sign-on for everyone except owners.
+             */
             enforce: boolean;
+        };
+        /** ExecutionDetailOut */
+        ExecutionDetailOut: {
+            /** Execution */
+            execution: {
+                [key: string]: unknown;
+            };
+            /**
+             * Timeline
+             * @description Events in order: detection, alerts sent, acknowledgement, notes, resolution.
+             */
+            timeline: {
+                [key: string]: unknown;
+            }[];
+            /** Logs */
+            logs: {
+                [key: string]: string;
+            };
+            /**
+             * Log Bytes
+             * @default {}
+             */
+            log_bytes?: {
+                [key: string]: number;
+            };
+            /** Exit Meaning */
+            exit_meaning?: string | null;
+            /** @description Host the run was reported from. */
+            host?: components["schemas"]["RunHostOut"] | null;
         };
         /** ExecutionOut */
         ExecutionOut: {
-            /** Id */
+            /**
+             * Id
+             * @description Unique identifier (UUID).
+             */
             id: string;
             /**
              * Job Id
              * Format: uuid
+             * @description The job's id.
              */
             job_id: string;
-            /** Status */
+            /**
+             * Status
+             * @description Outcome: `scheduled`, `running`, `success`, `failed`, `timeout` or `missed`.
+             */
             status: string;
             /**
              * Scheduled Ts
@@ -1705,14 +2908,126 @@ export interface components {
             agent_ts_start: string | null;
             /** Agent Ts End */
             agent_ts_end: string | null;
-            /** Duration Ms */
+            /**
+             * Duration Ms
+             * @description How long the run took, in milliseconds.
+             */
             duration_ms: number | null;
-            /** Exit Code */
+            /**
+             * Exit Code
+             * @description The process exit code, when reported.
+             */
             exit_code: number | null;
-            /** Host */
+            /**
+             * Host
+             * @description Host the run was reported from.
+             */
             host: string | null;
-            /** Skew Ms */
+            /**
+             * Skew Ms
+             * @description Difference between the reporting host's clock and JobWatch's, in milliseconds.
+             */
             skew_ms: number;
+            /**
+             * Metrics
+             * @description Numbers the run reported, for example `{"rows": 1200, "size_bytes": 4200000000}`. Used by assertions and unusual-run detection.
+             * @default {}
+             */
+            metrics?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Assertion Failures
+             * @description Assertions the run failed.
+             * @default []
+             */
+            assertion_failures?: string[];
+            /**
+             * Anomalies
+             * @description What was unusual about the run: the metric or duration, its value, the typical value and a message.
+             * @default []
+             */
+            anomalies?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** ExportIn */
+        ExportIn: {
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             * @default Datadog
+             */
+            name?: string;
+            /**
+             * Api Key
+             * @description API key for the other service. Used as described on the endpoint; never returned.
+             */
+            api_key: string;
+            /**
+             * Site
+             * @description Datadog site, for example `datadoghq.com` or `datadoghq.eu`.
+             * @default datadoghq.com
+             */
+            site?: string;
+            /**
+             * Tags
+             * @description extra tags for every series, comma separated
+             */
+            tags?: string | null;
+        };
+        /** ExportOut */
+        ExportOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Site
+             * @description Datadog site, for example `datadoghq.com` or `datadoghq.eu`.
+             */
+            site: string;
+            /**
+             * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
+             */
+            enabled: boolean;
+            /** Points Total */
+            points_total: number;
+            /**
+             * Last Success At
+             * @description When the last successful run finished.
+             */
+            last_success_at?: string | null;
+            /**
+             * Last Error
+             * @description The last delivery error, if any.
+             */
+            last_error?: string | null;
+            /** Last Error At */
+            last_error_at?: string | null;
+            /**
+             * Next Attempt At
+             * Format: date-time
+             */
+            next_attempt_at: string;
+        };
+        /** GroupRoleIn */
+        GroupRoleIn: {
+            /**
+             * Role
+             * @description Role: `viewer`, `developer`, `sre`, `devops`, `admin` or `owner`. Each role can do everything the ones before it can.
+             */
+            role?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1721,44 +3036,179 @@ export interface components {
         };
         /** HealthchecksIn */
         HealthchecksIn: {
-            /** Api Key */
+            /**
+             * Api Key
+             * @description API key for the other service. Used as described on the endpoint; never returned.
+             */
             api_key: string;
             /**
              * Base Url
+             * @description Base URL of the other service, for a self-hosted instance.
              * @default https://healthchecks.io
              */
             base_url?: string;
             /**
              * Workspace Id
              * Format: uuid
+             * @description Workspace the job belongs to. `GET /api/v1/workspaces` lists them.
              */
             workspace_id: string;
             /**
              * Dry Run
+             * @description Report what would happen without changing anything.
              * @default true
              */
             dry_run?: boolean;
         };
-        /** ImportOut */
-        ImportOut: {
-            /** Dry Run */
-            dry_run: boolean;
-            /** Results */
-            results: components["schemas"]["ImportedCheck"][];
-            /** Ping Host Change */
-            ping_host_change: string;
+        /** HostAgentOut */
+        HostAgentOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name?: string | null;
+            /**
+             * Version
+             * @description Version.
+             */
+            version?: string | null;
+            /** State */
+            state: string;
+            /**
+             * Last Seen At
+             * @description When it last reported.
+             */
+            last_seen_at?: string | null;
+            /**
+             * Skew Ms
+             * @description Difference between the reporting host's clock and JobWatch's, in milliseconds.
+             */
+            skew_ms?: number | null;
+            /**
+             * Heartbeat Interval S
+             * @default 60
+             */
+            heartbeat_interval_s?: number;
         };
-        /** ImportedCheck */
-        ImportedCheck: {
-            /** Name */
+        /** HostContextOut */
+        HostContextOut: {
+            server: components["schemas"]["ServerOut"];
+            agent?: components["schemas"]["HostAgentOut"] | null;
+            latest?: components["schemas"]["HostMetricPoint"] | null;
+            /**
+             * Series
+             * @default []
+             */
+            series?: components["schemas"]["HostMetricPoint"][];
+            /**
+             * Jobs
+             * @default []
+             */
+            jobs?: components["schemas"]["HostJobOut"][];
+        };
+        /** HostJobOut */
+        HostJobOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Status */
             status: string;
-            /** Note */
+            /**
+             * Last Status
+             * @description Outcome of the last run.
+             */
+            last_status?: string | null;
+            /**
+             * Last Run At
+             * @description When the last run started.
+             */
+            last_run_at?: string | null;
+            /**
+             * Paused
+             * @default false
+             */
+            paused?: boolean;
+        };
+        /** HostMetricPoint */
+        HostMetricPoint: {
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+            /** Cpu Pct */
+            cpu_pct?: number | null;
+            /** Mem Pct */
+            mem_pct?: number | null;
+            /** Load1 */
+            load1?: number | null;
+            /** Disk Pct */
+            disk_pct?: number | null;
+            /** Inode Pct */
+            inode_pct?: number | null;
+            /** Io Wait Pct */
+            io_wait_pct?: number | null;
+        };
+        /** ImportOut */
+        ImportOut: {
+            /**
+             * Dry Run
+             * @description Report what would happen without changing anything.
+             */
+            dry_run: boolean;
+            /**
+             * Results
+             * @description One entry per item: what was or would be done.
+             */
+            results: components["schemas"]["ImportedCheck"][];
+            /** Ping Host Change */
+            ping_host_change: string;
+            /**
+             * Warnings
+             * @description Things to check after the import.
+             * @default []
+             */
+            warnings?: string[];
+        };
+        /** ImportedCheck */
+        ImportedCheck: {
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /** Status */
+            status: string;
+            /**
+             * Note
+             * @description Text of the note.
+             */
             note?: string | null;
-            /** Job Id */
+            /**
+             * Job Id
+             * @description The job's id.
+             */
             job_id?: string | null;
-            /** Schedule Expr */
+            /**
+             * Schedule Expr
+             * @description When the job should run: a cron expression (`0 2 * * *`), a systemd `OnCalendar` expression (`Mon..Fri 02:00`) or an interval (`@every 15m`). Omit for a heartbeat-only job that is checked by `grace_s` alone.
+             */
             schedule_expr?: string | null;
             /**
              * Kept Ping Url
@@ -1773,42 +3223,73 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
             /**
              * Org Id
              * Format: uuid
+             * @description The organization's id.
              */
             org_id: string;
-            /** Severity */
+            /**
+             * Severity
+             * @description `critical`, `high`, `medium` or `low`.
+             */
             severity: string;
-            /** Status */
+            /**
+             * Status
+             * @description `open`, `acknowledged` or `resolved`.
+             */
             status: string;
-            /** Title */
+            /**
+             * Title
+             * @description Title.
+             */
             title: string;
-            /** Correlation Key */
+            /**
+             * Correlation Key
+             * @description What grouped the failures into one incident (a host, cluster or shared dependency).
+             */
             correlation_key?: string | null;
             /**
              * Started At
              * Format: date-time
+             * @description When the run started (UTC).
              */
             started_at: string;
-            /** Detected At */
+            /**
+             * Detected At
+             * @description When the first failure was detected.
+             */
             detected_at?: string | null;
-            /** Acknowledged At */
+            /**
+             * Acknowledged At
+             * @description When someone acknowledged it.
+             */
             acknowledged_at?: string | null;
-            /** Resolved At */
+            /**
+             * Resolved At
+             * @description When it was resolved.
+             */
             resolved_at?: string | null;
             /**
              * Affected Job Ids
+             * @description Jobs involved in the incident.
              * @default []
              */
             affected_job_ids?: string[];
             /** Job Names */
             job_names?: string[] | null;
-            /** Root Cause */
+            /**
+             * Root Cause
+             * @description Likely cause, when known.
+             */
             root_cause?: string | null;
-            /** Resolution */
+            /**
+             * Resolution
+             * @description How it was resolved.
+             */
             resolution?: string | null;
             /**
              * Responder Ids
@@ -1831,43 +3312,127 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** InviteIn */
+        InviteIn: {
+            /**
+             * Email
+             * @description Email address.
+             */
+            email: string;
+            /**
+             * Role
+             * @description Role: `viewer`, `developer`, `sre`, `devops`, `admin` or `owner`. Each role can do everything the ones before it can.
+             * @default developer
+             */
+            role?: string;
+        };
+        /** InviteOut */
+        InviteOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * Email
+             * @description Email address.
+             */
+            email: string;
+            /**
+             * Role
+             * @description Role: `viewer`, `developer`, `sre`, `devops`, `admin` or `owner`. Each role can do everything the ones before it can.
+             */
+            role: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
+             */
+            created_at: string;
+            /**
+             * Expires At
+             * Format: date-time
+             * @description When it stops working.
+             */
+            expires_at: string;
+            /**
+             * Status
+             * @description `pending`, `accepted`, `expired` or `revoked`.
+             */
+            status: string;
+            /**
+             * Invite Url
+             * @description Link to send to the invited person. Returned only when the invitation is created.
+             */
+            invite_url?: string | null;
+        };
         /** JobAnalyticsOut */
         JobAnalyticsOut: {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Status */
             status: string;
-            /** Reliability Score */
+            /**
+             * Reliability Score
+             * @description 0–100 score combining success rate, missed runs and recovery time.
+             */
             reliability_score?: number | null;
-            /** Sla Target */
+            /**
+             * Sla Target
+             * @description Target success rate in percent, for example `99.5`. Shown on reports and used by `sla_breach` rules.
+             */
             sla_target?: number | null;
             /**
              * Tags
+             * @description Free-form labels. Used to filter jobs and to scope alert rules and maintenance windows.
              * @default []
              */
             tags?: string[];
             /** Runs */
             runs: number;
-            /** Ok */
+            /**
+             * Ok
+             * @description Successful runs.
+             */
             ok: number;
             /** Failures */
             failures: number;
-            /** Missed */
+            /**
+             * Missed
+             * @description Missed runs.
+             */
             missed: number;
-            /** Success Rate */
+            /**
+             * Success Rate
+             * @description Successful runs as a percentage of runs.
+             */
             success_rate?: number | null;
-            /** P50 Ms */
+            /**
+             * P50 Ms
+             * @description Median duration in milliseconds.
+             */
             p50_ms?: number | null;
-            /** P95 Ms */
+            /**
+             * P95 Ms
+             * @description 95th-percentile duration in milliseconds.
+             */
             p95_ms?: number | null;
             /** Max Ms */
             max_ms?: number | null;
-            /** Drift Pct */
+            /**
+             * Drift Pct
+             * @description Change in p95 duration compared with the previous period, in percent.
+             */
             drift_pct?: number | null;
             /** Sla Met */
             sla_met?: boolean | null;
@@ -1879,115 +3444,380 @@ export interface components {
             /**
              * Workspace Id
              * Format: uuid
+             * @description Workspace the job belongs to. `GET /api/v1/workspaces` lists them.
              */
             workspace_id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
-            /** Description */
+            /**
+             * Description
+             * @description Free-text description.
+             */
             description?: string | null;
             /**
              * Kind
+             * @description How runs are reported. `heartbeat` (the default) for jobs that call their ping URL.
              * @default heartbeat
              */
             kind?: string;
-            /** Schedule Expr */
+            /**
+             * Schedule Expr
+             * @description When the job should run: a cron expression (`0 2 * * *`), a systemd `OnCalendar` expression (`Mon..Fri 02:00`) or an interval (`@every 15m`). Omit for a heartbeat-only job that is checked by `grace_s` alone.
+             */
             schedule_expr?: string | null;
             /**
              * Tz
+             * @description IANA time zone the schedule is evaluated in, for example `Europe/London`. Defaults to `UTC`.
              * @default UTC
              */
             tz?: string;
-            /** Expected Runtime S */
+            /**
+             * Expected Runtime S
+             * @description How long a run normally takes, in seconds. A run still going after this is reported as `runtime_exceeded`.
+             */
             expected_runtime_s?: number | null;
             /**
              * Grace S
+             * @description Seconds after the expected time before a run that has not started is reported late, then missed.
              * @default 300
              */
             grace_s?: number;
-            /** Environment Id */
+            /**
+             * Environment Id
+             * @description Optional environment (for example production or staging).
+             */
             environment_id?: string | null;
-            /** Team Id */
+            /**
+             * Team Id
+             * @description Optional owning team.
+             */
             team_id?: string | null;
             /**
              * Tags
+             * @description Free-form labels. Used to filter jobs and to scope alert rules and maintenance windows.
              * @default []
              */
             tags?: string[];
-            /** Sla Target */
+            /**
+             * Assertions
+             * @description Checks on each run's output or metrics, for example `size_bytes > 1000000`. A run that fails an assertion is a failure even if it exited 0.
+             * @default []
+             */
+            assertions?: string[];
+            /**
+             * Sla Target
+             * @description Target success rate in percent, for example `99.5`. Shown on reports and used by `sla_breach` rules.
+             */
             sla_target?: number | null;
+            /**
+             * Anomaly Sensitivity
+             * @description Unusual-run detection: `off`, `low`, `normal` or `high`. Higher flags smaller departures from the job's history.
+             * @default normal
+             * @enum {string}
+             */
+            anomaly_sensitivity?: "off" | "low" | "normal" | "high";
+            /**
+             * Anomaly Action
+             * @description What an unusual run does: `warn` (alerts only through `anomaly` rules) or `fail` (the run counts as failed).
+             * @default warn
+             * @enum {string}
+             */
+            anomaly_action?: "warn" | "fail";
+        };
+        /** JobHostOut */
+        JobHostOut: {
+            /**
+             * Job Id
+             * Format: uuid
+             * @description The job's id.
+             */
+            job_id: string;
+            /** Source */
+            source: string;
+            /** Last Host */
+            last_host?: string | null;
+            context?: components["schemas"]["HostContextOut"] | null;
         };
         /** JobOut */
         JobOut: {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
             /**
              * Workspace Id
              * Format: uuid
+             * @description Workspace the job belongs to. `GET /api/v1/workspaces` lists them.
              */
             workspace_id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
-            /** Description */
+            /**
+             * Description
+             * @description Free-text description.
+             */
             description: string | null;
-            /** Kind */
+            /**
+             * Kind
+             * @description How runs are reported: `heartbeat` for ping URLs, or the agent type that discovered it.
+             */
             kind: string;
-            /** Schedule Expr */
+            /**
+             * Schedule Expr
+             * @description When the job should run: a cron expression (`0 2 * * *`), a systemd `OnCalendar` expression (`Mon..Fri 02:00`) or an interval (`@every 15m`). Omit for a heartbeat-only job that is checked by `grace_s` alone.
+             */
             schedule_expr: string | null;
-            /** Schedule Human */
+            /**
+             * Schedule Human
+             * @description The schedule in words.
+             */
             schedule_human: string | null;
-            /** Tz */
+            /**
+             * Tz
+             * @description IANA time zone the schedule is evaluated in, for example `Europe/London`. Defaults to `UTC`.
+             */
             tz: string;
-            /** Expected Runtime S */
+            /**
+             * Expected Runtime S
+             * @description How long a run normally takes, in seconds. A run still going after this is reported as `runtime_exceeded`.
+             */
             expected_runtime_s: number | null;
-            /** Grace S */
+            /**
+             * Grace S
+             * @description Seconds after the expected time before a run that has not started is reported late, then missed.
+             */
             grace_s: number;
-            /** Tags */
+            /**
+             * Tags
+             * @description Free-form labels. Used to filter jobs and to scope alert rules and maintenance windows.
+             */
             tags: string[];
-            /** Status */
+            /**
+             * Status
+             * @description Current state: `unknown`, `healthy`, `running`, `late`, `missed`, `failed`, `timeout`, `recovered` or `paused`.
+             */
             status: string;
             /** Paused */
             paused: boolean;
-            /** Last Run At */
+            /**
+             * Last Run At
+             * @description When the last run started.
+             */
             last_run_at: string | null;
-            /** Last Status */
+            /**
+             * Last Status
+             * @description Outcome of the last run.
+             */
             last_status: string | null;
-            /** Next Expected At */
+            /**
+             * Next Expected At
+             * @description When the next run is due.
+             */
             next_expected_at: string | null;
-            /** Reliability Score */
+            /**
+             * Reliability Score
+             * @description 0–100 score combining success rate, missed runs and recovery time.
+             */
             reliability_score: number | null;
-            /** Heartbeat Token */
+            /**
+             * Heartbeat Token
+             * @description The secret part of the ping URL. Returned only once.
+             */
             heartbeat_token?: string | null;
-            /** Heartbeat Token Hint */
+            /**
+             * Heartbeat Token Hint
+             * @description The last characters of the ping token, to recognise it.
+             */
             heartbeat_token_hint: string;
+            /**
+             * Ping Url
+             * @description URL the job calls to report runs. Contains the secret token; returned only when the job is created or its token rotated.
+             */
+            ping_url?: string | null;
+            /**
+             * Assertions
+             * @description Checks on each run's output or metrics, for example `size_bytes > 1000000`. A run that fails an assertion is a failure even if it exited 0.
+             * @default []
+             */
+            assertions?: string[];
+            /**
+             * Anomaly Sensitivity
+             * @description Unusual-run detection: `off`, `low`, `normal` or `high`. Higher flags smaller departures from the job's history.
+             * @default normal
+             */
+            anomaly_sensitivity?: string;
+            /**
+             * Anomaly Action
+             * @description What an unusual run does: `warn` (alerts only through `anomaly` rules) or `fail` (the run counts as failed).
+             * @default warn
+             */
+            anomaly_action?: string;
+            /** Server Id */
+            server_id?: string | null;
         };
         /** JobPage */
         JobPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The objects on this page.
+             */
             items: components["schemas"]["JobOut"][];
-            /** Next Cursor */
+            /**
+             * Next Cursor
+             * @description Pass as `cursor` to get the next page. `null` on the last page.
+             */
             next_cursor?: string | null;
         };
         /** JobUpdate */
         JobUpdate: {
-            /** Description */
+            /**
+             * Description
+             * @description Free-text description.
+             */
             description?: string | null;
-            /** Schedule Expr */
+            /**
+             * Schedule Expr
+             * @description When the job should run: a cron expression (`0 2 * * *`), a systemd `OnCalendar` expression (`Mon..Fri 02:00`) or an interval (`@every 15m`). Omit for a heartbeat-only job that is checked by `grace_s` alone.
+             */
             schedule_expr?: string | null;
-            /** Tz */
+            /**
+             * Tz
+             * @description IANA time zone the schedule is evaluated in, for example `Europe/London`. Defaults to `UTC`.
+             */
             tz?: string | null;
-            /** Expected Runtime S */
+            /**
+             * Expected Runtime S
+             * @description How long a run normally takes, in seconds. A run still going after this is reported as `runtime_exceeded`.
+             */
             expected_runtime_s?: number | null;
-            /** Grace S */
+            /**
+             * Grace S
+             * @description Seconds after the expected time before a run that has not started is reported late, then missed.
+             */
             grace_s?: number | null;
-            /** Tags */
+            /**
+             * Tags
+             * @description Free-form labels. Used to filter jobs and to scope alert rules and maintenance windows.
+             */
             tags?: string[] | null;
-            /** Sla Target */
+            /**
+             * Sla Target
+             * @description Target success rate in percent, for example `99.5`. Shown on reports and used by `sla_breach` rules.
+             */
             sla_target?: number | null;
             /** Paused */
             paused?: boolean | null;
+            /**
+             * Assertions
+             * @description Checks on each run's output or metrics, for example `size_bytes > 1000000`. A run that fails an assertion is a failure even if it exited 0.
+             */
+            assertions?: string[] | null;
+            /**
+             * Anomaly Sensitivity
+             * @description Unusual-run detection: `off`, `low`, `normal` or `high`. Higher flags smaller departures from the job's history.
+             */
+            anomaly_sensitivity?: ("off" | "low" | "normal" | "high") | null;
+            /**
+             * Anomaly Action
+             * @description What an unusual run does: `warn` (alerts only through `anomaly` rules) or `fail` (the run counts as failed).
+             */
+            anomaly_action?: ("warn" | "fail") | null;
+        };
+        /** LayerIn */
+        LayerIn: {
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             * @default Rotation
+             */
+            name?: string;
+            /**
+             * Rotation
+             * @description Who rotates, in order.
+             */
+            rotation: string;
+            /**
+             * Shift Hours
+             * @description Length of each shift in hours.
+             */
+            shift_hours?: number | null;
+            /**
+             * Handoff At
+             * Format: date-time
+             * @description When the first shift starts; later shifts follow from it.
+             */
+            handoff_at: string;
+            /**
+             * Members
+             * @description Members, in order.
+             */
+            members: string[];
+            /**
+             * Restrict Days
+             * @description Only these weekdays (0 = Monday).
+             */
+            restrict_days?: number[] | null;
+            /**
+             * Restrict Start
+             * @description Daily start of on-call time (HH:MM).
+             */
+            restrict_start?: string | null;
+            /**
+             * Restrict End
+             * @description Daily end of on-call time (HH:MM).
+             */
+            restrict_end?: string | null;
+        };
+        /** LayerOut */
+        LayerOut: {
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Rotation
+             * @description Who rotates, in order.
+             */
+            rotation: string;
+            /**
+             * Shift Hours
+             * @description Length of each shift in hours.
+             */
+            shift_hours?: number | null;
+            /**
+             * Handoff At
+             * @description When the first shift starts; later shifts follow from it.
+             */
+            handoff_at?: string | null;
+            /**
+             * Members
+             * @description Members, in order.
+             */
+            members: components["schemas"]["cronsentinel__routers__oncall__MemberOut"][];
+            /**
+             * Restrict Days
+             * @description Only these weekdays (0 = Monday).
+             */
+            restrict_days?: number[] | null;
+            /**
+             * Restrict Start
+             * @description Daily start of on-call time (HH:MM).
+             */
+            restrict_start?: string | null;
+            /**
+             * Restrict End
+             * @description Daily end of on-call time (HH:MM).
+             */
+            restrict_end?: string | null;
         };
         /**
          * LogHit
@@ -2000,6 +3830,7 @@ export interface components {
         LogSearchOut: {
             /**
              * Items
+             * @description The objects on this page.
              * @default []
              */
             items?: components["schemas"]["LogHit"][];
@@ -2009,27 +3840,145 @@ export interface components {
              */
             hosts?: string[];
         };
-        /** MaintenanceIn */
+        /**
+         * MaintenanceIn
+         * @description R63: a named window; `repeat` daily or weekly expands in `tz` (cronsentinel/maintenance.py).
+         */
         MaintenanceIn: {
             /**
-             * Scope
-             * @default {}
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             * @default Maintenance
              */
-            scope?: {
-                [key: string]: unknown;
-            };
+            name?: string;
+            /**
+             * @description Which jobs it applies to: by `job_ids`, `tags`, `workspace_ids` or `environment_ids`. Empty means every job.
+             * @default {
+             *       "job_ids": [],
+             *       "tags": [],
+             *       "environment_ids": []
+             *     }
+             */
+            scope?: components["schemas"]["MaintenanceScope"];
             /**
              * Starts At
              * Format: date-time
+             * @description Start (UTC).
              */
             starts_at: string;
             /**
              * Ends At
              * Format: date-time
+             * @description End (UTC).
              */
             ends_at: string;
-            /** Rrule */
+            /**
+             * Tz
+             * @description IANA time zone the schedule is evaluated in, for example `Europe/London`. Defaults to `UTC`.
+             * @default UTC
+             */
+            tz?: string;
+            /**
+             * Repeat
+             * @description `none`, `daily` or `weekly`, expanded in `tz`.
+             * @default none
+             */
+            repeat?: string;
+            /**
+             * Weekdays
+             * @default []
+             */
+            weekdays?: string[];
+            /** Until */
+            until?: string | null;
+            /**
+             * Rrule
+             * @description advanced: an RFC 5545 RRULE (DAILY or WEEKLY); overrides repeat
+             */
             rrule?: string | null;
+        };
+        /** MaintenanceOut */
+        MaintenanceOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Scope
+             * @description Which jobs it applies to: by `job_ids`, `tags`, `workspace_ids` or `environment_ids`. Empty means every job.
+             */
+            scope: {
+                [key: string]: unknown;
+            };
+            /**
+             * Starts At
+             * Format: date-time
+             * @description Start (UTC).
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             * @description End (UTC).
+             */
+            ends_at: string;
+            /**
+             * Tz
+             * @description IANA time zone the schedule is evaluated in, for example `Europe/London`. Defaults to `UTC`.
+             */
+            tz: string;
+            /**
+             * Rrule
+             * @description Advanced: an RFC 5545 RRULE (DAILY or WEEKLY). Overrides `repeat`.
+             */
+            rrule?: string | null;
+            /**
+             * Active Now
+             * @description Whether the window is in effect now.
+             */
+            active_now: boolean;
+            /** Current End */
+            current_end?: string | null;
+            /** Next Start */
+            next_start?: string | null;
+            /** Next End */
+            next_end?: string | null;
+        };
+        /** MaintenanceScope */
+        MaintenanceScope: {
+            /**
+             * Job Ids
+             * @description Ids of the jobs it applies to.
+             * @default []
+             */
+            job_ids?: string[];
+            /**
+             * Tags
+             * @description Free-form labels. Used to filter jobs and to scope alert rules and maintenance windows.
+             * @default []
+             */
+            tags?: string[];
+            /**
+             * Environment Ids
+             * @description Environments it applies to.
+             * @default []
+             */
+            environment_ids?: string[];
+        };
+        /** MemberPatch */
+        MemberPatch: {
+            /**
+             * Role
+             * @description Role: `viewer`, `developer`, `sre`, `devops`, `admin` or `owner`. Each role can do everything the ones before it can.
+             */
+            role: string;
         };
         /**
          * MonitoringGapOut
@@ -2037,13 +3986,17 @@ export interface components {
          *     are `unobserved`, never `missed`, and never alert.
          */
         MonitoringGapOut: {
-            /** Id */
+            /**
+             * Id
+             * @description Unique identifier (UUID).
+             */
             id: number;
             /** Service */
             service: string;
             /**
              * Started At
              * Format: date-time
+             * @description When the run started (UTC).
              */
             started_at: string;
             /**
@@ -2063,9 +4016,15 @@ export interface components {
         };
         /** NamedMetric */
         NamedMetric: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
-            /** P95 Ms */
+            /**
+             * P95 Ms
+             * @description 95th-percentile duration in milliseconds.
+             */
             p95_ms?: number | null;
             /** Failures */
             failures?: number | null;
@@ -2077,12 +4036,82 @@ export interface components {
         };
         /** OidcIn */
         OidcIn: {
-            /** Issuer */
+            /**
+             * Issuer
+             * @description The identity provider's issuer URL (OIDC).
+             */
             issuer: string;
-            /** Client Id */
+            /**
+             * Client Id
+             * @description OIDC client id.
+             */
             client_id: string;
-            /** Client Secret */
+            /**
+             * Client Secret
+             * @description OIDC client secret. Stored encrypted; never returned.
+             */
             client_secret?: string | null;
+        };
+        /** OnCallNow */
+        OnCallNow: {
+            /**
+             * User Id
+             * @description The user's id.
+             */
+            user_id?: string | null;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name?: string | null;
+            /** Source */
+            source: string;
+        };
+        /** OverrideIn */
+        OverrideIn: {
+            /**
+             * User Id
+             * Format: uuid
+             * @description The user's id.
+             */
+            user_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             * @description Start (UTC).
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             * @description End (UTC).
+             */
+            ends_at: string;
+        };
+        /** OverrideOut */
+        OverrideOut: {
+            /**
+             * Id
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * User Id
+             * @description The user's id.
+             */
+            user_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             * @description Start (UTC).
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             * @description End (UTC).
+             */
+            ends_at: string;
         };
         /** OverviewOut */
         OverviewOut: {
@@ -2100,43 +4129,137 @@ export interface components {
             top_slowest_7d: components["schemas"]["NamedMetric"][];
             /** Top Failing 7D */
             top_failing_7d: components["schemas"]["NamedMetric"][];
-            /** Mttd Min */
+            /**
+             * Mttd Min
+             * @description Average minutes from a failure to its alert.
+             */
             mttd_min?: number | null;
-            /** Mttr Min */
+            /**
+             * Mttr Min
+             * @description Average minutes from an incident opening to its resolution.
+             */
             mttr_min?: number | null;
         };
         /** PageIn */
         PageIn: {
-            /** Slug */
+            /**
+             * Slug
+             * @description URL name, lower case.
+             */
             slug: string;
-            /** Title */
+            /**
+             * Title
+             * @description Title.
+             */
             title: string;
             /**
              * Visibility
+             * @description `public` or `unlisted`.
              * @default public
              */
             visibility?: string;
             /**
              * Job Ids
+             * @description Ids of the jobs it applies to.
              * @default []
              */
             job_ids?: string[];
         };
+        /** PersonOut */
+        PersonOut: {
+            /**
+             * Id
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Email
+             * @description Email address.
+             */
+            email: string;
+        };
+        /** PolicyIn */
+        PolicyIn: {
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Repeat Count
+             * @description How many times to run through the steps if nobody acknowledges.
+             * @default 0
+             */
+            repeat_count?: number;
+            /**
+             * Delivery Channel Id
+             * Format: uuid
+             */
+            delivery_channel_id: string;
+            /**
+             * Steps
+             * @description Escalation steps, in order.
+             */
+            steps: components["schemas"]["StepIn"][];
+        };
+        /** PolicyOut */
+        PolicyOut: {
+            /**
+             * Id
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Repeat Count
+             * @description How many times to run through the steps if nobody acknowledges.
+             */
+            repeat_count: number;
+            /** Delivery Channel Id */
+            delivery_channel_id: string;
+            /**
+             * Steps
+             * @description Escalation steps, in order.
+             */
+            steps: components["schemas"]["StepOut"][];
+        };
         /** ResolveIn */
         ResolveIn: {
-            /** Resolution */
+            /**
+             * Resolution
+             * @description How it was resolved.
+             */
             resolution: string;
-            /** Root Cause */
+            /**
+             * Root Cause
+             * @description Likely cause, when known.
+             */
             root_cause?: string | null;
         };
         /** RuleIn */
         RuleIn: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
-            /** Condition */
+            /**
+             * Condition
+             * @description What triggers the rule: `failed`, `missed`, `late`, `runtime_exceeded`, `recovered`, `consecutive_failures`, `sla_breach` or `anomaly`.
+             */
             condition: string;
             /**
              * Scope
+             * @description Which jobs it applies to: by `job_ids`, `tags`, `workspace_ids` or `environment_ids`. Empty means every job.
              * @default {}
              */
             scope?: {
@@ -2144,6 +4267,7 @@ export interface components {
             };
             /**
              * Params
+             * @description Parameters for the condition, for example `{"count": 3}` for `consecutive_failures`.
              * @default {}
              */
             params?: {
@@ -2151,39 +4275,222 @@ export interface components {
             };
             /**
              * Severity
+             * @description `critical`, `high`, `medium` or `low`.
              * @default medium
              */
             severity?: string;
             /**
              * Channel Ids
+             * @description Channels to notify.
              * @default []
              */
             channel_ids?: string[];
-            /** Business Hours */
+            /**
+             * Business Hours
+             * @description Only notify during business hours.
+             */
             business_hours?: {
                 [key: string]: unknown;
             } | null;
-            /** Repeat Interval S */
+            /**
+             * Repeat Interval S
+             * @description Re-send while the problem lasts, every this many seconds (minimum 60). `null` sends once.
+             */
             repeat_interval_s?: number | null;
             /**
              * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
              * @default true
              */
             enabled?: boolean;
+        };
+        /** RunHostOut */
+        RunHostOut: {
+            /** Hostname */
+            hostname?: string | null;
+            /** Server Id */
+            server_id?: string | null;
+            /**
+             * Facts
+             * @default {}
+             */
+            facts?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Metrics During
+             * @default []
+             */
+            metrics_during?: components["schemas"]["HostMetricPoint"][];
+        };
+        /** RunOut */
+        RunOut: {
+            /**
+             * Id
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /** Status */
+            status: string;
+            /** Step */
+            step: number;
+            /** Cycle */
+            cycle: number;
+            /**
+             * Next At
+             * Format: date-time
+             */
+            next_at: string;
+            /** History */
+            history: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Created At
+             * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
+             */
+            created_at: string;
+            /**
+             * Incident Id
+             * @description The incident's id.
+             */
+            incident_id?: string | null;
+            /**
+             * Job Id
+             * @description The job's id.
+             */
+            job_id?: string | null;
+            /**
+             * Job Name
+             * @description The job's name.
+             */
+            job_name?: string | null;
+            /**
+             * Condition
+             * @description What triggers the rule: `failed`, `missed`, `late`, `runtime_exceeded`, `recovered`, `consecutive_failures`, `sla_breach` or `anomaly`.
+             */
+            condition?: string | null;
+            /** Policy */
+            policy: string;
         };
         /** SamlIn */
         SamlIn: {
             /** Entity Id */
             entity_id: string;
-            /** Sso Url */
+            /**
+             * Sso Url
+             * @description The identity provider's single sign-on URL (SAML).
+             */
             sso_url: string;
-            /** Signing Cert */
+            /**
+             * Signing Cert
+             * @description The identity provider's signing certificate, PEM (SAML).
+             */
             signing_cert: string;
+        };
+        /** ScheduleIn */
+        ScheduleIn: {
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Tz
+             * @description IANA time zone the schedule is evaluated in, for example `Europe/London`. Defaults to `UTC`.
+             * @default UTC
+             */
+            tz?: string;
+            /**
+             * Description
+             * @description Free-text description.
+             */
+            description?: string | null;
+            /**
+             * Layers
+             * @description lowest first; later layers win
+             */
+            layers: components["schemas"]["LayerIn"][];
+        };
+        /** ScheduleOut */
+        ScheduleOut: {
+            /**
+             * Id
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Tz
+             * @description IANA time zone the schedule is evaluated in, for example `Europe/London`. Defaults to `UTC`.
+             */
+            tz: string;
+            /**
+             * Description
+             * @description Free-text description.
+             */
+            description?: string | null;
+            /**
+             * Layers
+             * @description Rotation layers. Later layers take precedence where they have someone on call.
+             */
+            layers: components["schemas"]["LayerOut"][];
+            /** @description Who is on call now. */
+            on_call_now: components["schemas"]["OnCallNow"];
+            /**
+             * Timeline
+             * @description Events in order: detection, alerts sent, acknowledgement, notes, resolution.
+             */
+            timeline?: components["schemas"]["ShiftOut"][] | null;
+            /**
+             * Overrides
+             * @description Temporary replacements.
+             */
+            overrides?: components["schemas"]["OverrideOut"][] | null;
+        };
+        /**
+         * ScimGroupOut
+         * @description R56: a directory group and the JobWatch role it grants (None = no effect on roles).
+         */
+        ScimGroupOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * Display Name
+             * @description Name shown on the sign-in button.
+             */
+            display_name: string;
+            /**
+             * Role
+             * @description Role: `viewer`, `developer`, `sre`, `devops`, `admin` or `owner`. Each role can do everything the ones before it can.
+             */
+            role?: string | null;
+            /**
+             * Members
+             * @description Members, in order.
+             */
+            members: number;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description When it was last changed (UTC).
+             */
+            updated_at: string;
         };
         /** ScimTokenIn */
         ScimTokenIn: {
             /**
              * Name
+             * @description Human-readable name, unique within its kind in the organization.
              * @default Directory sync
              */
             name?: string;
@@ -2196,26 +4503,97 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
-            /** Prefix */
+            /**
+             * Prefix
+             * @description First characters of the token, to recognise it.
+             */
             prefix: string;
             /**
              * Created At
              * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
              */
             created_at: string;
-            /** Last Used At */
+            /**
+             * Last Used At
+             * @description When it was last used.
+             */
             last_used_at?: string | null;
         };
         /** ScimTokensOut */
         ScimTokensOut: {
-            /** Base Url */
+            /**
+             * Base Url
+             * @description Base URL of the other service, for a self-hosted instance.
+             */
             base_url: string;
             /** Tokens */
             tokens: components["schemas"]["ScimTokenOut"][];
+        };
+        /** SecurityIn */
+        SecurityIn: {
+            /**
+             * Require Mfa
+             * @description Members who sign in with a password must also use an authenticator app.
+             */
+            require_mfa: boolean;
+        };
+        /** SecurityOut */
+        SecurityOut: {
+            /**
+             * Require Mfa
+             * @description Members who sign in with a password must also use an authenticator app.
+             */
+            require_mfa: boolean;
+            /**
+             * Mfa Checkable
+             * @description Whether this server can check second factors (its Keycloak admin client is configured).
+             */
+            mfa_checkable: boolean;
+            /**
+             * Sso Enforced
+             * @description Whether single sign-on is enforced for members other than owners.
+             */
+            sso_enforced: boolean;
+        };
+        /** SentryIn */
+        SentryIn: {
+            /**
+             * Auth Token
+             * @description Sentry auth token with org:read (or alerts:read) and project:read
+             */
+            auth_token: string;
+            /**
+             * Organization
+             * @description Organization slug, as in your Sentry URL
+             */
+            organization: string;
+            /**
+             * Base Url
+             * @description https://sentry.io, https://de.sentry.io, or your self-hosted Sentry
+             * @default https://sentry.io
+             */
+            base_url?: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             * @description Workspace the job belongs to. `GET /api/v1/workspaces` lists them.
+             */
+            workspace_id: string;
+            /**
+             * Dry Run
+             * @description Report what would happen without changing anything.
+             * @default true
+             */
+            dry_run?: boolean;
         };
         /** SeriesIncident */
         SeriesIncident: {
@@ -2223,7 +4601,10 @@ export interface components {
         };
         /** SeriesOut */
         SeriesOut: {
-            /** Bucket */
+            /**
+             * Bucket
+             * @description Bucket size: `hour` or `day`.
+             */
             bucket: string;
             /**
              * Points
@@ -2241,26 +4622,95 @@ export interface components {
             /**
              * T
              * Format: date-time
+             * @description Start of the bucket (UTC).
              */
             t: string;
             /** Executions */
             executions: number;
-            /** Ok */
+            /**
+             * Ok
+             * @description Successful runs.
+             */
             ok: number;
-            /** Failed */
+            /**
+             * Failed
+             * @description Failed runs.
+             */
             failed: number;
-            /** Missed */
+            /**
+             * Missed
+             * @description Missed runs.
+             */
             missed: number;
-            /** P50 Ms */
+            /**
+             * P50 Ms
+             * @description Median duration in milliseconds.
+             */
             p50_ms?: number | null;
-            /** P95 Ms */
+            /**
+             * P95 Ms
+             * @description 95th-percentile duration in milliseconds.
+             */
             p95_ms?: number | null;
+        };
+        /** ServerOut */
+        ServerOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /** Hostname */
+            hostname: string;
+            /**
+             * Labels
+             * @default {}
+             */
+            labels?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Facts
+             * @default {}
+             */
+            facts?: {
+                [key: string]: unknown;
+            };
+            /** Facts Updated At */
+            facts_updated_at?: string | null;
+        };
+        /** ShiftOut */
+        ShiftOut: {
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * User Id
+             * @description The user's id.
+             */
+            user_id?: string | null;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name?: string | null;
+            /** Source */
+            source: string;
         };
         /** SignalDeliveryOut */
         SignalDeliveryOut: {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
             /**
@@ -2278,13 +4728,17 @@ export interface components {
             status: string;
             /** Attempts */
             attempts: number;
-            /** Last Error */
+            /**
+             * Last Error
+             * @description The last delivery error, if any.
+             */
             last_error?: string | null;
             /** Response Code */
             response_code?: number | null;
             /**
              * Created At
              * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
              */
             created_at: string;
             /** Sent At */
@@ -2295,20 +4749,31 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Kind */
             kind: string;
             /**
              * Event Types
+             * @description Event types to send. Empty means all.
              * @default []
              */
             event_types?: string[];
-            /** Workspace Ids */
+            /**
+             * Workspace Ids
+             * @description Workspaces it applies to.
+             */
             workspace_ids?: string[] | null;
-            /** Enabled */
+            /**
+             * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
+             */
             enabled: boolean;
             /**
              * Consecutive Failures
@@ -2320,6 +4785,7 @@ export interface components {
             /**
              * Created At
              * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
              */
             created_at: string;
             /**
@@ -2332,7 +4798,10 @@ export interface components {
              * @default 0
              */
             failed_24h?: number;
-            /** Url */
+            /**
+             * Url
+             * @description HTTPS URL. Private and internal addresses are refused.
+             */
             url?: string | null;
             /**
              * Has Secret
@@ -2351,11 +4820,20 @@ export interface components {
         SignalSchemaOut: {
             /** Schema */
             schema: string;
-            /** Version */
+            /**
+             * Version
+             * @description Version.
+             */
             version: number | string;
-            /** Event Types */
+            /**
+             * Event Types
+             * @description Event types to send. Empty means all.
+             */
             event_types: string[];
-            /** Headers */
+            /**
+             * Headers
+             * @description Extra HTTP headers to send.
+             */
             headers: string[];
             /** Signature */
             signature: string;
@@ -2374,32 +4852,53 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Domain */
+            /**
+             * Domain
+             * @description Email domain, for example `example.com`.
+             */
             domain: string;
-            /** Verified At */
+            /**
+             * Verified At
+             * @description When ownership of the domain was verified.
+             */
             verified_at: string | null;
-            /** Txt Name */
+            /**
+             * Txt Name
+             * @description DNS name of the TXT record to create.
+             */
             txt_name: string;
-            /** Txt Value */
+            /**
+             * Txt Value
+             * @description Value of the TXT record.
+             */
             txt_value: string;
         };
         /** SsoIn */
         SsoIn: {
-            /** Protocol */
+            /**
+             * Protocol
+             * @description `saml` or `oidc`.
+             */
             protocol: string;
-            /** Display Name */
+            /**
+             * Display Name
+             * @description Name shown on the sign-in button.
+             */
             display_name: string;
             oidc?: components["schemas"]["OidcIn"] | null;
             saml?: components["schemas"]["SamlIn"] | null;
             /**
              * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
              * @default true
              */
             enabled?: boolean;
             /**
              * Default Role
+             * @description Role given to people who join through single sign-on.
              * @default viewer
              */
             default_role?: string;
@@ -2411,15 +4910,30 @@ export interface components {
         SsoOut: {
             /** Configured */
             configured: boolean;
-            /** Protocol */
+            /**
+             * Protocol
+             * @description `saml` or `oidc`.
+             */
             protocol?: string | null;
-            /** Display Name */
+            /**
+             * Display Name
+             * @description Name shown on the sign-in button.
+             */
             display_name?: string | null;
-            /** Enabled */
+            /**
+             * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
+             */
             enabled?: boolean | null;
-            /** Enforce */
+            /**
+             * Enforce
+             * @description Require single sign-on for everyone except owners.
+             */
             enforce?: boolean | null;
-            /** Default Role */
+            /**
+             * Default Role
+             * @description Role given to people who join through single sign-on.
+             */
             default_role?: string | null;
             /** Config */
             config?: {
@@ -2427,7 +4941,10 @@ export interface components {
             } | null;
             /** Has Client Secret */
             has_client_secret?: boolean | null;
-            /** Updated At */
+            /**
+             * Updated At
+             * @description When it was last changed (UTC).
+             */
             updated_at?: string | null;
             /** Redirect Uri */
             redirect_uri: string;
@@ -2439,28 +4956,175 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Slug */
+            /**
+             * Slug
+             * @description URL name, lower case.
+             */
             slug: string;
-            /** Title */
+            /**
+             * Title
+             * @description Title.
+             */
             title: string;
-            /** Visibility */
+            /**
+             * Visibility
+             * @description `public` or `unlisted`.
+             */
             visibility: string;
             /**
              * Job Ids
+             * @description Ids of the jobs it applies to.
              * @default []
              */
             job_ids?: string[];
+        };
+        /** StepIn */
+        StepIn: {
+            /**
+             * Delay Min
+             * @description minutes to wait for an acknowledgement before the next step
+             * @default 15
+             */
+            delay_min?: number;
+            /**
+             * Targets
+             * @description [{"type": "schedule"|"user", "id": "…"}]
+             */
+            targets: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** StepOut */
+        StepOut: {
+            /**
+             * Delay Min
+             * @description Minutes to wait for an acknowledgement before the next step.
+             */
+            delay_min: number;
+            /**
+             * Targets
+             * @description Who a step pages: schedules or people.
+             */
+            targets: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** StreamIn */
+        StreamIn: {
+            /**
+             * Kind
+             * @description `webhook`, `splunk_hec` or `datadog_logs`.
+             */
+            kind: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Url
+             * @description webhook and splunk_hec
+             */
+            url?: string | null;
+            /**
+             * Api Key
+             * @description datadog_logs: Datadog API key
+             */
+            api_key?: string | null;
+            /**
+             * Site
+             * @description datadog_logs: e.g. datadoghq.com, datadoghq.eu
+             */
+            site?: string | null;
+            /**
+             * Secret
+             * @description webhook: HMAC signing secret
+             */
+            secret?: string | null;
+            /**
+             * Token
+             * @description splunk_hec: HEC token
+             */
+            token?: string | null;
+            /** Index */
+            index?: string | null;
+            /** Sourcetype */
+            sourcetype?: string | null;
+            /**
+             * Start
+             * @description 'now', or '30d' to also send the last 30 days
+             * @default now
+             */
+            start?: string;
+        };
+        /** StreamOut */
+        StreamOut: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Host
+             * @description Host the run was reported from.
+             */
+            host: string;
+            /**
+             * Enabled
+             * @description Whether it is active. Disabled objects are kept but do nothing.
+             */
+            enabled: boolean;
+            /** Delivered Total */
+            delivered_total: number;
+            /** Pending */
+            pending: number;
+            /**
+             * Last Success At
+             * @description When the last successful run finished.
+             */
+            last_success_at?: string | null;
+            /**
+             * Last Error
+             * @description The last delivery error, if any.
+             */
+            last_error?: string | null;
+            /** Last Error At */
+            last_error_at?: string | null;
+            /**
+             * Next Attempt At
+             * Format: date-time
+             */
+            next_attempt_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
+             */
+            created_at: string;
         };
         /** TopologyCluster */
         TopologyCluster: {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Status */
             status: string;
@@ -2475,16 +5139,23 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Status */
             status: string;
         };
         /** TopologyNamespace */
         TopologyNamespace: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Status */
             status: string;
@@ -2519,9 +5190,13 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name?: string | null;
             /** Status */
             status: string;
@@ -2533,7 +5208,10 @@ export interface components {
         };
         /** TopologyUser */
         TopologyUser: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /** Status */
             status: string;
@@ -2542,6 +5220,48 @@ export interface components {
              * @default []
              */
             jobs?: components["schemas"]["TopologyJob"][];
+        };
+        /**
+         * UnusualRunOut
+         * @description R69: one run that R68 flagged as unusual for its job.
+         */
+        UnusualRunOut: {
+            /**
+             * Execution Id
+             * @description The run's id.
+             */
+            execution_id: string;
+            /**
+             * Job Id
+             * Format: uuid
+             * @description The job's id.
+             */
+            job_id: string;
+            /**
+             * Job Name
+             * @description The job's name.
+             */
+            job_name: string;
+            /** Status */
+            status: string;
+            /**
+             * Finished At
+             * @description When the run finished (UTC). `null` while running.
+             */
+            finished_at: string | null;
+            /**
+             * Host
+             * @description Host the run was reported from.
+             */
+            host: string | null;
+            /**
+             * Anomalies
+             * @description What was unusual about the run: the metric or duration, its value, the typical value and a message.
+             * @default []
+             */
+            anomalies?: {
+                [key: string]: unknown;
+            }[];
         };
         /** ValidationError */
         ValidationError: {
@@ -2558,7 +5278,10 @@ export interface components {
         };
         /** WorkspaceIn */
         WorkspaceIn: {
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
         };
         /** WorkspaceOut */
@@ -2566,15 +5289,208 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description Unique identifier (UUID).
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
             name: string;
             /**
              * Created At
              * Format: date-time
+             * @description When it was created (UTC, ISO 8601).
              */
             created_at: string;
+        };
+        /** MemberOut */
+        cronsentinel__routers__oncall__MemberOut: {
+            /**
+             * Id
+             * @description Unique identifier (UUID).
+             */
+            id: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+        };
+        /** MemberOut */
+        cronsentinel__routers__team__MemberOut: {
+            /**
+             * User Id
+             * Format: uuid
+             * @description The user's id.
+             */
+            user_id: string;
+            /**
+             * Email
+             * @description Email address.
+             */
+            email: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string | null;
+            /**
+             * Role
+             * @description Role: `viewer`, `developer`, `sre`, `devops`, `admin` or `owner`. Each role can do everything the ones before it can.
+             */
+            role: string;
+            /**
+             * Joined At
+             * Format: date-time
+             * @description When the person joined the organization.
+             */
+            joined_at: string;
+            /**
+             * Managed By Directory
+             * @description Provisioned over SCIM: the role follows directory groups and cannot be changed here.
+             */
+            managed_by_directory: boolean;
+        };
+        /** DiscoveredJob */
+        DiscoveredJob: {
+            /** Fingerprint */
+            fingerprint: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /**
+             * Schedule
+             * @default
+             */
+            schedule?: string | null;
+            /** Command */
+            command: string;
+            /** User */
+            user: string;
+            /** Source */
+            source: string;
+            /** Working Dir */
+            working_dir?: string | null;
+            /** Timer Slack S */
+            timer_slack_s?: number | null;
+        };
+        /** DiscoveryIn */
+        DiscoveryIn: {
+            /** Jobs */
+            jobs: components["schemas"]["DiscoveredJob"][];
+        };
+        /** EnrollIn */
+        EnrollIn: {
+            /**
+             * Bootstrap Token
+             * @description One-time enrollment token. Returned only in this response.
+             */
+            bootstrap_token: string;
+            /**
+             * Name
+             * @description Human-readable name, unique within its kind in the organization.
+             */
+            name: string;
+            /** Host Id */
+            host_id: string;
+            /**
+             * Kind
+             * @default linux
+             */
+            kind?: string;
+            /**
+             * Version
+             * @description Version.
+             * @default unknown
+             */
+            version?: string;
+        };
+        /** EventsIn */
+        EventsIn: {
+            /** Events */
+            events: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** HeartbeatBody */
+        HeartbeatBody: {
+            /**
+             * Status
+             * @description `start`, `success` or `fail`.
+             */
+            status: string;
+            /**
+             * Execution Id
+             * @description The run's id.
+             */
+            execution_id?: string | null;
+            /**
+             * Sequence
+             * @description Optional increasing number, so a retried report is not counted twice.
+             * @default 0
+             */
+            sequence?: number;
+            /**
+             * Duration Ms
+             * @description How long the run took, in milliseconds.
+             */
+            duration_ms?: number | null;
+            /**
+             * Exit Code
+             * @description The process exit code, when reported.
+             */
+            exit_code?: number | null;
+            /** Agent Ts */
+            agent_ts?: string | null;
+            /**
+             * Host
+             * @description Host the run was reported from.
+             */
+            host?: string | null;
+            /**
+             * Stdout Tail
+             * @description The end of the run's standard output, redacted.
+             */
+            stdout_tail?: string | null;
+            /**
+             * Stderr Tail
+             * @description The end of the run's standard error, redacted.
+             */
+            stderr_tail?: string | null;
+            /**
+             * Meta
+             * @description Extra key-value data stored with the run.
+             * @default {}
+             */
+            meta?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Metrics
+             * @description Numbers the run reported, for example `{"rows": 1200, "size_bytes": 4200000000}`. Used by assertions and unusual-run detection.
+             * @default {}
+             */
+            metrics?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * Error
+         * @example {
+         *       "detail": "requires role >= devops"
+         *     }
+         */
+        Error: {
+            /**
+             * Detail
+             * @description What went wrong, in words. Validation errors (422) return a list of field errors instead.
+             */
+            detail: string | Record<string, never>[];
         };
     };
     responses: never;
@@ -2594,11 +5510,7 @@ export interface operations {
                 limit?: number;
                 cursor?: string | null;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2613,6 +5525,24 @@ export interface operations {
                     "application/json": components["schemas"]["JobPage"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2622,16 +5552,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_job_api_v1_jobs_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2650,6 +5587,24 @@ export interface operations {
                     "application/json": components["schemas"]["JobOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2659,16 +5614,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     get_job_api_v1_jobs__job_id__get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 job_id: string;
             };
@@ -2685,6 +5647,33 @@ export interface operations {
                     "application/json": components["schemas"]["JobOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2694,16 +5683,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_job_api_v1_jobs__job_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 job_id: string;
             };
@@ -2718,6 +5714,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2727,16 +5750,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     update_job_api_v1_jobs__job_id__patch: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 job_id: string;
             };
@@ -2757,6 +5787,33 @@ export interface operations {
                     "application/json": components["schemas"]["JobOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2766,16 +5823,92 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    job_host_api_v1_jobs__job_id__host_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobHostOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     rotate_token_api_v1_jobs__job_id__rotate_token_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 job_id: string;
             };
@@ -2792,6 +5925,33 @@ export interface operations {
                     "application/json": components["schemas"]["JobOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2801,6 +5961,17 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     next_runs_api_v1_jobs__job_id__next_runs_get: {
@@ -2808,11 +5979,7 @@ export interface operations {
             query?: {
                 n?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 job_id: string;
             };
@@ -2829,6 +5996,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2838,6 +6032,17 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     job_executions_api_v1_jobs__job_id__executions_get: {
@@ -2845,11 +6050,7 @@ export interface operations {
             query?: {
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 job_id: string;
             };
@@ -2866,6 +6067,33 @@ export interface operations {
                     "application/json": components["schemas"]["ExecutionOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2873,6 +6101,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2883,11 +6122,7 @@ export interface operations {
                 expr: string;
                 tz?: string;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2902,6 +6137,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2911,16 +6164,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     get_execution_api_v1_executions__execution_id__get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 execution_id: string;
             };
@@ -2934,7 +6194,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExecutionDetailOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Validation Error */
@@ -2946,16 +6233,94 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    download_logs_api_v1_executions__execution_id__logs_get: {
+        parameters: {
+            query?: {
+                stream?: string;
+            };
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     compare_api_v1_executions__execution_id__compare__other_id__get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 execution_id: string;
                 other_id: string;
@@ -2973,6 +6338,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2982,16 +6374,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     me_api_v1_me_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3006,6 +6405,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3015,16 +6432,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     list_workspaces_api_v1_workspaces_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3039,6 +6463,24 @@ export interface operations {
                     "application/json": components["schemas"]["WorkspaceOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3048,16 +6490,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_workspace_api_v1_workspaces_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3076,6 +6525,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3085,16 +6552,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     list_keys_api_v1_api_keys_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3109,6 +6583,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3118,16 +6610,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_key_api_v1_api_keys_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3146,6 +6645,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3155,16 +6672,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     revoke_key_api_v1_api_keys__key_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 key_id: string;
             };
@@ -3179,6 +6703,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3188,6 +6739,17 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     audit_logs_api_v1_audit_logs_get: {
@@ -3195,11 +6757,7 @@ export interface operations {
             query?: {
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3214,6 +6772,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3223,16 +6799,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     overview_api_v1_analytics_overview_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3247,6 +6830,24 @@ export interface operations {
                     "application/json": components["schemas"]["OverviewOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3256,16 +6857,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     list_channels_api_v1_alerts_channels_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3280,6 +6888,24 @@ export interface operations {
                     "application/json": components["schemas"]["ChannelOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3289,16 +6915,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_channel_api_v1_alerts_channels_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3317,6 +6950,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3326,16 +6977,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     test_channel_api_v1_alerts_channels__channel_id__test_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 channel_id: string;
             };
@@ -3352,6 +7010,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3361,16 +7046,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_channel_api_v1_alerts_channels__channel_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 channel_id: string;
             };
@@ -3385,6 +7077,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3394,16 +7113,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     list_rules_api_v1_alerts_rules_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3418,6 +7144,24 @@ export interface operations {
                     "application/json": components["schemas"]["AlertRuleOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3427,16 +7171,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_rule_api_v1_alerts_rules_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3455,6 +7206,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3464,16 +7233,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_rule_api_v1_alerts_rules__rule_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 rule_id: string;
             };
@@ -3488,6 +7264,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3497,6 +7300,17 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     toggle_rule_api_v1_alerts_rules__rule_id__patch: {
@@ -3504,11 +7318,7 @@ export interface operations {
             query: {
                 enabled: boolean;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 rule_id: string;
             };
@@ -3525,6 +7335,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3534,16 +7371,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     list_maintenance_api_v1_alerts_maintenance_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3555,7 +7399,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MaintenanceOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Validation Error */
@@ -3567,16 +7429,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_maintenance_api_v1_alerts_maintenance_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3592,7 +7461,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MaintenanceOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Validation Error */
@@ -3604,16 +7491,92 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_maintenance_api_v1_alerts_maintenance__mw_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mw_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_maintenance_api_v1_alerts_maintenance__mw_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 mw_id: string;
             };
@@ -3628,6 +7591,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3637,6 +7627,86 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    end_maintenance_api_v1_alerts_maintenance__mw_id__end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mw_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     ledger_api_v1_alerts_ledger_get: {
@@ -3644,11 +7714,7 @@ export interface operations {
             query?: {
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3663,6 +7729,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3670,6 +7754,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -3680,11 +7775,7 @@ export interface operations {
                 status?: string | null;
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3699,6 +7790,24 @@ export interface operations {
                     "application/json": components["schemas"]["IncidentOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3706,6 +7815,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -3713,11 +7833,7 @@ export interface operations {
     get_incident_api_v1_incidents__incident_id__get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 incident_id: string;
             };
@@ -3734,6 +7850,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3741,6 +7884,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -3748,11 +7902,7 @@ export interface operations {
     ack_api_v1_incidents__incident_id__ack_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 incident_id: string;
             };
@@ -3769,6 +7919,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3778,16 +7955,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     resolve_api_v1_incidents__incident_id__resolve_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 incident_id: string;
             };
@@ -3808,6 +7992,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3817,16 +8028,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     add_note_api_v1_incidents__incident_id__notes_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 incident_id: string;
             };
@@ -3847,6 +8065,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3856,16 +8101,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     bootstrap_token_api_v1_agents_bootstrap_token_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3884,6 +8136,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3893,16 +8163,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     list_agents_api_v1_agents_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3917,6 +8194,24 @@ export interface operations {
                     "application/json": components["schemas"]["AgentOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3926,16 +8221,92 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_agent_api_v1_agents__agent_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDetailOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     rotate_api_v1_agents__agent_id__rotate_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 agent_id: string;
             };
@@ -3952,6 +8323,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3961,16 +8359,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     revoke_api_v1_agents__agent_id__revoke_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 agent_id: string;
             };
@@ -3985,6 +8390,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3992,6 +8424,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4008,11 +8451,7 @@ export interface operations {
                 until?: string | null;
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4027,6 +8466,24 @@ export interface operations {
                     "application/json": components["schemas"]["LogSearchOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4034,6 +8491,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4070,12 +8538,98 @@ export interface operations {
             };
         };
     };
+    discover_auth_discover_get: {
+        parameters: {
+            query: {
+                email: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    signup_auth_signup_get: {
+        parameters: {
+            query?: {
+                email?: string;
+                next?: string;
+                idp?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    providers_auth_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     login_auth_login_get: {
         parameters: {
             query?: {
                 next?: string;
                 idp?: string | null;
                 login_hint?: string | null;
+                register?: boolean;
+                prompt?: string | null;
             };
             header?: never;
             path?: never;
@@ -4228,6 +8782,15 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4242,11 +8805,7 @@ export interface operations {
     list_pages_api_v1_status_pages_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4261,6 +8820,24 @@ export interface operations {
                     "application/json": components["schemas"]["StatusPageOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4270,16 +8847,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_page_api_v1_status_pages_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4298,6 +8882,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4307,16 +8909,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_page_api_v1_status_pages__page_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 page_id: string;
             };
@@ -4331,6 +8940,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4338,6 +8974,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4362,6 +9009,15 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4376,11 +9032,7 @@ export interface operations {
     list_clusters_api_v1_clusters_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4395,6 +9047,24 @@ export interface operations {
                     "application/json": components["schemas"]["ClusterOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4404,6 +9074,17 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     cluster_cronjobs_api_v1_clusters__cluster_id__cronjobs_get: {
@@ -4411,11 +9092,7 @@ export interface operations {
             query?: {
                 namespace?: string | null;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 cluster_id: string;
             };
@@ -4432,6 +9109,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4441,16 +9145,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     dependencies_api_v1_dependencies_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4465,6 +9176,24 @@ export interface operations {
                     "application/json": components["schemas"]["DependencyGraph"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4474,16 +9203,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     add_dependency_api_v1_dependencies_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4502,6 +9238,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4509,6 +9263,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4519,11 +9284,7 @@ export interface operations {
                 job_id: string;
                 depends_on_job_id: string;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4536,6 +9297,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4545,16 +9324,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     impact_api_v1_jobs__job_id__impact_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 job_id: string;
             };
@@ -4571,6 +9357,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4580,16 +9393,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     topology_api_v1_topology_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4604,6 +9424,24 @@ export interface operations {
                     "application/json": components["schemas"]["TopologyOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4611,6 +9449,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4621,11 +9470,7 @@ export interface operations {
                 days?: number;
                 bucket?: string;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4640,6 +9485,24 @@ export interface operations {
                     "application/json": components["schemas"]["SeriesOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4647,6 +9510,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    unusual_runs_api_v1_analytics_unusual_runs_get: {
+        parameters: {
+            query?: {
+                days?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnusualRunOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4657,11 +9592,7 @@ export interface operations {
                 days?: number;
                 sort?: string;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4676,6 +9607,24 @@ export interface operations {
                     "application/json": components["schemas"]["JobAnalyticsOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4683,6 +9632,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4692,11 +9652,7 @@ export interface operations {
             query?: {
                 days?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4711,6 +9667,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4718,6 +9692,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4727,11 +9712,7 @@ export interface operations {
             query?: {
                 period?: string;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4746,6 +9727,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4755,16 +9754,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     ask_api_v1_copilot_ask_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4783,6 +9789,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4790,6 +9814,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4799,11 +9834,7 @@ export interface operations {
             query?: {
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4818,6 +9849,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4825,6 +9874,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4832,11 +9892,7 @@ export interface operations {
     suggestions_api_v1_copilot_suggestions_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4851,6 +9907,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4858,6 +9932,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4865,11 +9950,7 @@ export interface operations {
     status_api_v1_billing_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4884,6 +9965,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4891,6 +9990,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4900,11 +10010,7 @@ export interface operations {
             query: {
                 plan: string;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4919,6 +10025,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4926,6 +10050,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4933,11 +10068,7 @@ export interface operations {
     portal_api_v1_billing_portal_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -4952,6 +10083,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4959,6 +10108,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -4986,11 +10146,7 @@ export interface operations {
     list_destinations_api_v1_integrations_destinations_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5005,6 +10161,24 @@ export interface operations {
                     "application/json": components["schemas"]["SignalDestinationOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5014,16 +10188,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_destination_api_v1_integrations_destinations_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5042,6 +10223,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5051,16 +10250,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     update_destination_api_v1_integrations_destinations__dest_id__put: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 dest_id: string;
             };
@@ -5081,6 +10287,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5090,16 +10323,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_destination_api_v1_integrations_destinations__dest_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 dest_id: string;
             };
@@ -5114,6 +10354,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5123,16 +10390,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     test_destination_api_v1_integrations_destinations__dest_id__test_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 dest_id: string;
             };
@@ -5149,6 +10423,33 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5158,6 +10459,17 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     deliveries_api_v1_integrations_deliveries_get: {
@@ -5165,11 +10477,7 @@ export interface operations {
             query?: {
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5184,6 +10492,24 @@ export interface operations {
                     "application/json": components["schemas"]["SignalDeliveryOut"][];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5193,16 +10519,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     monitoring_gaps_api_v1_platform_monitoring_gaps_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5217,6 +10550,24 @@ export interface operations {
                     "application/json": components["schemas"]["MonitoringGapsOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5226,16 +10577,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     export_org_api_v1_org_export_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5250,6 +10608,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5259,16 +10635,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_org_api_v1_org__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5285,6 +10668,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5294,16 +10695,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     get_sso_api_v1_sso_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5318,6 +10726,24 @@ export interface operations {
                     "application/json": components["schemas"]["SsoOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5327,16 +10753,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     put_sso_api_v1_sso_put: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5355,6 +10788,24 @@ export interface operations {
                     "application/json": components["schemas"]["SsoOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5364,16 +10815,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_sso_api_v1_sso_delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5386,6 +10844,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5395,16 +10871,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     add_domain_api_v1_sso_domains_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5423,6 +10906,24 @@ export interface operations {
                     "application/json": components["schemas"]["SsoOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5432,16 +10933,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     verify_domain_api_v1_sso_domains__domain_id__verify_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 domain_id: string;
             };
@@ -5458,6 +10966,33 @@ export interface operations {
                     "application/json": components["schemas"]["SsoOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5467,16 +11002,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     delete_domain_api_v1_sso_domains__domain_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 domain_id: string;
             };
@@ -5491,6 +11033,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5500,16 +11069,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     set_enforce_api_v1_sso_enforce_put: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5528,6 +11104,24 @@ export interface operations {
                     "application/json": components["schemas"]["SsoOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5537,16 +11131,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     scim_tokens_api_v1_sso_scim_tokens_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5561,6 +11162,24 @@ export interface operations {
                     "application/json": components["schemas"]["ScimTokensOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5570,16 +11189,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     create_scim_token_api_v1_sso_scim_tokens_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5598,6 +11224,24 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5607,16 +11251,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     revoke_scim_token_api_v1_sso_scim_tokens__token_id__delete: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path: {
                 token_id: string;
             };
@@ -5631,6 +11282,33 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5640,16 +11318,154 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    scim_groups_api_v1_sso_scim_groups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScimGroupOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    set_group_role_api_v1_sso_scim_groups__group_id__role_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupRoleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     import_healthchecks_api_v1_import_healthchecks_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5668,6 +11484,24 @@ export interface operations {
                     "application/json": components["schemas"]["ImportOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5677,16 +11511,23 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     import_cronitor_api_v1_import_cronitor_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "x-api-key"?: string | null;
-                "x-org-id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -5705,6 +11546,2288 @@ export interface operations {
                     "application/json": components["schemas"]["ImportOut"];
                 };
             };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    import_sentry_api_v1_import_sentry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SentryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    list_streams_api_v1_audit_streams_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    create_stream_api_v1_audit_streams_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StreamIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_stream_api_v1_audit_streams__stream_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    set_enabled_api_v1_audit_streams__stream_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnabledIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    test_stream_api_v1_audit_streams__stream_id__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    list_exports_api_v1_metric_exports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    create_export_api_v1_metric_exports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_export_api_v1_metric_exports__export_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    set_enabled_api_v1_metric_exports__export_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnabledIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    test_export_api_v1_metric_exports__export_id__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    list_schedules_api_v1_oncall_schedules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    create_schedule_api_v1_oncall_schedules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_schedule_api_v1_oncall_schedules__sid__get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    replace_schedule_api_v1_oncall_schedules__sid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_schedule_api_v1_oncall_schedules__sid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    add_override_api_v1_oncall_schedules__sid__overrides_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_override_api_v1_oncall_schedules__sid__overrides__oid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+                oid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    list_policies_api_v1_oncall_policies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    create_policy_api_v1_oncall_policies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    replace_policy_api_v1_oncall_policies__pid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_policy_api_v1_oncall_policies__pid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    list_escalations_api_v1_oncall_escalations_get: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ack_escalation_api_v1_oncall_escalations__rid__ack_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Developer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    people_api_v1_oncall_people_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    policy_channel_api_v1_oncall_policies__pid__channel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below DevOps, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    list_invites_api_v1_org_invites_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    create_invite_api_v1_org_invites_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    revoke_invite_api_v1_org_invites__invite_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_security_api_v1_org_security_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_security_api_v1_org_security_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecurityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Owner, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    list_members_api_v1_org_members_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["cronsentinel__routers__team__MemberOut"][];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Viewer, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    remove_member_api_v1_org_members__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    change_role_api_v1_org_members__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["cronsentinel__routers__team__MemberOut"];
+                };
+            };
+            /** @description Missing, invalid or expired credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The key or user's role is below Admin, or the organization requires single sign-on. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded. Retry after the number of seconds in `Retry-After`. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    invite_preview_auth_invite__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -5716,11 +13839,46 @@ export interface operations {
             };
         };
     };
-    healthz_healthz_get: {
+    contact_sales_public_contact_post: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ping_ping__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -5734,13 +13892,34 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
-    readyz_readyz_get: {
+    heartbeat_path_heartbeat__token___status__get: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                token: string;
+                status: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -5754,13 +13933,34 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
-    metrics_metrics_get: {
+    heartbeat_path_heartbeat__token___status__post: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                token: string;
+                status: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -5772,6 +13972,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    heartbeat_json_api_v1_heartbeat__token__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeartbeatBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description No such resource in this organization. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

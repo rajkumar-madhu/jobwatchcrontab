@@ -1,4 +1,4 @@
-"""R48 — bring jobs over from another monitor. Healthchecks.io first (cronsentinel/importers)."""
+"""R48 — bring jobs over from another monitor: Healthchecks.io (R48), Cronitor (R50), Sentry Crons (R67)."""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -11,6 +11,7 @@ from ..config import settings
 from ..db import system_session, tenant_session
 from ..importers import cronitor as cr
 from ..importers import healthchecks as hc
+from ..importers import sentry as se
 from .heartbeat import invalidate_token
 
 router = APIRouter(prefix="/api/v1/import", tags=["import"])
@@ -32,6 +33,16 @@ class CronitorIn(BaseModel):
     dry_run: bool = True
 
 
+class SentryIn(BaseModel):
+    auth_token: str = Field(min_length=8, max_length=300,
+                            description="Sentry auth token with org:read (or alerts:read) and project:read")
+    organization: str = Field(min_length=1, max_length=64, description="Organization slug, as in your Sentry URL")
+    base_url: str = Field(default="https://sentry.io", max_length=300,
+                          description="https://sentry.io, https://de.sentry.io, or your self-hosted Sentry")
+    workspace_id: UUID
+    dry_run: bool = True
+
+
 class ImportedCheck(BaseModel):
     name: str
     status: str                      # imported | converted | needs_schedule | skipped | exists
@@ -46,6 +57,7 @@ class ImportOut(BaseModel):
     dry_run: bool
     results: list[ImportedCheck]
     ping_host_change: str
+    warnings: list[str] = []
 
 
 def _apply(p: Principal, workspace_id: UUID, items: list[tuple[str, dict]], dry_run: bool, ingest: str) -> list[ImportedCheck]:
@@ -92,12 +104,12 @@ def _apply(p: Principal, workspace_id: UUID, items: list[tuple[str, dict]], dry_
                 existing.add(job["name"]); continue
             nxt = schedule.next_run(job["schedule_expr"], job["tz"]) if job["schedule_expr"] else None
             jid = s.execute(text("""INSERT INTO jobs (org_id, workspace_id, name, description, kind, heartbeat_token_hash, heartbeat_token_hint,
-                    schedule_expr, tz, grace_s, expected_runtime_s, tags, paused, status, next_expected_at, owner_id)
-                VALUES (:o, :w, :n, :d, 'heartbeat', :h, :hint, :e, :tz, :g, :rt, :tags, :paused, :st, :nxt, :owner) RETURNING id"""),
+                    schedule_expr, tz, grace_s, expected_runtime_s, tags, paused, status, next_expected_at, owner_id, assertions)
+                VALUES (:o, :w, :n, :d, 'heartbeat', :h, :hint, :e, :tz, :g, :rt, :tags, :paused, :st, :nxt, :owner, :rules) RETURNING id"""),
                 {"o": str(p.org_id), "w": str(workspace_id), "n": job["name"], "d": job["description"], "h": tok_hash, "hint": hint,
                  "e": job["schedule_expr"], "tz": job["tz"], "g": job["grace_s"], "rt": job.get("expected_runtime_s"), "tags": job["tags"],
                  "paused": job["paused"], "st": "healthy" if job["schedule_expr"] else "unknown", "nxt": nxt,
-                 "owner": str(p.user_id) if p.user_id else None}).scalar()
+                 "owner": str(p.user_id) if p.user_id else None, "rules": job.get("assertions") or []}).scalar()
             res.job_id = jid
             invalidate_token(tok_hash)   # drop any cached "unknown token" answer from pings sent before the import
             if raw:
@@ -149,3 +161,24 @@ def import_cronitor(body: CronitorIn, request: Request, p: Principal = Depends(r
             "and metric= keep working)." if body.telemetry_key else
             "No telemetry key was given, so every job has a new ping URL (listed below, shown once).")
     return ImportOut(dry_run=body.dry_run, results=out, ping_host_change=hint)
+
+
+@router.post("/sentry", response_model=ImportOut)
+def import_sentry(body: SentryIn, request: Request, p: Principal = Depends(require_role("admin"))):
+    """R67. The auth token is used for this request only. Each job whose project's client key could be
+    read keeps Sentry's check-in credential (project id, public key, slug) as its hashed ping token."""
+    try:
+        monitors, keys, warnings = se.fetch(body.auth_token, body.organization, body.base_url)
+    except se.ImportError_ as e:
+        raise HTTPException(400, str(e)) from None
+    items = [(m.get("name") or m.get("slug"), se.map_monitor(m, keys.get(str((m.get("project") or {}).get("id"))))) for m in monitors]
+    out = _apply(p, body.workspace_id, items, body.dry_run, _ingest())
+    if not body.dry_run:
+        _audit(p, request, "import.sentry", len(monitors), out)
+    ing = _ingest()
+    host = ing.split("://", 1)[-1]
+    hint = (f"SDKs: change the host in the DSN you use for crons, e.g. https://<key>@o1.ingest.sentry.io/<project id> → "
+            f"https://<key>@{host}/sentry/<project id>. HTTP check-ins: replace https://<your Sentry ingest host>/api/ with {ing}/sentry/api/ "
+            "(status=in_progress|ok|error and check_in_id keep working)." if any(r.kept_ping_url for r in out) or not out else
+            "No client keys could be read, so every job has a new ping URL (listed below, shown once).")
+    return ImportOut(dry_run=body.dry_run, results=out, ping_host_change=hint, warnings=warnings)

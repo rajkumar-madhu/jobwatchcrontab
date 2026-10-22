@@ -38,6 +38,17 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!res.ok) { let msg = res.statusText; try { msg = (await res.json()).detail ?? msg; } catch {} throw new ApiError(res.status, String(msg)); }
   return res.status === 204 ? (undefined as T) : res.json();
 }
+/** R70: a text download (a run's log file). Same credentials as api(); the browser's own download
+ *  is then driven from a Blob, so the API host never needs a navigable cookie. */
+export async function downloadText(path: string, filename: string): Promise<void> {
+  const key = getKey();
+  const res = await fetch(`${API}${path}`, { credentials: "include", headers: key ? { "X-API-Key": key } : {} });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  const url = URL.createObjectURL(await res.blob());
+  const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 /** Sign out of the cookie session. Logout is a cookie-authenticated write, so it carries the CSRF
  *  token even when an API key is also stored (api() would send the key and skip the token). */
 export async function logout(): Promise<void> {
@@ -129,6 +140,12 @@ export type JobAnalytics = S["JobAnalyticsOut"];
 export type SignalDestination = S["SignalDestinationOut"];
 export type SignalDelivery = S["SignalDeliveryOut"];
 export type SignalSchema = S["SignalSchemaOut"];
+// R70: host context (the server a job runs on) and the typed run detail
+export type HostContext = S["HostContextOut"];
+export type HostMetricPoint = S["HostMetricPoint"];
+export type JobHost = S["JobHostOut"];
+export type AgentDetail = S["AgentDetailOut"];
+export type ExecutionDetail = S["ExecutionDetailOut"];
 
 /** Public base URL of the ingest service (ping URLs). R49: in a real deployment ingest has its own
  *  domain; deriving it from the API URL by swapping port 8000 for 8010 only ever worked locally and

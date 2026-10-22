@@ -36,13 +36,9 @@ def _job_ctx(s, org, job_id) -> R.JobCtx | None:
 
 
 def _in_maintenance(s, org, job: R.JobCtx, now) -> bool:
-    rows = s.execute(text("SELECT scope FROM maintenance_windows WHERE org_id=:o AND starts_at <= :n AND ends_at >= :n"), {"o": org, "n": now}).all()
-    # TODO: rrule expansion for recurring windows
-    for r in rows:
-        sc = r.scope or {}
-        if not sc or job.id in sc.get("job_ids", []) or set(sc.get("tags", [])) & set(job.tags) or job.environment_id in sc.get("environment_ids", []):
-            return True
-    return False
+    """R63: one definition (cronsentinel/maintenance.py), recurring windows included."""
+    from .. import maintenance
+    return maintenance.covering(maintenance.load(s, org), job.id, job.tags, job.environment_id, now) is not None
 
 
 def _record_change(job_id: str, now: datetime) -> list[datetime]:
@@ -64,11 +60,15 @@ def handle_status_change(ev: dict):
         job = _job_ctx(s, org, job_id)
         if not job:
             return
-        changes = _record_change(job_id, now)
-        flapping = R.is_flapping(changes, now)
+        # R68: an anomaly-only event (unusual successful run, status unchanged) is not a state change:
+        # it must not count towards flapping or re-run the recovery clean-up below.
+        status_changed = prev != new
+        anomalies = ev.get("anomalies") or []
+        changes = _record_change(job_id, now) if status_changed else []
+        flapping = R.is_flapping(changes, now) if status_changed else False
 
         # auto-resolve open incidents for this job when it recovers/healthy
-        if new in ("recovered", "healthy"):
+        if status_changed and new in ("recovered", "healthy"):
             s.execute(text("UPDATE incidents SET status='resolved', resolved_at=now(), resolution='auto: job recovered' "
                            "WHERE org_id=:o AND status<>'resolved' AND :j = ANY(affected_job_ids)"), {"o": org, "j": job_id})
             # R42: the payload is a bind parameter. It used to be the literal '{"auto":true}', and
@@ -79,7 +79,9 @@ def handle_status_change(ev: dict):
 
         # R42: close alerts this job left open on PagerDuty/Opsgenie. Runs before the maintenance and
         # rule checks on purpose: a recovery must never leave someone paged, rule or no rule.
-        if new in ("recovered", "healthy"):
+        if status_changed and new in ("recovered", "healthy"):
+            from .. import escalation                      # R66: stop paging people for a recovered job
+            escalation.resolve_for_job(s, org, job_id)
             for ch in _r.smembers(oncall.open_key(org, str(job_id))):
                 send_notification.delay(org, ch, f"oncall-resolve:{job_id}:{ch}:{int(now.timestamp())}", None,
                                         {"job_id": job.id, "job_name": job.name, "prev_status": prev, "new_status": new,
@@ -93,12 +95,15 @@ def handle_status_change(ev: dict):
         for rr in rule_rows:
             rule = R.Rule(id=str(rr.id), condition=rr.condition, scope=rr.scope or {}, params=rr.params or {}, severity=str(rr.severity),
                           channel_ids=[str(c) for c in rr.channel_ids or []], business_hours=rr.business_hours, repeat_interval_s=rr.repeat_interval_s)
-            if not R.scope_matches(rule, job) or not R.condition_fires(rule, prev, new, job, new_state=ev.get("new_state"), unknown_reason=ev.get("unknown_reason")):
+            if not R.scope_matches(rule, job) or not R.condition_fires(rule, prev, new, job, new_state=ev.get("new_state"), unknown_reason=ev.get("unknown_reason"),
+                                                                       anomalies=anomalies):
                 continue
             if not R.in_business_hours(rule.business_hours, now):
                 log.info("suppressed: outside business hours", rule=rule.id); continue
             cond = "flapping" if flapping and rule.condition != "recovered" else rule.condition
             dk = R.dedup_key(rule.id, job.id, cond)
+            if cond == "anomaly":           # R68: every unusual run is its own event; dedup only redeliveries of it
+                dk = f"{dk}:{ev.get('execution_id')}"
             last = s.execute(text("SELECT max(sent_at) FROM notification_ledger WHERE org_id=:o AND dedup_key=:k AND status='sent'"), {"o": org, "k": dk}).scalar()
             if not R.should_repeat(last, rule.repeat_interval_s, now):
                 log.info("suppressed: dedup", key=dk); continue
@@ -130,5 +135,7 @@ def handle_status_change(ev: dict):
 
             payload = {"job_id": job.id, "job_name": job.name, "prev_status": prev, "new_status": new, "condition": cond,
                        "severity": rule.severity, "incident_id": incident_id, "execution_id": ev.get("execution_id"), "ts": now.isoformat()}
+            if cond == "anomaly":
+                payload["anomalies"] = anomalies
             for ch in rule.channel_ids:
                 send_notification.delay(org, ch, dk, incident_id, payload)

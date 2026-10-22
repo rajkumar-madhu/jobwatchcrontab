@@ -27,19 +27,28 @@ log = structlog.get_logger()
 
 
 def _settle_maintenance(s) -> list[tuple]:
-    """Slots that came due inside a maintenance window, or while the job was paused, are skipped."""
-    return s.execute(text("""
+    """Slots that came due inside a maintenance window, or while the job was paused, are skipped.
+    R63: windows are matched in Python (cronsentinel/maintenance.py) so recurring windows count; the
+    SQL version only saw a window's first occurrence."""
+    from .. import maintenance
+    out = list(s.execute(text("""
         UPDATE expected_runs er SET state='skipped', settled_at=now()
         FROM jobs j WHERE er.job_id=j.id AND er.state IN ('pending','late') AND er.grace_until < now()
-          AND er.execution_id IS NULL
-          AND (j.paused OR EXISTS (
-                SELECT 1 FROM maintenance_windows m WHERE m.org_id=er.org_id
-                  AND m.starts_at <= er.scheduled_for AND m.ends_at >= er.scheduled_for
-                  AND (m.scope = '{}'::jsonb
-                       OR (m.scope->'job_ids') ? CAST(er.job_id AS text)
-                       OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(m.scope->'tags','[]')) t WHERE t = ANY(j.tags))
-                       OR (m.scope->'environment_ids') ? CAST(j.environment_id AS text))))
-        RETURNING er.job_id, er.org_id""")).all()
+          AND er.execution_id IS NULL AND j.paused
+        RETURNING er.job_id, er.org_id""")).all())
+    orgs = [r.org_id for r in s.execute(text("""SELECT DISTINCT org_id FROM maintenance_windows
+        WHERE rrule IS NOT NULL OR ends_at >= now() - interval '35 days'""")).all()]
+    for org in orgs:
+        windows = maintenance.load(s, org)
+        cand = s.execute(text("""SELECT er.id, er.job_id, er.scheduled_for, j.tags, j.environment_id
+            FROM expected_runs er JOIN jobs j ON j.id = er.job_id
+            WHERE er.org_id = :o AND er.state IN ('pending','late') AND er.grace_until < now() AND er.execution_id IS NULL
+            ORDER BY er.scheduled_for LIMIT 5000"""), {"o": org}).all()
+        ids = [c.id for c in cand if maintenance.covering(windows, c.job_id, c.tags, c.environment_id, c.scheduled_for)]
+        if ids:
+            out += s.execute(text("""UPDATE expected_runs SET state='skipped', settled_at=now()
+                WHERE id = ANY(:ids) AND state IN ('pending','late') RETURNING job_id, org_id"""), {"ids": ids}).all()
+    return out
 
 
 def _mark_late(s) -> list[tuple]:

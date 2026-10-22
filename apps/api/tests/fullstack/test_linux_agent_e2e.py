@@ -118,6 +118,13 @@ def test_agent_enrolls_wraps_and_delivers(agent_bin, tenant, tmp_path):
     kinds = [json.loads(ln)["kind"] for ln in buffered.splitlines() if ln.strip()]
     assert kinds == ["start", "fail"], kinds
     assert SECRET_VALUE not in buffered and "DB_PASSWORD" not in buffered
+    # R71: `jobwatch-run` is the documented name; it must behave exactly like cs-run
+    jw_run = tmp_path / "jobwatch-run"
+    jw_run.symlink_to(agent_bin)
+    r2 = subprocess.run([jw_run, "--job", job_token, "--", "sh", "-c", "exit 0"], env={**env, "PATH": os.environ["PATH"]}, capture_output=True, text=True)
+    assert r2.returncode == 0, r2.stderr
+    kinds = [json.loads(ln)["kind"] for ln in (tmp_path / "buffer.jsonl").read_text().splitlines() if ln.strip()]
+    assert kinds == ["start", "fail", "start", "success"], kinds
 
     # 4. daemon flushes the buffer to the ingest service
     daemon = subprocess.Popen([agent_bin, "run"], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)

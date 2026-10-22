@@ -8,7 +8,7 @@ from cronsentinel.alerting.tasks import _SENDERS
 from cronsentinel.routers.alerting import _KINDS
 
 CHANNEL_KINDS = set(_KINDS)
-NON_CHANNEL_FEATURES = {"ai", "kubernetes", "all", "sso"}   # sso: R43
+NON_CHANNEL_FEATURES = {"ai", "kubernetes", "all", "sso", "audit_stream", "metrics_export", "oncall"}   # sso: R43, audit_stream: R57
 
 
 def test_router_and_notifier_agree_on_channel_kinds():

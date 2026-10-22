@@ -36,6 +36,7 @@ USER = "urn:ietf:params:scim:schemas:core:2.0:User"
 LIST = "urn:ietf:params:scim:api:messages:2.0:ListResponse"
 ERROR = "urn:ietf:params:scim:api:messages:2.0:Error"
 PATCH = "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+GROUP = "urn:ietf:params:scim:schemas:core:2.0:Group"
 MAX_PAGE = 200
 TOKEN_RATE_PER_MIN = 600
 
@@ -176,9 +177,10 @@ def service_provider_config():
 
 @router.get("/ResourceTypes")
 def resource_types():
-    return _ok({"schemas": [LIST], "totalResults": 1, "Resources": [
-        {"schemas": ["urn:ietf:params:scim:schemas:core:2.0:ResourceType"], "id": "User", "name": "User",
-         "endpoint": "/Users", "schema": USER}]})
+    rt = "urn:ietf:params:scim:schemas:core:2.0:ResourceType"
+    return _ok({"schemas": [LIST], "totalResults": 2, "Resources": [
+        {"schemas": [rt], "id": "User", "name": "User", "endpoint": "/Users", "schema": USER},
+        {"schemas": [rt], "id": "Group", "name": "Group", "endpoint": "/Groups", "schema": GROUP}]})
 
 
 @router.get("/Schemas")
@@ -189,7 +191,11 @@ def schemas():
                                           ("active", "boolean", False, False, "readWrite", "none"),
                                           ("name", "complex", False, False, "readWrite", "none"),
                                           ("emails", "complex", True, False, "readWrite", "none"))]
-    return _ok({"schemas": [LIST], "totalResults": 1, "Resources": [{"id": USER, "name": "User", "attributes": attrs}]})
+    gattrs = [{"name": "displayName", "type": "string", "multiValued": False, "required": True, "mutability": "readWrite", "returned": "default", "uniqueness": "server"},
+              {"name": "externalId", "type": "string", "multiValued": False, "required": False, "mutability": "readWrite", "returned": "default", "uniqueness": "none"},
+              {"name": "members", "type": "complex", "multiValued": True, "required": False, "mutability": "readWrite", "returned": "default", "uniqueness": "none"}]
+    return _ok({"schemas": [LIST], "totalResults": 2, "Resources": [{"id": USER, "name": "User", "attributes": attrs},
+                                                                    {"id": GROUP, "name": "Group", "attributes": gattrs}]})
 
 
 # ---- Users ------------------------------------------------------------------------------------
@@ -321,6 +327,7 @@ def delete_user(uid: str, request: Request, authorization: str | None = Header(N
             raise ScimError(403, "owners are managed in JobWatch, not by provisioning")
         s.execute(text("DELETE FROM memberships WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": r.user_id})
         s.execute(text("DELETE FROM scim_users WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": r.user_id})
+        s.execute(text("DELETE FROM scim_group_members WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": r.user_id})   # R56
         audit(s, _actor(org_id, tok), "scim.user_delete", "user", str(r.user_id), {"email": r.email})
     return Response(status_code=204)
 
@@ -335,18 +342,215 @@ def _apply_active(s, org_id, uid, active: bool, tok) -> None:
     audit(s, _actor(org_id, tok), "scim.user_activate" if active else "scim.user_deactivate", "user", str(uid))
 
 
-# ---- Groups: not supported, but answered so IdPs that probe them do not fail the connection --------
+# ---- Groups (R56) -------------------------------------------------------------------------------
+# Groups come from the directory; an org owner maps a group to a JobWatch role in Settings. A person's
+# role is the highest role among their mapped groups. Owners are never changed, deactivated people keep
+# no access, and a person in no mapped group keeps (or, if a group set it, reverts to) the default role.
+
+def recompute_roles(s, org_id, user_ids, tok=None, principal: Principal | None = None) -> None:
+    """Re-derive roles for these SCIM-provisioned people from their mapped groups. The audit actor is the
+    SCIM token (directory push) or the owner who changed a mapping (`principal`)."""
+    actor = principal or (_actor(org_id, tok) if tok else None)
+    from ..auth import ROLE_ORDER
+    default = s.execute(text("SELECT default_role FROM org_sso WHERE org_id=:o"), {"o": org_id}).scalar() or "viewer"
+    for uid in {str(u) for u in user_ids}:
+        su = s.execute(text("SELECT active, role, role_from_group FROM scim_users WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": uid}).first()
+        if not su:
+            continue
+        current = s.execute(text("SELECT role FROM memberships WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": uid}).scalar()
+        if current == "owner":
+            continue                                        # owners are managed in JobWatch only
+        mapped = [r for (r,) in s.execute(text("""SELECT g.role FROM scim_group_members m JOIN scim_groups g ON g.id = m.group_id
+            WHERE m.org_id=:o AND m.user_id=:u AND g.role IS NOT NULL"""), {"o": org_id, "u": uid}).all()]
+        if mapped:
+            target, from_group = max(mapped, key=ROLE_ORDER.index), True
+        elif su.role_from_group:
+            target, from_group = default, False             # left every mapped group
+        else:
+            continue                                        # role was set by hand or by default: leave it
+        before = current or su.role
+        s.execute(text("UPDATE scim_users SET role=:r, role_from_group=:g, updated_at=now() WHERE org_id=:o AND user_id=:u"),
+                  {"r": target, "g": from_group, "o": org_id, "u": uid})
+        if su.active and current and current != target:
+            s.execute(text("UPDATE memberships SET role=:r WHERE org_id=:o AND user_id=:u"), {"r": target, "o": org_id, "u": uid})
+        if before != target and actor is not None:
+            audit(s, actor, "scim.role_sync", "user", uid, {"from": before, "to": target, "active": su.active})
+
+
+def _group_row(s, org_id, gid):
+    try:
+        gid = str(UUID(str(gid)))
+    except ValueError:
+        raise ScimError(404, "group not found") from None
+    g = s.execute(text("SELECT id, display_name, external_id, role, created_at, updated_at FROM scim_groups WHERE org_id=:o AND id=:g"),
+                  {"o": org_id, "g": gid}).first()
+    if not g:
+        raise ScimError(404, "group not found")
+    return g
+
+
+def _group_resource(s, org_id, g, with_members=True) -> dict:
+    out = {"schemas": [GROUP], "id": str(g.id), "displayName": g.display_name, "externalId": g.external_id,
+           "meta": {"resourceType": "Group", "created": g.created_at, "lastModified": g.updated_at,
+                    "location": f"{settings.api_public_url}/scim/v2/Groups/{g.id}"}}
+    if with_members:
+        out["members"] = [{"value": str(r.user_id), "display": r.email} for r in s.execute(text(
+            "SELECT m.user_id, u.email FROM scim_group_members m JOIN users u ON u.id = m.user_id WHERE m.org_id=:o AND m.group_id=:g ORDER BY u.email"),
+            {"o": org_id, "g": g.id}).all()]
+    return out
+
+
+def _member_ids(s, org_id, value) -> set[str]:
+    """SCIM member objects → ids of people provisioned to this org (others are ignored)."""
+    ids = set()
+    for m in value if isinstance(value, list) else [value]:
+        v = m.get("value") if isinstance(m, dict) else m
+        try:
+            ids.add(str(UUID(str(v))))
+        except (ValueError, TypeError):
+            continue
+    if not ids:
+        return set()
+    rows = s.execute(text("SELECT user_id FROM scim_users WHERE org_id=:o AND user_id = ANY(CAST(:ids AS uuid[]))"),
+                     {"o": org_id, "ids": list(ids)}).all()
+    return {str(r.user_id) for r in rows}
+
+
+def _set_members(s, org_id, gid, add: set[str] = frozenset(), remove: set[str] = frozenset(), replace: set[str] | None = None) -> set[str]:
+    """Apply a membership change; returns everyone whose role may change."""
+    current = {str(r.user_id) for r in s.execute(text("SELECT user_id FROM scim_group_members WHERE org_id=:o AND group_id=:g"),
+                                                    {"o": org_id, "g": gid}).all()}
+    target = set(replace) if replace is not None else (current | set(add)) - set(remove)
+    for uid in target - current:
+        s.execute(text("INSERT INTO scim_group_members (org_id, group_id, user_id) VALUES (:o, :g, :u) ON CONFLICT DO NOTHING"),
+                  {"o": org_id, "g": gid, "u": uid})
+    for uid in current - target:
+        s.execute(text("DELETE FROM scim_group_members WHERE org_id=:o AND group_id=:g AND user_id=:u"), {"o": org_id, "g": gid, "u": uid})
+    s.execute(text("UPDATE scim_groups SET updated_at=now() WHERE id=:g"), {"g": gid})
+    return target ^ current
+
+
+_GFILTER = re.compile(r'^\s*(displayName|externalId)\s+eq\s+"([^"]*)"\s*$', re.I)
+
 
 @router.get("/Groups")
-def list_groups(request: Request, authorization: str | None = Header(None)):
-    _org_for(authorization, request)
-    return _ok({"schemas": [LIST], "totalResults": 0, "startIndex": 1, "itemsPerPage": 0, "Resources": []})
+def list_groups(request: Request, filter: str | None = None, startIndex: int = 1, count: int = 100,  # noqa: A002
+                excludedAttributes: str | None = None, authorization: str | None = Header(None)):  # noqa: N803
+    org_id, _ = _org_for(authorization, request)
+    start, count = max(1, startIndex), max(0, min(count, MAX_PAGE))
+    where, params = "", {"o": org_id}
+    if filter:
+        m = _GFILTER.match(filter)
+        if not m:
+            raise ScimError(400, 'only `displayName eq "…"` and `externalId eq "…"` filters are supported', "invalidFilter")
+        where = " AND external_id = :v" if m.group(1).lower() == "externalid" else " AND lower(display_name) = lower(:v)"
+        params["v"] = m.group(2)
+    members = "members" not in (excludedAttributes or "")
+    with system_session() as s:
+        total = s.execute(text(f"SELECT count(*) FROM scim_groups WHERE org_id=:o{where}"), params).scalar()
+        rows = s.execute(text(f"SELECT id, display_name, external_id, role, created_at, updated_at FROM scim_groups WHERE org_id=:o{where} "
+                              "ORDER BY created_at LIMIT :c OFFSET :off"), {**params, "c": count, "off": start - 1}).all()
+        res = [_group_resource(s, org_id, g, members) for g in rows]
+    return _ok({"schemas": [LIST], "totalResults": total, "startIndex": start, "itemsPerPage": len(res), "Resources": res})
 
 
-@router.api_route("/Groups{rest:path}", methods=["POST", "PUT", "PATCH", "DELETE"])
-def groups_unsupported(request: Request, rest: str = "", authorization: str | None = Header(None)):
-    _org_for(authorization, request)
-    raise ScimError(501, "groups are not supported; assign roles in JobWatch")
+@router.get("/Groups/{gid}")
+def get_group(gid: str, request: Request, excludedAttributes: str | None = None, authorization: str | None = Header(None)):  # noqa: N803
+    org_id, _ = _org_for(authorization, request)
+    with system_session() as s:
+        return _ok(_group_resource(s, org_id, _group_row(s, org_id, gid), "members" not in (excludedAttributes or "")))
+
+
+@router.post("/Groups", status_code=201)
+async def create_group(request: Request, authorization: str | None = Header(None)):
+    org_id, tok = _org_for(authorization, request)
+    body = await _json(request)
+    name = str(body.get("displayName") or "").strip()[:200]
+    if not name:
+        raise ScimError(400, "displayName is required", "invalidValue")
+    with system_session() as s:
+        if s.execute(text("SELECT 1 FROM scim_groups WHERE org_id=:o AND lower(display_name)=lower(:n)"), {"o": org_id, "n": name}).first():
+            raise ScimError(409, "a group with this displayName already exists", "uniqueness")
+        gid = s.execute(text("INSERT INTO scim_groups (org_id, display_name, external_id) VALUES (:o, :n, :x) RETURNING id"),
+                        {"o": org_id, "n": name, "x": body.get("externalId")}).scalar()
+        changed = _set_members(s, org_id, gid, add=_member_ids(s, org_id, body.get("members") or []))
+        recompute_roles(s, org_id, changed, tok)
+        audit(s, _actor(org_id, tok), "scim.group_create", "scim_group", str(gid), {"name": name})
+        out = _group_resource(s, org_id, _group_row(s, org_id, gid))
+    resp = _ok(out, 201)
+    resp.headers["Location"] = out["meta"]["location"]
+    return resp
+
+
+@router.put("/Groups/{gid}")
+async def replace_group(gid: str, request: Request, authorization: str | None = Header(None)):
+    org_id, tok = _org_for(authorization, request)
+    body = await _json(request)
+    with system_session() as s:
+        g = _group_row(s, org_id, gid)
+        name = str(body.get("displayName") or g.display_name).strip()[:200]
+        s.execute(text("UPDATE scim_groups SET display_name=:n, external_id=:x WHERE id=:g"), {"n": name, "x": body.get("externalId", g.external_id), "g": g.id})
+        changed = _set_members(s, org_id, g.id, replace=_member_ids(s, org_id, body.get("members") or []))
+        recompute_roles(s, org_id, changed, tok)
+        return _ok(_group_resource(s, org_id, _group_row(s, org_id, g.id)))
+
+
+_MEMBER_PATH = re.compile(r'^members\[value eq "([^"]+)"\]$', re.I)
+
+
+@router.patch("/Groups/{gid}")
+async def patch_group(gid: str, request: Request, authorization: str | None = Header(None)):
+    """Okta and Entra ID speak different PatchOp dialects; both are handled:
+       Okta   {"op":"add","path":"members","value":[{"value":id}]}, {"op":"remove","path":"members[value eq \"id\"]"},
+              {"op":"replace","value":{"id":…,"displayName":…}}
+       Entra  {"op":"Add","path":"members","value":[{"value":id}]}, {"op":"Remove","path":"members","value":[{"value":id}]},
+              {"op":"Replace","path":"displayName","value":"…"}"""
+    org_id, tok = _org_for(authorization, request)
+    body = await _json(request)
+    ops = body.get("Operations")
+    if not isinstance(ops, list):
+        raise ScimError(400, "PatchOp with an Operations list expected", "invalidSyntax")
+    with system_session() as s:
+        g = _group_row(s, org_id, gid)
+        changed: set[str] = set()
+        for op in ops:
+            kind = str(op.get("op", "")).lower()
+            path = str(op.get("path") or "")
+            val = op.get("value")
+            m = _MEMBER_PATH.match(path)
+            if kind not in ("add", "remove", "replace"):
+                raise ScimError(400, f"unsupported op {op.get('op')!r}", "invalidSyntax")
+            if path.lower() == "members" or m:
+                if kind == "add":
+                    changed |= _set_members(s, org_id, g.id, add=_member_ids(s, org_id, val or []))
+                elif kind == "remove":
+                    who = _member_ids(s, org_id, [m.group(1)]) if m else (_member_ids(s, org_id, val) if val else None)
+                    changed |= _set_members(s, org_id, g.id, replace=set()) if who is None else _set_members(s, org_id, g.id, remove=who)
+                else:
+                    changed |= _set_members(s, org_id, g.id, replace=_member_ids(s, org_id, val or []))
+            elif path.lower() in ("displayname", "externalid") or (not path and isinstance(val, dict)):
+                vals = {path.lower(): val} if path else {k.lower(): v for k, v in val.items()}
+                if "displayname" in vals and str(vals["displayname"]).strip():
+                    s.execute(text("UPDATE scim_groups SET display_name=:n, updated_at=now() WHERE id=:g"), {"n": str(vals["displayname"]).strip()[:200], "g": g.id})
+                if "externalid" in vals:
+                    s.execute(text("UPDATE scim_groups SET external_id=:x, updated_at=now() WHERE id=:g"), {"x": vals["externalid"], "g": g.id})
+                if not path and isinstance(val, dict) and "members" in vals:
+                    changed |= _set_members(s, org_id, g.id, replace=_member_ids(s, org_id, vals["members"] or []))
+            # other attributes are accepted and ignored
+        recompute_roles(s, org_id, changed, tok)
+        return _ok(_group_resource(s, org_id, _group_row(s, org_id, g.id)))
+
+
+@router.delete("/Groups/{gid}", status_code=204)
+def delete_group(gid: str, request: Request, authorization: str | None = Header(None)):
+    org_id, tok = _org_for(authorization, request)
+    with system_session() as s:
+        g = _group_row(s, org_id, gid)
+        members = {str(r.user_id) for r in s.execute(text("SELECT user_id FROM scim_group_members WHERE group_id=:g"), {"g": g.id}).all()}
+        s.execute(text("DELETE FROM scim_groups WHERE id=:g"), {"g": g.id})
+        recompute_roles(s, org_id, members, tok)
+        audit(s, _actor(org_id, tok), "scim.group_delete", "scim_group", str(g.id), {"name": g.display_name})
+    return Response(status_code=204)
 
 
 async def _json(request: Request) -> dict:

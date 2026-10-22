@@ -9,4 +9,5 @@ lint:
 	gofmt -l . && go vet ./...
 release: build
 	cp packaging/cronsentinel-agent.service dist/
+	cp packaging/install.sh dist/   # R59: shipped with each release; it verifies the binaries against SHA256SUMS
 	cd dist && sha256sum cronsentinel-agent-linux-amd64 cronsentinel-agent-linux-arm64 cronsentinel-agent.service > SHA256SUMS

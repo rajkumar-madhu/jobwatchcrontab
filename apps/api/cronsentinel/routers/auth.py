@@ -120,8 +120,10 @@ def providers():
 
 
 @router.get("/login")
-def login(next: str = "/", idp: str | None = None, login_hint: str | None = None, register: bool = False):
+def login(next: str = "/", idp: str | None = None, login_hint: str | None = None, register: bool = False, prompt: str | None = None):
     next = safe_next(next)
+    if prompt not in (None, "login"):
+        raise HTTPException(400, "prompt must be login")
     # Only an organization's own IdP (org-<uuid>) or a configured social provider may be hinted.
     if idp is not None and not (re.fullmatch(r"org-[0-9a-f-]{36}", idp) or idp in social_providers()):
         raise HTTPException(400, "invalid identity provider")
@@ -136,6 +138,8 @@ def login(next: str = "/", idp: str | None = None, login_hint: str | None = None
         params["kc_idp_hint"] = idp          # skip Keycloak's own login page, go to the org's IdP
     if login_hint:
         params["login_hint"] = login_hint[:254]
+    if prompt:
+        params["prompt"] = prompt            # R69: re-authenticate, so required actions (MFA setup) run
     q = urlencode(params)
     endpoint = _discovery()["authorization_endpoint"]
     if register and not idp:
@@ -212,6 +216,14 @@ def callback(code: str, state: str):
         else:
             uid = s.execute(text("INSERT INTO users (keycloak_sub, email, name) VALUES (:sub, :e, :n) RETURNING id"),
                             {"sub": claims["sub"], "e": email, "n": claims.get("name")}).scalar()
+        # R69: open invitations for this verified address become memberships on first sign-in.
+        invited = s.execute(text("""UPDATE org_invites SET accepted_at = now(), accepted_by = :u
+            WHERE lower(email) = lower(:e) AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > now()
+            RETURNING org_id, role"""), {"u": uid, "e": email}).all()
+        for inv in invited:
+            s.execute(text("INSERT INTO memberships (user_id, org_id, role) VALUES (:u, :o, :r) ON CONFLICT DO NOTHING"),
+                      {"u": uid, "o": inv.org_id, "r": inv.role})
+        social = bool(idp) and idp in social_providers()
         if sso_org:
             # R44: someone the directory deactivated over SCIM must not walk back in through JIT.
             if s.execute(text("SELECT 1 FROM scim_users WHERE org_id=:o AND user_id=:u AND NOT active"),
@@ -222,9 +234,33 @@ def callback(code: str, state: str):
                       {"u": uid, "o": sso_org.org_id, "r": sso_org.default_role})
             org = sso_org.org_id
         else:
-            org = s.execute(text("""SELECT m.org_id FROM memberships m LEFT JOIN org_sso os ON os.org_id = m.org_id
+            # R69: an org that requires MFA does not accept social sign-ins: Keycloak cannot ask a
+            # Google or GitHub login for a second factor, so such a session would bypass the rule.
+            org = s.execute(text("""SELECT m.org_id FROM memberships m JOIN organizations o ON o.id = m.org_id
+                LEFT JOIN org_sso os ON os.org_id = m.org_id
                 WHERE m.user_id=:u AND NOT (COALESCE(os.enforce AND os.enabled, false) AND m.role <> 'owner' AND os.idp_alias IS DISTINCT FROM :idp)
-                ORDER BY m.created_at LIMIT 1"""), {"u": uid, "idp": idp}).scalar()
+                  AND NOT (o.require_mfa AND :social)
+                ORDER BY (m.org_id = ANY(CAST(:inv AS uuid[]))) DESC, m.created_at LIMIT 1"""),
+                {"u": uid, "idp": idp, "social": social, "inv": [i.org_id for i in invited]}).scalar()
+            if org is None and social and s.execute(text("""SELECT 1 FROM memberships m JOIN organizations o ON o.id = m.org_id
+                    WHERE m.user_id=:u AND o.require_mfa"""), {"u": uid}).first():
+                raise HTTPException(403, "your organization requires multi-factor sign-in: sign in with your email and password "
+                                         "(with an authenticator app) or with single sign-on")
+        mfa_org = bool(org) and not sso_org and not idp and s.execute(
+            text("SELECT require_mfa FROM organizations WHERE id=:o"), {"o": org}).scalar()
+    if mfa_org:
+        # R69: a password sign-in to an org that requires MFA must have a second factor. Without one,
+        # Keycloak is told to ask for an authenticator app and the user signs in again to set it up.
+        from .. import keycloak_admin as kc
+        try:
+            has_mfa = bool(kc.mfa_methods(claims["sub"]))
+            if not has_mfa:
+                kc.require_totp_setup(claims["sub"])
+        except kc.KeycloakAdminError as e:
+            log.error("mfa check failed", error=str(e))
+            raise HTTPException(503, "your organization requires multi-factor sign-in, which cannot be checked right now; try again shortly") from e
+        if not has_mfa:
+            return login(next=nxt, login_hint=email, prompt="login")
     sess = sign_session({"sub": claims["sub"], "uid": str(uid), "email": email, "name": claims.get("name"),
                          "org_id": str(org) if org else None, "idp": idp})
     resp = RedirectResponse(f"{settings.web_public_url}{nxt if org else '/onboarding'}")

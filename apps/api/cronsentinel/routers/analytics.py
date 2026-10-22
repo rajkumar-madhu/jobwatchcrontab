@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 from ..auth import Principal, current_principal
 from ..db import tenant_session
-from ..schemas import SeriesOut, JobAnalyticsOut
+from ..schemas import JobAnalyticsOut, SeriesOut, UnusualRunOut
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 
@@ -27,6 +27,18 @@ def series(p: Principal = Depends(current_principal), days: int = Query(14, le=9
               percentile_cont(0.5) WITHIN GROUP (ORDER BY duration_ms) AS p50_ms, percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS p95_ms
             FROM executions WHERE scheduled_ts >= now() - (:d || ' days')::interval AND status<>'running' GROUP BY 1 ORDER BY 1""", d=days),
                 "incidents": _rows(s, f"SELECT date_trunc('{b}', started_at) AS t, count(*) AS n FROM incidents WHERE started_at >= now() - (:d || ' days')::interval GROUP BY 1 ORDER BY 1", d=days)}
+
+
+@router.get("/unusual-runs", response_model=list[UnusualRunOut])
+def unusual_runs(p: Principal = Depends(current_principal), days: int = Query(7, ge=1, le=90), limit: int = Query(20, ge=1, le=100)):
+    """R69: the most recent runs flagged as unusual for their job (R68), newest first."""
+    with tenant_session(p.org_id) as s:
+        return _rows(s, """
+            SELECT e.id AS execution_id, e.job_id, j.name AS job_name, e.status::text AS status,
+                   COALESCE(e.agent_ts_end, e.server_received_ts) AS finished_at, e.host, e.meta->'anomalies' AS anomalies
+            FROM executions e JOIN jobs j ON j.id = e.job_id
+            WHERE e.meta ? 'anomalies' AND e.scheduled_ts >= now() - (:d || ' days')::interval
+            ORDER BY COALESCE(e.agent_ts_end, e.server_received_ts) DESC LIMIT :n""", d=days, n=limit)
 
 
 @router.get("/jobs", response_model=list[JobAnalyticsOut])

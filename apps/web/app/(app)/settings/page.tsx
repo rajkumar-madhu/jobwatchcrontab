@@ -4,6 +4,8 @@ import { useState } from "react";
 import { api, mutate, getKey, setKey, type Job } from "@/lib/api";
 import { Page, ErrorBox } from "@/components/ui";
 import { SsoSettings } from "@/components/sso-settings";
+import { AuditStreams } from "@/components/audit-streams";
+import { SecuritySettings, TeamSettings } from "@/components/team-settings";
 
 export default function SettingsPage() {
   const qc = useQueryClient();
@@ -17,12 +19,18 @@ export default function SettingsPage() {
   const inp = "mt-1 w-full rounded-md border border-line bg-panel px-2 py-1.5 text-sm";
   return (
     <Page title="Settings">
-      <div className="max-w-2xl space-y-10 text-sm">
+      <div className="max-w-3xl space-y-10 text-sm">
         <section><h2 className="mb-2 font-medium">Account</h2>
           {sess.data ? <p>Signed in as <b>{sess.data.user.email}</b>{sess.data.orgs?.length > 1 && <> · {sess.data.orgs.length} workspaces</>}</p>
             : <p className="text-mute">Not signed in with an account. <a className="underline" href={`${process.env.NEXT_PUBLIC_API_URL}/auth/login?next=/settings`}>Sign in</a> or use an API key below.</p>}</section>
+        <section aria-labelledby="team-h"><h2 id="team-h" className="mb-2 font-medium">Team</h2>
+          <TeamSettings role={sess.data?.orgs?.find((o: any) => o.id === sess.data?.org_id)?.role} /></section>
+        <section aria-labelledby="security-h"><h2 id="security-h" className="mb-2 font-medium">Sign-in security</h2>
+          <SecuritySettings role={sess.data?.orgs?.find((o: any) => o.id === sess.data?.org_id)?.role} /></section>
         <section><h2 className="mb-2 font-medium">Single sign-on</h2>
           <SsoSettings role={sess.data?.orgs?.find((o: any) => o.id === sess.data?.org_id)?.role} /></section>
+        <section><h2 className="mb-2 font-medium">Audit log streaming</h2>
+          <AuditStreams role={sess.data?.orgs?.find((o: any) => o.id === sess.data?.org_id)?.role} /></section>
         <section><h2 className="mb-2 font-medium">API key (alternative to sign-in)</h2>
           <input className={`${inp} font-mono`} value={k} onChange={(e) => { setK(e.target.value); setSaved(false); }} placeholder="cs_xxxx.…" />
           <button className="btn btn-primary mt-2" onClick={() => { setKey(k); setSaved(true); }}>Save key</button>{saved && <span className="ml-2 text-ok">Saved.</span>}

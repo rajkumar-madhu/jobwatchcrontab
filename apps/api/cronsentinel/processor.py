@@ -1,12 +1,16 @@
 """Execution event → DB state. Shared by ingest (sync fallback) and NATS worker.
 Idempotent on (execution_id, sequence) — D5. Monotonic status."""
 import hashlib
+import json
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import text
 from ulid import ULID
 
 from .config import settings
+from .assertions import clean_metrics
+from .assertions import evaluate as evaluate_assertions
+from . import anomaly
 from .redaction import redact
 from .state_machine import Event, JobStatus, transition
 
@@ -88,6 +92,7 @@ def process(s, ev: dict) -> dict | None:
     server_ts = _parse_ts(ev.get("server_ts")) or datetime.now(UTC)
     agent_ts = _parse_ts(ev.get("agent_ts"))
     meta = dict(ev.get("meta") or {})
+    anomalies: list[dict] = []   # R68: set when a successful run is unusual and the job only warns
     if agent_ts and not (server_ts - MAX_PAST_SKEW <= agent_ts <= server_ts + MAX_FUTURE_SKEW):
         meta["agent_ts_rejected"] = agent_ts.isoformat()
         agent_ts = None
@@ -141,25 +146,48 @@ def process(s, ev: dict) -> dict | None:
     else:
         final = "success" if ev["kind"] == "success" else "failed"
         end_ts = agent_ts or server_ts
+        metrics = clean_metrics(ev.get("metrics") or {})
         row = s.execute(text("SELECT scheduled_ts, agent_ts_start FROM executions WHERE id=:id AND org_id=:org"), {"id": exec_id, "org": org}).first()
         if row:
             start = row.agent_ts_start
             duration = ev.get("duration_ms") or (int((end_ts - start).total_seconds() * 1000) if start else None)
-            s.execute(text(
-                "UPDATE executions SET status=:st, agent_ts_end=:end, duration_ms=:dur, exit_code=:ec, host=COALESCE(:host, host), "
-                "sequence_max=GREATEST(sequence_max, :seq) WHERE id=:id AND org_id=:org AND :rank >= (CASE status WHEN 'running' THEN 1 WHEN 'scheduled' THEN 0 ELSE 2 END)"),
-                {"st": final, "end": end_ts, "dur": duration, "ec": ev.get("exit_code"), "host": ev.get("host"), "seq": ev.get("sequence", 0),
-                 "id": exec_id, "org": org, "rank": _ORDER[final]})
         else:
-            # success/fail without prior start (simple ping mode): synthesize a single-point execution
             duration = ev.get("duration_ms")
             start = end_ts if duration is None else datetime.fromtimestamp(end_ts.timestamp() - duration / 1000, tz=UTC)
+        # R54: a run that reports success must also satisfy the job's assertions; otherwise it is a
+        # failure, with the broken rules recorded, and the normal alert/incident flow takes over.
+        extra_meta: dict = {}
+        if final == "success":
+            cfg = s.execute(text("SELECT assertions, anomaly_sensitivity, anomaly_action FROM jobs WHERE id=:j"), {"j": job_id}).first()
+            rules = (cfg.assertions if cfg else None) or []
+            broken = evaluate_assertions(rules, metrics, duration) if rules else []
+            if broken:
+                final, extra_meta = "failed", {"assertion_failures": broken}
+            elif cfg and cfg.anomaly_sensitivity != "off":
+                # R68: compare with the job's own recent successful runs. Warn mode keeps the run a
+                # success and raises the `anomaly` alert condition; fail mode makes it a failure.
+                found = anomaly.detect(duration, metrics, anomaly.load_history(s, job_id, exec_id), cfg.anomaly_sensitivity)
+                if found:
+                    extra_meta = {"anomalies": found}
+                    if cfg.anomaly_action == "fail":
+                        final = "failed"
+                    else:
+                        anomalies = found
+        if row:
             s.execute(text(
-                "INSERT INTO executions (id, org_id, job_id, agent_id, status, scheduled_ts, agent_ts_start, agent_ts_end, server_received_ts, skew_ms, duration_ms, exit_code, host, sequence_max, meta) "
-                "VALUES (:id, :org, :job, :agent, :st, :sched, :start, :end, :sts, :skew, :dur, :ec, :host, :seq, CAST(:meta AS jsonb)) ON CONFLICT DO NOTHING"),
+                "UPDATE executions SET status=:st, agent_ts_end=:end, duration_ms=:dur, exit_code=:ec, host=COALESCE(:host, host), "
+                "metrics=metrics || CAST(:metrics AS jsonb), meta=meta || CAST(:xm AS jsonb), "
+                "sequence_max=GREATEST(sequence_max, :seq) WHERE id=:id AND org_id=:org AND :rank >= (CASE status WHEN 'running' THEN 1 WHEN 'scheduled' THEN 0 ELSE 2 END)"),
+                {"st": final, "end": end_ts, "dur": duration, "ec": ev.get("exit_code"), "host": ev.get("host"), "seq": ev.get("sequence", 0),
+                 "metrics": json.dumps(metrics), "xm": json.dumps(extra_meta), "id": exec_id, "org": org, "rank": _ORDER[final]})
+        else:
+            # success/fail without prior start (simple ping mode): synthesize a single-point execution
+            s.execute(text(
+                "INSERT INTO executions (id, org_id, job_id, agent_id, status, scheduled_ts, agent_ts_start, agent_ts_end, server_received_ts, skew_ms, duration_ms, exit_code, host, sequence_max, meta, metrics) "
+                "VALUES (:id, :org, :job, :agent, :st, :sched, :start, :end, :sts, :skew, :dur, :ec, :host, :seq, CAST(:meta AS jsonb), CAST(:metrics AS jsonb)) ON CONFLICT DO NOTHING"),
                 {"id": exec_id, "org": org, "job": job_id, "agent": ev.get("agent_id"), "st": final, "sched": start, "start": start, "end": end_ts,
                  "sts": server_ts, "skew": skew_ms, "dur": duration, "ec": ev.get("exit_code"), "host": ev.get("host"), "seq": ev.get("sequence", 0),
-                 "meta": __import__("json").dumps(ev.get("meta", {}))})
+                 "meta": json.dumps({**(ev.get("meta") or {}), **extra_meta}), "metrics": json.dumps(metrics)})
         for stream in ("stdout", "stderr"):
             tail = ev.get(f"{stream}_tail")
             if tail:
@@ -189,9 +217,12 @@ def process(s, ev: dict) -> dict | None:
     # outbound exporter both read org_id and the four-state fields off it. Keep it in sync with
     # reconciler.recompute_state's event, which is the other producer on this subject.
     jb = s.execute(text("SELECT job_state::text, unknown_reason, consecutive_failures FROM jobs WHERE id=:id"), {"id": job_id}).first()
-    return {"org_id": str(org), "job_id": str(job_id), "execution_id": exec_id,
+    out = {"org_id": str(org), "job_id": str(job_id), "execution_id": exec_id,
             "prev_status": prev.value, "new_status": new.value,
             "prev_state": None, "new_state": jb.job_state if jb else None,
             "unknown_reason": jb.unknown_reason if jb else None,
             "consecutive_failures": jb.consecutive_failures if jb else 0,
             "occurred_at": server_ts.isoformat()}
+    if anomalies:
+        out["anomalies"] = [{"kind": f["kind"], "field": f["field"], "message": f["message"]} for f in anomalies]
+    return out

@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     web_public_url: str = "http://localhost:3000"
     # R48: public base URL of the ingest service (ping URLs). Empty = same host as the API.
     ingest_public_url: str = ""
+    # R62: the Linux agent installer served at <ingest>/agent/install.sh fetches binaries from
+    # <agent_download_base>/<agent_version>/… (e.g. https://github.com/<owner>/<repo>/releases/download, v0.2.0)
+    agent_download_base: str = ""
+    agent_version: str = ""
+    agent_install_script: str = ""   # path to install.sh; default: the repository copy
     session_ttl_s: int = 12 * 3600
     cookie_secure: bool = False
     copilot_provider: str = "openai"          # openai-compatible (vLLM/Ollama) | anthropic
