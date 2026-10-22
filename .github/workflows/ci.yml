@@ -6,10 +6,13 @@ jobs:
     services:
       postgres: {image: postgres:16-alpine, env: {POSTGRES_USER: cronsentinel, POSTGRES_PASSWORD: cronsentinel, POSTGRES_DB: cronsentinel}, ports: ["5432:5432"], options: --health-cmd pg_isready --health-interval 5s --health-retries 10}
       redis: {image: "redis:7-alpine", ports: ["6379:6379"]}
-      nats: {image: "nats:2.10-alpine", ports: ["4222:4222"], options: --entrypoint "/nats-server -js"}
     env: {DATABASE_URL: postgresql+psycopg://cronsentinel:cronsentinel@localhost:5432/cronsentinel, JOBWATCH_APP_DB_PASSWORD: app}   # owner URL: migrations only; the test step overrides it with the app role
     steps:
       - uses: actions/checkout@v4
+      # R72: NATS runs as a step, not a service. The service form passed `--entrypoint "/nats-server -js"`,
+      # which the current runner hands to Docker as one binary path ("/nats-server -js": no such file).
+      # Same form the fullstack workflow has used since R49.
+      - run: docker run -d --name nats -p 4222:4222 nats:2.10-alpine -js
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
       # migrations run as the owner and provision the app role; tests run AS the app role so RLS is real
