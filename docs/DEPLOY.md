@@ -51,6 +51,20 @@ database migrations first, smoke-tests the live URLs and rolls back if the smoke
 - **Production:** Actions → deploy → Run workflow → `production`, after staging looks right. Waits for a reviewer.
 - Non-secret per-environment settings (replica counts, NATS size) live in `deploy/environments/*.yaml`.
 
+## Deploying from a workstation (R72)
+When the cluster is one you reach with `kubectl` and the GitHub Environment is not set up,
+`deploy/release-local.sh` does what the workflow does — build the images for the domain, push them
+(or `kind load` them), run the migrate hook, `helm upgrade`, smoke test, roll back on failure:
+
+```bash
+deploy/release-local.sh --domain jobwatch.wecrew.in --ingest-domain ingest.jobwatch.wecrew.in \
+  --context <kube-context> --registry ghcr.io/<owner> \
+  --secret-values ~/.config/jobwatch/production-secrets.yaml --tag v0.72.0
+```
+`secret-values.yaml` carries the values the GitHub Environment would (see the header of
+`.github/workflows/deploy.yml`); it is read by Helm only. Take a database backup first — the
+migrate hook is not rolled back.
+
 ## After the first staging deploy
 1. Sign in, create a job, put its ping token in `SMOKE_PING_TOKEN`.
 2. `tools/sso-e2e` against the staging Keycloak (SSO and SCIM, OIDC and SAML).
