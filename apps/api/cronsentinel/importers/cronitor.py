@@ -16,7 +16,8 @@ Mapping:
   "every N minutes|hours|days"   cron when the period divides the clock, as for Healthchecks intervals
   "at HH:MM"                     daily cron at that time
   several schedules              the first one is used; the rest are reported
-  assertion metric.duration < X  expected runtime (timeout); other assertions reported, not enforced yet
+  assertion metric.duration < X  expected runtime (timeout); other per-run assertions → job assertions (R54);
+                                 aggregate ones (… over 24 hours) reported, not imported
   note / tags / paused           description / tags / paused
 
 Ping URLs: Cronitor scripts call https://cronitor.link/p/<telemetry key>/<monitor key>?state=… . If the
@@ -25,7 +26,7 @@ import is given the telemetry key those scripts use, each job's ping token becom
 """
 import re
 
-from .. import netguard, schedule
+from .. import assertions, netguard, schedule
 
 CRONITOR_VERSION = "2025-11-28"   # lists every schedule (`schedules`); 2020-10-01 shows only one
 PAGE_SIZE = 100
@@ -119,14 +120,18 @@ def map_monitor(mon: dict, telemetry_key: str | None) -> dict:
     if len(scheds) > 1:
         notes.append(f"Cronitor had {len(scheds)} schedules; only '{scheds[0]}' was imported")
     grace = int(mon.get("grace_seconds") if mon.get("grace_seconds") is not None else (60 if mtype == "job" else 0))
-    runtime = None
+    runtime, rules = None, []
     for a in mon.get("assertions") or []:
         m = re.fullmatch(r"\s*metric\.duration\s*<\s*(.+)", str(a))
         sec = _duration_seconds(m.group(1)) if m else None
         if sec:
-            runtime = sec
-        else:
-            notes.append(f"assertion '{a}' not imported")
+            runtime = sec                  # a timeout while the run is still going
+            continue
+        try:                               # R54: other per-run rules are enforced as job assertions
+            assertions.parse(str(a))
+            rules.append(" ".join(str(a).split()))
+        except assertions.InvalidAssertion as e:
+            notes.append(f"assertion not imported: {e}")
     tags = [str(t) for t in (mon.get("tags") or []) if str(t).strip()][:20]
     token = f"{telemetry_key}/{key}" if telemetry_key and KEY_RE.fullmatch(key) else None
     status = "imported" if cron and not any("became" in x for x in notes) else ("converted" if cron else "needs_schedule")
@@ -134,5 +139,5 @@ def map_monitor(mon: dict, telemetry_key: str | None) -> dict:
         notes.append("Cronitor environments are not separated in JobWatch; all pings go to this job")
     return {"job": {"name": name, "description": (mon.get("note") or None), "tags": tags, "kind": "heartbeat",
                     "paused": bool(mon.get("paused")), "tz": mon.get("timezone") or "UTC", "schedule_expr": cron,
-                    "grace_s": grace + extra_grace, "expected_runtime_s": runtime},
+                    "grace_s": grace + extra_grace, "expected_runtime_s": runtime, "assertions": rules[:assertions.MAX_ASSERTIONS]},
             "token": token, "status": status, "note": "; ".join(notes) or None}

@@ -21,6 +21,8 @@ check "web app"               "$APP/welcome"          200 JobWatch
 check "ingest health"         "$INGEST/healthz"       200 ok
 check "ingest serves pings"   "$INGEST/ping/smoke-unknown-token-$(date +%s)" 404
 check "Healthchecks paths"    "$INGEST/hc/00000000-0000-0000-0000-000000000000" 404
+# R62: the agent installer is served with this deployment's defaults (deploy.yml sets them)
+check "agent installer"       "$INGEST/agent/install.sh" 200 "DEFAULT_SERVER=\"$INGEST\""
 if [ -n "${SMOKE_PING_TOKEN:-}" ]; then
   check "ping accepted end to end" "$INGEST/ping/$SMOKE_PING_TOKEN" 200
 fi

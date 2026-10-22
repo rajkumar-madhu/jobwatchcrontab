@@ -1,58 +1,121 @@
 "use client";
+/* R69 onboarding: organization → how jobs report → install → first signal → invite the team → alerts.
+   Each step does the real thing through the API (bootstrap token, first job, invitations), and every
+   step after the first can be skipped. */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
+import { Activity, Check } from "lucide-react";
 import { api, mutate, INGEST_URL } from "@/lib/api";
+import { ErrorBox } from "@/components/ui";
 
 const API = process.env.NEXT_PUBLIC_API_URL; const INGEST = INGEST_URL;
 const METHODS = [
-  ["agent", "Linux agent", "Discovers crontabs and systemd timers, captures exit codes and logs."],
-  ["k8s", "Kubernetes", "Helm chart watches CronJobs, Jobs and Pods across the cluster or chosen namespaces."],
-  ["heartbeat", "Heartbeat URL", "Add one curl to any script, pipeline step or container. Works anywhere."],
-  ["api", "API / webhook", "Post JSON with status, duration and exit code from your own code."],
+  ["agent", "Linux servers", "The agent finds crontabs and systemd timers and reports exit codes, duration and output."],
+  ["k8s", "Kubernetes", "A Helm-installed agent watches CronJobs and Jobs in the whole cluster or chosen namespaces."],
+  ["heartbeat", "Ping URL", "One curl at the end of any script, pipeline step or container. Works anywhere."],
+  ["api", "API", "Post status, duration and exit code as JSON from your own code."],
 ] as const;
+const STEPS = ["Organization", "Connect", "Install", "First signal", "Team", "Alerts"];
+const ROLES = [["developer", "Developer"], ["sre", "SRE"], ["devops", "DevOps"], ["viewer", "Viewer"], ["admin", "Admin"]] as const;
+
+function Pre({ children }: { children: string }) {
+  const [c, setC] = useState(false);
+  return <div className="relative mt-3"><pre className="overflow-auto rounded-md border border-line bg-panel p-3 pr-20 font-mono text-xs">{children}</pre>
+    <button type="button" className="btn absolute right-2 top-2 py-1 text-xs" onClick={async () => { try { await navigator.clipboard.writeText(children); setC(true); } catch { setC(false); } }}>{c ? "Copied" : "Copy"}</button></div>;
+}
 
 export default function Onboarding() {
   const sess = useQuery({ queryKey: ["session"], queryFn: () => api<{ user: { email: string }; org_id: string | null }>("/auth/session"), retry: false });
   const [step, setStep] = useState(1); const [org, setOrg] = useState(""); const [method, setMethod] = useState<string>("heartbeat");
   const [job, setJob] = useState<any>(null); const [tok, setTok] = useState<any>(null);
-  const createOrg = useMutation({ mutationFn: () => mutate("/auth/orgs", "post", { body: { name: org } }) as Promise<{ org_id: string }>, onSuccess: () => { sess.refetch(); setStep(2); } });
-  const mkJob = useMutation({ mutationFn: async () => { const ws = await api<{ id: string }[]>("/api/v1/workspaces"); return mutate("/api/v1/jobs", "post", { body: { workspace_id: ws[0].id, name: "my-first-job", grace_s: 300 } }); }, onSuccess: (j) => { setJob(j); setStep(4); } });
-  const mkTok = useMutation({ mutationFn: () => mutate("/api/v1/agents/bootstrap-token", "post", { body: {} }), onSuccess: (t) => { setTok(t); setStep(4); } });
+  const [cluster, setCluster] = useState("production");
+  const [invites, setInvites] = useState([{ email: "", role: "developer" }]);
+  const [sent, setSent] = useState<{ email: string; url?: string | null }[]>([]);
+  const createOrg = useMutation({ mutationFn: () => mutate("/auth/orgs" as any, "post", { body: { name: org } } as any) as Promise<{ org_id: string }>, onSuccess: () => { sess.refetch(); setStep(2); } });
+  const mkJob = useMutation({ mutationFn: async () => { const ws = await api<{ id: string }[]>("/api/v1/workspaces"); return mutate("/api/v1/jobs", "post", { body: { workspace_id: ws[0].id, name: "my-first-job", grace_s: 300 } as any }); }, onSuccess: (j) => { setJob(j); setStep(4); } });
+  const mkTok = useMutation({ mutationFn: () => mutate("/api/v1/agents/bootstrap-token" as any, "post", { body: {} } as any), onSuccess: (t) => { setTok(t); setStep(4); } });
+  const sendInvites = useMutation({ mutationFn: async () => {
+    const out: { email: string; url?: string | null }[] = [];
+    for (const i of invites.filter((x) => x.email.trim())) {
+      const r = await mutate("/api/v1/org/invites" as any, "post", { body: i } as any) as { email: string; invite_url?: string | null };
+      out.push({ email: r.email, url: r.invite_url });
+    }
+    return out;
+  }, onSuccess: (r) => setSent(r) });
   const jobs = useQuery({ queryKey: ["jobs", "onb"], queryFn: () => api<{ items: any[] }>("/api/v1/jobs?limit=5"), enabled: step === 4, refetchInterval: 3000 });
-  const detected = (jobs.data?.items ?? []).filter((j) => j.last_run_at || j.source === "agent");
+  const detected = (jobs.data?.items ?? []).filter((j) => j.last_run_at || j.source === "agent" || j.source === "k8s");
 
-  if (sess.isError) return <Wrap><p>You need to sign in first.</p><a className="btn btn-primary mt-4" href={`${API}/auth/login?next=/onboarding`}>Sign in</a></Wrap>;
+  if (sess.isError) return <Wrap step={0}><h1 className="text-xl font-semibold">Sign in to continue</h1><p className="mt-1 text-sm text-mute">Setting up an organization needs a signed-in account.</p><a className="btn btn-primary mt-4" href={`${API}/auth/login?next=/onboarding`}>Sign in</a></Wrap>;
   if (sess.data?.org_id && step === 1) setStep(2);
-  const STEPS = ["Create workspace", "Choose method", "Install", "Detect jobs", "Alerting", "Done"];
+  const token = tok?.token ?? tok?.bootstrap_token ?? "csb_…";
+
   return (
-    <Wrap>
-      <ol className="mb-8 flex flex-wrap gap-x-5 gap-y-1 text-xs text-mute">{STEPS.map((s, i) => <li key={s} className={i + 1 === step ? "font-medium text-ink" : i + 1 < step ? "text-ok" : ""}>{i + 1}. {s}</li>)}</ol>
-      {step === 1 && <><h1 className="text-xl font-semibold">Name your workspace</h1><p className="mt-1 text-sm text-mute">Usually your company or team. You can add more later.</p>
-        <input className="mt-4 w-full rounded-md border border-line bg-panel px-3 py-2" placeholder="Acme Ops" value={org} onChange={(e) => setOrg(e.target.value)} />
-        <button className="btn btn-primary mt-4" disabled={!org} onClick={() => createOrg.mutate()}>Create workspace</button></>}
-      {step === 2 && <><h1 className="text-xl font-semibold">How do you want to monitor?</h1>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">{METHODS.map(([k, t, d]) => (
-          <button key={k} onClick={() => setMethod(k)} className={`rounded-lg border p-4 text-left ${method === k ? "border-accent bg-accent/5" : "border-line hover:border-mute/60"}`}><div className="font-medium">{t}</div><div className="mt-1 text-sm text-mute">{d}</div></button>))}</div>
-        <button className="btn btn-primary mt-4" onClick={() => setStep(3)}>Continue</button></>}
+    <Wrap step={step}>
+      {step === 1 && <><h1 className="text-xl font-semibold">Name your organization</h1><p className="mt-1 text-sm text-mute">Usually your company. Teams, environments and workspaces live inside it, and you can add more later.</p>
+        <form onSubmit={(e) => { e.preventDefault(); createOrg.mutate(); }}>
+          <label className="mt-5 block text-sm font-medium" htmlFor="org-name">Organization name</label>
+          <input id="org-name" className="input mt-1.5" placeholder="Acme Ops" value={org} onChange={(e) => setOrg(e.target.value)} autoFocus />
+          <button className="btn btn-primary mt-4" type="submit" disabled={!org.trim() || createOrg.isPending}>Create organization</button></form>
+        {createOrg.error && <div className="mt-3"><ErrorBox error={createOrg.error} /></div>}</>}
+      {step === 2 && <><h1 className="text-xl font-semibold">How do your jobs run?</h1><p className="mt-1 text-sm text-mute">Pick one to start. You can connect the others later.</p>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Connection method">{METHODS.map(([k, t, d]) => (
+          <button key={k} type="button" role="radio" aria-checked={method === k} onClick={() => setMethod(k)} className={`flex flex-col items-start justify-start rounded-lg border p-4 text-left ${method === k ? "border-accent bg-accent/5" : "border-line hover:border-mute/60"}`}><div className="font-medium">{t}</div><div className="mt-1 text-sm text-mute">{d}</div></button>))}</div>
+        <button className="btn btn-primary mt-5" onClick={() => setStep(3)}>Continue</button></>}
       {step === 3 && <><h1 className="text-xl font-semibold">Install</h1>
-        {method === "agent" && <><p className="mt-1 text-sm text-mute">Generate a one-time token, then run the installer on the server.</p><button className="btn btn-primary mt-4" onClick={() => mkTok.mutate()}>Generate install command</button></>}
-        {method === "k8s" && <><pre className="mt-3 rounded-md border border-line bg-panel p-3 font-mono text-xs">helm repo add cronsentinel https://charts.example.com{"\n"}helm install cronsentinel-agent cronsentinel/agent \{"\n"}  --set server={INGEST} --set bootstrapToken=&lt;token&gt;</pre><p className="mt-2 text-sm text-warn">Kubernetes agent ships in the next release — heartbeat works today.</p><button className="btn mt-3" onClick={() => setMethod("heartbeat")}>Use heartbeat instead</button></>}
-        {(method === "heartbeat" || method === "api") && <><p className="mt-1 text-sm text-mute">We'll create a first job and give you its URL.</p><button className="btn btn-primary mt-4" onClick={() => mkJob.mutate()}>Create my first job</button></>}</>}
-      {step === 4 && <><h1 className="text-xl font-semibold">Detect scheduled jobs</h1>
-        {tok && <pre className="mt-3 overflow-auto rounded-md border border-line bg-panel p-3 font-mono text-xs">{tok.install}</pre>}
-        {job && <pre className="mt-3 overflow-auto rounded-md border border-line bg-panel p-3 font-mono text-xs">{method === "api"
+        {method === "agent" && <><p className="mt-1 text-sm text-mute">Generate a one-time install command (valid 24 hours), then run it on each server as root.</p><button className="btn btn-primary mt-4" disabled={mkTok.isPending} onClick={() => mkTok.mutate()}>Generate install command</button></>}
+        {method === "k8s" && <><p className="mt-1 text-sm text-mute">Name the cluster as it should appear in alerts, then generate a one-time token (valid 24 hours) for the Helm install.</p>
+          <label className="mt-4 block text-sm font-medium" htmlFor="cluster">Cluster name</label><input id="cluster" className="input mt-1.5 max-w-xs" value={cluster} onChange={(e) => setCluster(e.target.value)} />
+          <button className="btn btn-primary mt-4 block" disabled={mkTok.isPending || !cluster.trim()} onClick={() => mkTok.mutate()}>Generate Helm command</button></>}
+        {(method === "heartbeat" || method === "api") && <><p className="mt-1 text-sm text-mute">We will create a first job and give you its URL.</p><button className="btn btn-primary mt-4" disabled={mkJob.isPending} onClick={() => mkJob.mutate()}>Create my first job</button></>}
+        {(mkTok.error || mkJob.error) && <div className="mt-3"><ErrorBox error={mkTok.error ?? mkJob.error} /></div>}</>}
+      {step === 4 && <><h1 className="text-xl font-semibold">Waiting for the first signal</h1>
+        {tok && method === "agent" && (tok.install ? <Pre>{tok.install}</Pre>
+          : <p className="mt-3 rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm">The installer cannot be served yet: {tok.install_problem ?? "the server's agent download settings are incomplete"}. See <Link className="underline" href="/docs/linux-agent">Linux agent</Link> for a manual install with token <code className="font-mono">{token}</code>.</p>)}
+        {tok && method === "k8s" && <Pre>{`helm upgrade --install jobwatch-agent infra/helm/cronsentinel-agent -n jobwatch --create-namespace \\\n  --set server=${INGEST} \\\n  --set clusterName=${cluster.trim() || "production"} \\\n  --set bootstrapToken=${token}`}</Pre>}
+        {job && <Pre>{method === "api"
           ? `curl -X POST ${INGEST}/api/v1/heartbeat/${job.heartbeat_token} \\\n  -H 'Content-Type: application/json' \\\n  -d '{"status":"success","duration_ms":1240,"exit_code":0}'`
-          : `# add to the end of your script or pipeline step\ncurl -fsS ${INGEST}/ping/${job.heartbeat_token}`}</pre>}
-        {job && <p className="mt-2 text-xs text-mute">Copy this URL now. It is stored hashed and is shown only once; you can issue a new one from the job page.</p>}
-        <p className="mt-3 text-sm">{detected.length ? <span className="text-ok">✓ {detected.length} job{detected.length > 1 ? "s" : ""} detected: {detected.map((j) => j.name).join(", ")}</span> : <span className="text-mute">Waiting for the first signal… this page updates automatically.</span>}</p>
-        <div className="mt-4 flex gap-2"><button className="btn btn-primary" disabled={!detected.length} onClick={() => setStep(5)}>Continue</button><button className="btn" onClick={() => setStep(5)}>Skip for now</button></div></>}
-      {step === 5 && <><h1 className="text-xl font-semibold">Where should alerts go?</h1><p className="mt-1 text-sm text-mute">Add Slack, email or a webhook, then a rule such as "any job failed". You can do this later too.</p>
-        <div className="mt-4 flex gap-2"><Link className="btn btn-primary" href="/alerting">Set up alerting</Link><button className="btn" onClick={() => setStep(6)}>Skip</button></div></>}
-      {step === 6 && <><h1 className="text-xl font-semibold">You're monitoring.</h1><p className="mt-1 text-sm text-mute">Missed runs, failures and slow-downs will show on the overview first.</p><Link className="btn btn-primary mt-4" href="/">Open the dashboard</Link></>}
+          : `# add to the end of your script or pipeline step\ncurl -fsS ${INGEST}/ping/${job.heartbeat_token}`}</Pre>}
+        {job && <p className="mt-2 text-xs text-mute">Copy this now. The token is stored hashed and shown only once; you can issue a new one from the job page.</p>}
+        <p className="mt-4 text-sm" aria-live="polite">{detected.length ? <span className="text-ok">✓ {detected.length} job{detected.length > 1 ? "s" : ""} detected: {detected.map((j) => j.name).join(", ")}</span> : <span className="text-mute">Listening… this page updates by itself.</span>}</p>
+        <div className="mt-5 flex gap-2"><button className="btn btn-primary" disabled={!detected.length} onClick={() => setStep(5)}>Continue</button><button className="btn" onClick={() => setStep(5)}>Skip for now</button></div></>}
+      {step === 5 && <><h1 className="text-xl font-semibold">Invite your team</h1><p className="mt-1 text-sm text-mute">They join when they sign up or sign in with the invited email. With single sign-on, people on your verified domain can also join on their own.</p>
+        {!sent.length ? <form className="mt-5 space-y-2" onSubmit={(e) => { e.preventDefault(); sendInvites.mutate(); }}>
+          {invites.map((inv, i) => (
+            <div key={i} className="flex flex-wrap gap-2">
+              <input aria-label={`Teammate ${i + 1} email`} className="input min-w-0 flex-1 basis-56" type="email" placeholder="name@company.com" value={inv.email}
+                onChange={(e) => setInvites(invites.map((x, j) => (j === i ? { ...x, email: e.target.value } : x)))} />
+              <select aria-label={`Teammate ${i + 1} role`} className="input w-36" value={inv.role} onChange={(e) => setInvites(invites.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}>
+                {ROLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+            </div>))}
+          {invites.length < 10 && <button type="button" className="text-sm text-accent hover:underline" onClick={() => setInvites([...invites, { email: "", role: "developer" }])}>Add another</button>}
+          {sendInvites.error && <ErrorBox error={sendInvites.error} />}
+          <div className="flex gap-2 pt-3"><button className="btn btn-primary" type="submit" disabled={sendInvites.isPending || !invites.some((x) => x.email.trim())}>Send invitations</button>
+            <button type="button" className="btn" onClick={() => setStep(6)}>Skip</button></div>
+        </form> : <div className="mt-5 space-y-3">
+          <p className="text-sm text-ok">✓ {sent.length} invitation{sent.length > 1 ? "s" : ""} created. Send each person their link; links are shown once and expire in 7 days.</p>
+          {sent.map((x) => <div key={x.email}><div className="text-sm font-medium">{x.email}</div>{x.url && <Pre>{x.url}</Pre>}</div>)}
+          <button className="btn btn-primary" onClick={() => setStep(6)}>Continue</button></div>}</>}
+      {step === 6 && <><h1 className="text-xl font-semibold">Where should alerts go?</h1><p className="mt-1 text-sm text-mute">Connect Slack, Microsoft Teams, email, PagerDuty or a webhook, then add a rule such as "any production job failed".</p>
+        <div className="mt-5 flex gap-2"><Link className="btn btn-primary" href="/alerting">Set up alerting</Link><Link className="btn" href="/">Go to the dashboard</Link></div></>}
     </Wrap>
   );
 }
-function Wrap({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-xl px-6 py-14"><Link href="/welcome" className="mb-10 flex items-center gap-2 font-semibold"><span className="dot dot-healthy" />WeCrew JobWatch</Link>{children}</main>;
+
+function Wrap({ step, children }: { step: number; children: React.ReactNode }) {
+  return (
+    <main className="min-h-screen bg-bg">
+      <header className="border-b border-line bg-panel"><div className="mx-auto flex max-w-3xl items-center gap-2 px-5 py-4 font-display font-semibold">
+        <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-accent"><Activity size={15} aria-hidden /></span>Set up WeCrew JobWatch</div></header>
+      <div className="mx-auto max-w-3xl px-5 py-10">
+        {step > 0 && <ol className="mb-10 grid grid-cols-3 gap-2 sm:grid-cols-6" aria-label="Setup steps">{STEPS.map((s, i) => {
+          const n = i + 1, done = n < step, cur = n === step;
+          return <li key={s} aria-current={cur ? "step" : undefined} className="flex items-center gap-2 text-xs">
+            <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border text-[11px] font-semibold ${done ? "border-ok bg-ok text-[rgb(var(--bg))]" : cur ? "border-accent text-accent" : "border-line text-mute"}`}>{done ? <Check size={12} aria-hidden /> : n}</span>
+            <span className={cur ? "font-medium" : "text-mute"}>{s}</span></li>;
+        })}</ol>}
+        <div className="rounded-lg border border-line bg-panel p-6 sm:p-8">{children}</div>
+      </div>
+    </main>
+  );
 }

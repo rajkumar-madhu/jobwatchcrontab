@@ -176,6 +176,10 @@ def test_6_a_missed_run_is_detected_and_alerted_with_no_heartbeat_at_all(wired):
     httpx.post(f"{INGEST}/heartbeat/{tok}/success", timeout=10)
     wait_for(lambda: _job(wired)["status"] in ("healthy", "recovered"), 45, 1, "recovery before the silence leg")
     before = len(_hooks_for("miss"))
-    # A '* * * * *' slot with zero grace: worst case ~60s until the next slot plus one reconciler tick.
-    wait_for(lambda: _job(wired)["status"] in ("missed", "late"), 150, 2, "reconciler to flag the silent job")
+    # A '* * * * *' slot with zero grace. A run binds to the nearest open slot up to 90 s BEFORE it is
+    # due (processor.attach_slot), so the heartbeat above may have filled the next minute's slot: the
+    # first slot that can go unfilled is up to two minutes away. Worst case ≈ 120 s + one reconciler
+    # interval (30 s) + tick time and the alert pipeline. The old 150 s budget assumed one minute and
+    # failed intermittently (R53, R63); 240 s covers the real worst case with headroom.
+    wait_for(lambda: _job(wired)["status"] in ("missed", "late"), 240, 2, "reconciler to flag the silent job")
     wait_for(lambda: len(_hooks_for("miss")) > before or len(_hooks_for("late")) > 0, 60, 1, "the missed-run alert to reach the webhook")

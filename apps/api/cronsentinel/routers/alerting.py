@@ -15,7 +15,9 @@ router = APIRouter(prefix="/api/v1/alerts", tags=["alerting"])
 
 _KINDS = {"email": ["host", "from", "to"], "slack": ["webhook_url"], "teams": ["webhook_url"], "discord": ["webhook_url"],
           "telegram": ["bot_token", "chat_id"], "webhook": ["url"],
-          "pagerduty": ["routing_key"], "opsgenie": ["api_key"]}   # R42
+          "pagerduty": ["routing_key"], "opsgenie": ["api_key"],   # R42
+          "datadog": ["api_key"],                                  # R58
+          "escalation": ["policy_id"]}                             # R66
 
 
 class ChannelIn(BaseModel):
@@ -37,11 +39,37 @@ class RuleIn(BaseModel):
     enabled: bool = True
 
 
+class MaintenanceScope(BaseModel):
+    job_ids: list[UUID] = []
+    tags: list[str] = []
+    environment_ids: list[UUID] = []
+
+
 class MaintenanceIn(BaseModel):
-    scope: dict = {}
+    """R63: a named window; `repeat` daily or weekly expands in `tz` (cronsentinel/maintenance.py)."""
+    name: str = Field(default="Maintenance", min_length=1, max_length=80)
+    scope: MaintenanceScope = MaintenanceScope()
     starts_at: datetime
     ends_at: datetime
+    tz: str = "UTC"
+    repeat: str = Field(default="none", pattern="^(none|daily|weekly)$")
+    weekdays: list[str] = []
+    until: datetime | None = None
+    rrule: str | None = Field(default=None, description="advanced: an RFC 5545 RRULE (DAILY or WEEKLY); overrides repeat")
+
+
+class MaintenanceOut(BaseModel):
+    id: UUID
+    name: str
+    scope: dict
+    starts_at: datetime
+    ends_at: datetime
+    tz: str
     rrule: str | None = None
+    active_now: bool
+    current_end: datetime | None = None
+    next_start: datetime | None = None
+    next_end: datetime | None = None
 
 
 @router.get("/channels", response_model=list[ChannelOut])
@@ -77,6 +105,14 @@ def create_channel(body: ChannelIn, request: Request, p: Principal = Depends(req
         import re
         if not re.fullmatch(r"\d{3,20}:[A-Za-z0-9_-]{20,64}", str(body.config["bot_token"])):
             raise HTTPException(400, "bot_token: not a Telegram bot token")
+    if body.kind == "escalation":
+        with tenant_session(p.org_id) as s2:
+            if not s2.execute(text("SELECT 1 FROM escalation_policies WHERE id=CAST(:i AS uuid)"), {"i": str(body.config.get("policy_id"))}).first():
+                raise HTTPException(400, "policy_id: no such escalation policy")
+    if body.kind == "datadog":
+        from ..datadog import validate as dd_validate
+        if (err := dd_validate(body.config)):
+            raise HTTPException(400, err)
     if body.kind in ("pagerduty", "opsgenie"):
         from ..alerting import oncall
         if (err := oncall.validate(body.kind, body.config)):
@@ -104,6 +140,10 @@ def test_channel(channel_id: UUID, p: Principal = Depends(require_role("devops")
 @router.delete("/channels/{channel_id}", status_code=204)
 def delete_channel(channel_id: UUID, request: Request, p: Principal = Depends(require_role("devops"))):
     with tenant_session(p.org_id) as s:
+        # R66: escalation policies deliver pages through a channel (FK RESTRICT); say which one instead of a 500
+        used = s.execute(text("SELECT name FROM escalation_policies WHERE delivery_channel_id=:c LIMIT 1"), {"c": str(channel_id)}).scalar()
+        if used:
+            raise HTTPException(409, f"escalation policy '{used}' delivers pages through this channel; change the policy first")
         if not s.execute(text("DELETE FROM notification_channels WHERE id=:id"), {"id": str(channel_id)}).rowcount: raise HTTPException(404)
         audit(s, p, "channel.delete", "notification_channel", str(channel_id), ip=request.client.host)
 
@@ -143,26 +183,83 @@ def delete_rule(rule_id: UUID, request: Request, p: Principal = Depends(require_
         audit(s, p, "rule.delete", "alert_rule", str(rule_id), ip=request.client.host)
 
 
-@router.get("/maintenance")
+def _mw_out(w) -> MaintenanceOut:
+    from datetime import UTC
+    from datetime import datetime as _dt
+    now = _dt.now(UTC)
+    cur = w.active_at(now)
+    nxt = w.next_occurrence(now if not cur else cur[1])
+    return MaintenanceOut(id=w.id, name=w.name, scope=w.scope, starts_at=w.starts_at, ends_at=w.ends_at, tz=w.tz, rrule=w.rrule,
+                          active_now=bool(cur), current_end=cur[1] if cur else None,
+                          next_start=nxt[0] if nxt else None, next_end=nxt[1] if nxt else None)
+
+
+@router.get("/maintenance", response_model=list[MaintenanceOut])
 def list_maintenance(p: Principal = Depends(current_principal)):
+    """Windows that are active, upcoming, or ended in the last 7 days. Recurring windows stay listed
+    while they still have occurrences (R63: they used to vanish a week after their first one)."""
+    from datetime import UTC, timedelta
+    from datetime import datetime as _dt
+
+    from .. import maintenance
+    now = _dt.now(UTC)
     with tenant_session(p.org_id) as s:
-        return [dict(r._mapping) for r in s.execute(text("SELECT * FROM maintenance_windows WHERE ends_at >= now() - interval '7 days' ORDER BY starts_at")).all()]
+        ws = maintenance.load(s, p.org_id)
+    keep = [w for w in ws if w.occurrences(now - timedelta(days=7), now + timedelta(days=400))]
+    return [_mw_out(w) for w in sorted(keep, key=lambda w: (w.next_occurrence(now - timedelta(days=7)) or (w.starts_at,))[0])]
 
 
-@router.post("/maintenance", status_code=201)
+@router.get("/maintenance/{mw_id}", response_model=MaintenanceOut)
+def get_maintenance(mw_id: UUID, p: Principal = Depends(current_principal)):
+    """R64: one window by id, whatever its dates (Terraform reads; the list hides long-finished ones)."""
+    from .. import maintenance
+    with tenant_session(p.org_id) as s:
+        w = maintenance.get(s, p.org_id, mw_id)
+    if not w: raise HTTPException(404)
+    return _mw_out(w)
+
+
+@router.post("/maintenance", status_code=201, response_model=MaintenanceOut)
 def create_maintenance(body: MaintenanceIn, request: Request, p: Principal = Depends(require_role("devops"))):
-    if body.ends_at <= body.starts_at: raise HTTPException(400, "ends_at must be after starts_at")
+    from .. import maintenance
+    try:
+        rr = body.rrule or maintenance.build_rrule(body.repeat, body.weekdays, body.until, body.tz)
+        maintenance.validate(body.starts_at, body.ends_at, body.tz, rr)
+    except maintenance.InvalidWindow as e:
+        raise HTTPException(422, str(e)) from None
+    scope = {k: [str(x) for x in v] for k, v in body.scope.model_dump().items() if v}
     with tenant_session(p.org_id) as s:
-        r = s.execute(text("INSERT INTO maintenance_windows (org_id, scope, starts_at, ends_at, rrule) VALUES (:o, CAST(:sc AS jsonb), :st, :en, :rr) RETURNING id"),
-                      {"o": str(p.org_id), "sc": __import__("json").dumps(body.scope), "st": body.starts_at, "en": body.ends_at, "rr": body.rrule}).first()
-        audit(s, p, "maintenance.create", "maintenance_window", str(r.id), ip=request.client.host)
-        return {"id": r.id}
+        r = s.execute(text("""INSERT INTO maintenance_windows (org_id, name, scope, starts_at, ends_at, rrule, tz, created_by)
+                              VALUES (:o, :n, CAST(:sc AS jsonb), :st, :en, :rr, :tz, :by) RETURNING id"""),
+                      {"o": str(p.org_id), "n": body.name, "sc": __import__("json").dumps(scope), "st": body.starts_at,
+                       "en": body.ends_at, "rr": rr, "tz": body.tz, "by": str(p.user_id) if p.user_id else None}).first()
+        audit(s, p, "maintenance.create", "maintenance_window", str(r.id),
+              {"name": body.name, "repeat": rr or "none", "scope": scope}, request.client.host if request.client else None)
+        w = maintenance.get(s, p.org_id, r.id)
+    return _mw_out(w)
+
+
+@router.post("/maintenance/{mw_id}/end", response_model=MaintenanceOut)
+def end_maintenance(mw_id: UUID, request: Request, p: Principal = Depends(require_role("devops"))):
+    """End a one-off window now (work finished early). Recurring windows are deleted instead."""
+    from .. import maintenance
+    with tenant_session(p.org_id) as s:
+        row = s.execute(text("SELECT rrule, starts_at FROM maintenance_windows WHERE id=:id"), {"id": str(mw_id)}).first()
+        if not row: raise HTTPException(404)
+        if row.rrule: raise HTTPException(409, "recurring windows cannot be ended early; delete the window instead")
+        n = s.execute(text("""UPDATE maintenance_windows SET ends_at = GREATEST(now(), starts_at + interval '1 second')
+                              WHERE id=:id AND ends_at > now()"""), {"id": str(mw_id)}).rowcount
+        if not n: raise HTTPException(409, "this window is not active")
+        audit(s, p, "maintenance.end", "maintenance_window", str(mw_id), ip=request.client.host if request.client else None)
+        w = maintenance.get(s, p.org_id, mw_id)
+    return _mw_out(w)
 
 
 @router.delete("/maintenance/{mw_id}", status_code=204)
-def delete_maintenance(mw_id: UUID, p: Principal = Depends(require_role("devops"))):
+def delete_maintenance(mw_id: UUID, request: Request, p: Principal = Depends(require_role("devops"))):
     with tenant_session(p.org_id) as s:
         if not s.execute(text("DELETE FROM maintenance_windows WHERE id=:id"), {"id": str(mw_id)}).rowcount: raise HTTPException(404)
+        audit(s, p, "maintenance.delete", "maintenance_window", str(mw_id), ip=request.client.host if request.client else None)
 
 
 @router.get("/ledger")

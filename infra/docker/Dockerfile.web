@@ -7,6 +7,9 @@ FROM node:22-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/web ./
+# R59: the docs site is rendered at build time from the repository's docs/*.md (lib/docs.ts)
+COPY docs /docs
+ENV DOCS_DIR=/docs
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ARG NEXT_PUBLIC_INGEST_URL=
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL NEXT_PUBLIC_INGEST_URL=$NEXT_PUBLIC_INGEST_URL NEXT_TELEMETRY_DISABLED=1

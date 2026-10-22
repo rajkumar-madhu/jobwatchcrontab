@@ -4,7 +4,7 @@ from datetime import datetime, time
 from zoneinfo import ZoneInfo
 
 BAD = {"failed", "timeout", "missed"}
-CONDITIONS = {"failed", "missed", "late", "runtime_exceeded", "recovered", "consecutive_failures", "sla_breach"}
+CONDITIONS = {"failed", "missed", "late", "runtime_exceeded", "recovered", "consecutive_failures", "sla_breach", "anomaly"}
 
 
 @dataclass
@@ -62,10 +62,14 @@ def suppressed_unknown(new_state: str | None, unknown_reason: str | None) -> str
 
 
 def condition_fires(rule: Rule, prev: str, new: str, job: JobCtx, *, new_state: str | None = None,
-                    unknown_reason: str | None = None) -> bool:
+                    unknown_reason: str | None = None, anomalies: list | None = None) -> bool:
     if suppressed_unknown(new_state, unknown_reason):
         return False
     c = rule.condition
+    if c == "anomaly":                      # R68: an unusual successful run (warn mode)
+        return bool(anomalies)
+    if anomalies and prev == new:           # an anomaly-only event changes no status: nothing else fires
+        return False
     if c == "failed":
         return new == "failed"
     if c == "missed":

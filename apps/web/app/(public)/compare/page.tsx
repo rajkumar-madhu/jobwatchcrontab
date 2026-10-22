@@ -14,8 +14,7 @@ const CHOOSE: [string, string][] = [
 ];
 
 const BEHIND: [string, string][] = [
-  ["Group sync", "Directory sync covers people, not groups: roles are assigned in JobWatch, not mapped from directory groups."],
-  ["On-call scheduling", "JobWatch pages through PagerDuty or Opsgenie; it does not run rotas and escalations itself the way Better Stack does."],
+  ["Phone and SMS paging", "JobWatch runs on-call rotas and escalations, but pages by email, chat and webhooks; it has no phone calls, SMS or mobile app. Hand off to PagerDuty or Opsgenie for those."],
   ["Open source", "JobWatch is not released under an open-source licence. If that is a requirement, Healthchecks.io and Uptime Kuma are."],
   ["Track record", "JobWatch is young. The others have years of production history and much larger user bases."],
 ];
@@ -57,7 +56,7 @@ export default function Compare() {
                       <td className="px-4 py-3">
                         <div>{r.label}</div>
                         {r.help && <div className="mt-0.5 text-xs text-mute">{r.help}</div>}
-                        {r.note && <div className="mt-1 text-xs italic text-mute/80">{r.note}</div>}
+                        {r.note && <div className="mt-1 text-xs italic text-mute">{r.note}</div>}
                       </td>
                       {shown.map((v) => <td key={v.key} className={`px-3 py-3 ${v.key === "jw" ? "bg-accent/[.05]" : ""}`}><div className="flex justify-center text-center"><Mark c={r.cells[v.key]} /></div></td>)}
                     </tr>))}

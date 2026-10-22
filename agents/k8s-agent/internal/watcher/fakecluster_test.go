@@ -152,3 +152,28 @@ func TestWatcherAgainstFakeCluster(t *testing.T) {
 		return !a && !w.started["job-ok"] && !w.finished["job-ok"]
 	})
 }
+
+// R65: time zone and jobwatch.io annotations are reported; other annotations never leave the cluster.
+func TestCronJobSpecTimeZoneAndAnnotations(t *testing.T) {
+	tz := "Asia/Kolkata"
+	cj := &batchv1.CronJob{}
+	cj.Name, cj.Namespace = "report", "billing"
+	cj.Spec.Schedule = "0 2 * * *"
+	cj.Spec.TimeZone = &tz
+	cj.Annotations = map[string]string{
+		"jobwatch.io/grace": "10m", "jobwatch.io/tags": "db,prod",
+		"kubectl.kubernetes.io/last-applied-configuration": `{"env":[{"name":"DB_PASSWORD","value":"s3cret"}]}`,
+		"example.com/token": "abc",
+	}
+	s := cronJobSpec(cj)
+	if s.TimeZone != "Asia/Kolkata" {
+		t.Fatalf("time zone not reported: %q", s.TimeZone)
+	}
+	if len(s.Annotations) != 2 || s.Annotations["jobwatch.io/grace"] != "10m" {
+		t.Fatalf("expected only the two jobwatch.io annotations, got %v", s.Annotations)
+	}
+	none := &batchv1.CronJob{}
+	if cronJobSpec(none).Annotations != nil {
+		t.Fatal("no annotations should be reported as nil (omitted)")
+	}
+}

@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Any
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -18,7 +20,11 @@ class JobCreate(BaseModel):
     environment_id: UUID | None = None
     team_id: UUID | None = None
     tags: list[str] = []
+    assertions: list[str] = []   # R54: e.g. "metric.size_bytes > 0", "duration < 2h"
     sla_target: float | None = Field(default=None, ge=0, le=100)
+    # R68: unusual-run detection from the job's own history (cronsentinel/anomaly.py)
+    anomaly_sensitivity: Literal["off", "low", "normal", "high"] = "normal"
+    anomaly_action: Literal["warn", "fail"] = "warn"
 
     @field_validator("schedule_expr")
     @classmethod
@@ -40,6 +46,18 @@ class JobCreate(BaseModel):
         return v
 
 
+    @field_validator("assertions")
+    @classmethod
+    def _assertions_ok(cls, v):
+        from .assertions import InvalidAssertion, validate
+        if v is None:
+            return v
+        try:
+            return validate(v)
+        except InvalidAssertion as e:
+            raise ValueError(str(e)) from None
+
+
 class JobUpdate(BaseModel):
     description: str | None = None
     schedule_expr: str | None = None
@@ -49,6 +67,20 @@ class JobUpdate(BaseModel):
     tags: list[str] | None = None
     sla_target: float | None = Field(default=None, ge=0, le=100)
     paused: bool | None = None
+    assertions: list[str] | None = None   # R54; null or [] clears
+    anomaly_sensitivity: Literal["off", "low", "normal", "high"] | None = None   # R68
+    anomaly_action: Literal["warn", "fail"] | None = None
+
+    @field_validator("assertions")
+    @classmethod
+    def _assertions_ok(cls, v):
+        from .assertions import InvalidAssertion, validate
+        if v is None:
+            return v
+        try:
+            return validate(v)
+        except InvalidAssertion as e:
+            raise ValueError(str(e)) from None
 
     @field_validator("schedule_expr")
     @classmethod
@@ -92,6 +124,11 @@ class JobOut(BaseModel):
     # reads get the last 4 characters so a user can tell which URL a job has.
     heartbeat_token: str | None = None
     heartbeat_token_hint: str
+    ping_url: str | None = None   # R64: full URL, only alongside heartbeat_token (create/rotate)
+    assertions: list[str] = []
+    anomaly_sensitivity: str = "normal"   # R68
+    anomaly_action: str = "warn"
+    server_id: UUID | None = None   # R70: the server the agent discovered this job on; null for ping-only jobs
 
 
 class HeartbeatBody(BaseModel):
@@ -107,6 +144,16 @@ class HeartbeatBody(BaseModel):
     stdout_tail: str | None = Field(default=None, max_length=256 * 1024)
     stderr_tail: str | None = Field(default=None, max_length=256 * 1024)
     meta: dict = {}
+    # R54: numbers the run reports (size_bytes, rows, count …) for job assertions; ≤20, finite
+    metrics: dict = {}
+
+    @field_validator("metrics")
+    @classmethod
+    def _metrics_clean(cls, v: dict) -> dict:
+        from .assertions import clean_metrics
+        if len(v) > 20:
+            raise ValueError("at most 20 metrics per run")
+        return clean_metrics(v)
 
     @field_validator("meta")
     @classmethod
@@ -128,6 +175,9 @@ class ExecutionOut(BaseModel):
     exit_code: int | None
     host: str | None
     skew_ms: int
+    metrics: dict = {}                       # R54
+    assertion_failures: list[str] = []       # R54: why a run that exited 0 counts as failed
+    anomalies: list[dict] = []               # R68: what was unusual about this run (kind, field, value, typical, runs, message)
 
 
 class Page(BaseModel):
@@ -269,6 +319,8 @@ class AgentOut(BaseModel):
     revoked_at: datetime | None = None
     created_at: datetime
     jobs: int = 0
+    heartbeat_interval_s: int = 60   # R72
+    state: str = "never"             # online | offline | revoked | never — offline = no heartbeat for 3× heartbeat_interval_s
 
 
 class ClusterOut(BaseModel):
@@ -345,6 +397,17 @@ class SeriesPoint(BaseModel):
 
 class SeriesIncident(BaseModel):
     model_config = {"extra": "allow"}
+
+
+class UnusualRunOut(BaseModel):
+    """R69: one run that R68 flagged as unusual for its job."""
+    execution_id: str
+    job_id: UUID
+    job_name: str
+    status: str                      # success (warn mode) or failed (fail mode)
+    finished_at: datetime | None
+    host: str | None
+    anomalies: list[dict] = []
 
 
 class SeriesOut(BaseModel):
@@ -475,3 +538,90 @@ class ScimTokenOut(BaseModel):
 class ScimTokensOut(BaseModel):
     base_url: str
     tokens: list[ScimTokenOut]
+
+
+class ScimGroupOut(BaseModel):
+    """R56: a directory group and the JobWatch role it grants (None = no effect on roles)."""
+    id: UUID
+    display_name: str
+    role: str | None = None
+    members: int
+    updated_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# R70 — host context (cronsentinel/hostcontext.py): the server a job runs on.
+# ---------------------------------------------------------------------------
+
+
+class HostMetricPoint(BaseModel):
+    ts: datetime
+    cpu_pct: float | None = None
+    mem_pct: float | None = None
+    load1: float | None = None
+    disk_pct: float | None = None
+    inode_pct: float | None = None
+    io_wait_pct: float | None = None
+
+
+class ServerOut(BaseModel):
+    id: UUID
+    hostname: str
+    labels: dict[str, Any] = {}
+    facts: dict[str, Any] = {}   # os, kernel, arch, cpus, mem_total_mb, disk_total_gb, uptime_s, load5, load15, timezone, virt — whatever the agent reported
+    facts_updated_at: datetime | None = None
+
+
+class HostAgentOut(BaseModel):
+    id: UUID
+    kind: str
+    name: str | None = None
+    version: str | None = None
+    state: str   # online | offline | revoked | never — offline means no heartbeat for 3× its interval
+    last_seen_at: datetime | None = None
+    skew_ms: int | None = None
+    heartbeat_interval_s: int = 60
+
+
+class HostJobOut(BaseModel):
+    id: UUID
+    name: str
+    status: str
+    last_status: str | None = None
+    last_run_at: datetime | None = None
+    paused: bool = False
+
+
+class HostContextOut(BaseModel):
+    server: ServerOut
+    agent: HostAgentOut | None = None
+    latest: HostMetricPoint | None = None
+    series: list[HostMetricPoint] = []   # last 24 h, about 96 points
+    jobs: list[HostJobOut] = []          # every job on this server, failing first
+
+
+class JobHostOut(BaseModel):
+    job_id: UUID
+    source: str   # agent — discovered by an agent on a known server; ping — reported by URL, host known only from runs
+    last_host: str | None = None   # the `host` the most recent run reported, for ping jobs
+    context: HostContextOut | None = None
+
+
+class AgentDetailOut(AgentOut):
+    context: HostContextOut | None = None   # null until the agent has bound a server (first discovery)
+
+
+class RunHostOut(BaseModel):
+    hostname: str | None = None
+    server_id: UUID | None = None
+    facts: dict[str, Any] = {}
+    metrics_during: list[HostMetricPoint] = []   # samples from 5 min before the start to 5 min after the end
+
+
+class ExecutionDetailOut(BaseModel):
+    execution: dict[str, Any]
+    timeline: list[dict[str, Any]]
+    logs: dict[str, str]           # stdout, stderr — the redacted tails the agent kept
+    log_bytes: dict[str, int] = {}  # size of each tail, so the UI can say "last 32 KiB"
+    exit_meaning: str | None = None
+    host: RunHostOut | None = None

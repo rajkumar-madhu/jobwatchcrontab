@@ -109,8 +109,17 @@ jobs:
             echo "expected the default (no bootstrapToken) render to fail" && exit 1
           fi
       - run: tools/mini-helm/mini-helm --chart infra/helm/cronsentinel-agent --release ci --namespace ci --set bootstrapToken=ci-placeholder
+  terraform-provider:
+    # R64: build, vet and unit-test the Terraform provider. go.sum is generated here (it is not committed:
+    # the development sandbox fetched modules through GitHub mirrors, whose checksums differ).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version: "1.23"}
+      - run: cd integrations/terraform-provider-jobwatch && go mod tidy && go vet ./... && go test ./... && go build -o terraform-provider-jobwatch .
   images:
-    needs: [api, web, agents, helm]
+    needs: [api, web, agents, helm, terraform-provider]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:

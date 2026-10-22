@@ -21,10 +21,12 @@
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
     "lucide-react": "0.468.0",
+    "marked": "^14.1.4",
     "next": "15.5.27",
     "react": "19.0.8",
     "react-dom": "19.0.8",
-    "recharts": "2.15.0"
+    "recharts": "2.15.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

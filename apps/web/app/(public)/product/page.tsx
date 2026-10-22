@@ -23,7 +23,7 @@ const SECTIONS: Sec[] = [
   { id: "incidents", nav: "Incidents", h: "Open, acknowledge, resolve — with the evidence attached", lead: "Failures are correlated into incidents so a bad night is one thread, not forty alerts.",
     bullets: ["Correlation keys group related failures across jobs", "Acknowledge and resolve from the page, with notes on the thread", "Time-to-detect and time-to-resolve on the overview, computed from the record", "Root cause and resolution kept with the incident, not in a chat scrollback"],
     to: "/incidents", toLabel: "See incidents", shot: "incidents" },
-  { id: "logs", nav: "Logs", h: "The output of the run that failed, right there", lead: "Wrap a job with cs-run and its stdout, stderr and exit code arrive with the execution.",
+  { id: "logs", nav: "Logs", h: "The output of the run that failed, right there", lead: "Wrap a job with jobwatch-run and its stdout, stderr and exit code arrive with the execution.",
     bullets: ["Captured per execution, searchable, retained by plan", "Storage metered per organization, incrementally — no scan of your logs to bill you", "Log volume shown against your plan before you hit the limit", "Environment variable values are never collected"],
     to: "/logs", toLabel: "Browse logs", shot: "logs" },
   { id: "analytics", nav: "Analytics", h: "Success rate, p95 runtime, top failing — per job, over time", lead: "Enough to answer “which jobs are getting flakier?” without opening a spreadsheet.",

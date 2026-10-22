@@ -1,33 +1,70 @@
-# Linux Agent
+# Linux agent
 
-Go 1.23, stdlib only, CGO_ENABLED=0 static binary (~6 MB). Runs as `cronsentinel-agent run` under systemd.
+A single static binary (Linux amd64 and arm64) that runs as a systemd service. It finds your scheduled
+jobs, reports every run, and keeps events on disk if the network or JobWatch is unavailable.
 
-## Modes
-| Mode | How | Data captured |
-|---|---|---|
-| Wrapper (`cs-run -- cmd`) | Replace command in crontab with `cs-run -- <cmd>` | start, progress/30s, exit code, duration, stdout/stderr tail (32KB), env var **names** (allow-listed) |
-| Passive (journal) | Watches `journalctl _COMM=cron` for `CMD (...)` lines | start + duration by pid polling. **Exit code unknown** (STUB) |
-| Discovery | `/etc/crontab`, `/etc/cron.d/*`, user spools, `systemctl list-timers` every 5m | schedule, command, user, source → jobs auto-created with `discovered` tag |
-
-## Enrollment (D8)
-1. Admin: `POST /api/v1/agents/bootstrap-token` → `csb_…` (24h, one-time)
-2. Host: `cronsentinel-agent enroll --server https://ingest --token csb_…` → `/etc/cronsentinel/agent.json` with `csa_…` key
-3. Key hashed (argon2) server-side; `POST /api/v1/agents/{id}/rotate|revoke`
-
-## Buffering
-Append-only JSONL at `/var/lib/cronsentinel/buffer.jsonl` + committed `.offset`. Flush every 5s in batches of 100, exponential backoff to 5m, compacts when fully acked. Survives agent restart and network outage; server dedups on `(execution_id, sequence)`.
-
-## Security
-- TLS 1.2+ enforced; `--insecure` dev only
-- Never sends env var values, only allow-listed names
-- systemd unit: `ProtectSystem=strict`, `NoNewPrivileges`, `MemoryMax=128M`, `CPUQuota=20%`
-- Discovery-only mode never modifies crontabs
-
-## Build
+## Install
+In **Servers & agents**, choose **Install an agent** (or **Get install command**). JobWatch creates a
+one-time bootstrap token (valid 24 hours) and shows the command. Run it on the server as root:
 ```bash
-cd agents/linux-agent && make build   # dist/cronsentinel-agent-linux-{amd64,arm64}
-go test ./...
+curl -fsSL https://ingest.example.com/agent/install.sh | sudo bash -s -- --token csb_…
+```
+The installer is served by your JobWatch ingest host with its defaults filled in: which release to
+download and which server to enroll with. It downloads the agent for your architecture, **verifies it
+against the release's SHA256SUMS before installing anything**, enrolls the host and starts the systemd
+service. The host receives its own agent key; the bootstrap token cannot be reused.
+
+> [!NOTE]
+> If the page says the one-line installer is not available, the deployment has not set
+> `AGENT_DOWNLOAD_BASE` and `AGENT_VERSION` (the release pipeline sets both). You can still install from
+> the release: download `install.sh` from it and run
+> `sudo CS_DOWNLOAD_BASE=https://github.com/<owner>/<repo>/releases/download CS_AGENT_VERSION=v0.2.0 bash install.sh --server https://ingest.example.com --token csb_…`
+
+## Discovery
+Every few minutes the agent reads `/etc/crontab`, `/etc/cron.d/*`, user crontabs and systemd timers,
+and creates a job for each (tagged `discovered`), with its schedule, command and user. Discovery never
+edits your crontabs.
+
+> [!NOTE]
+> Timer schedules need agent version R53 or later. Older agents cannot report a timer's random delay,
+> so their timers stay unscheduled rather than raise false alerts. Upgrade the agent to get them.
+
+**systemd timers** get an expected schedule when cron can express it exactly: `daily`, `weekly`,
+`Mon..Fri 09:00`, `*:0/15`, `*-*-01 03:00 UTC` and similar, and interval timers such as
+`OnUnitActiveSec=15min`. Random delays (`RandomizedDelaySec`, e.g. certbot's 12 hours) widen the grace
+period so delayed runs are not flagged. Schedules cron cannot express (a specific year, seconds, days
+counted from month end, weekday and day-of-month together) are left unscheduled for you to set.
+
+## Wrap runs with `jobwatch-run`
+`jobwatch-run` is installed with the agent. Agents installed before October 2026 call it `cs-run`; both names work and existing crontab lines need no change.
+
+Prefix a crontab command with `jobwatch-run --` to report start, finish, exit code, duration and the end of
+stdout and stderr:
+```
+0 2 * * * jobwatch-run -- /opt/jobs/backup.sh
+```
+The wrapper exits with the job's own exit code, so cron mail and other behaviour are unchanged. Jobs
+that do not run as root report through a private spool the agent collects.
+
+To report metrics for [run checks](run-checks), append `name=value` lines to `$JOBWATCH_METRICS_FILE`:
+```bash
+echo "size_bytes=$(stat -c %s /backups/db.dump)" >> "$JOBWATCH_METRICS_FILE"
 ```
 
-## Not verified in this delivery
-Go toolchain unavailable in the build sandbox — `go build` / `go vet` / `go test` not run. Expect minor compile fixes (imports, unused vars). Logic paths reviewed by hand.
+## What the agent reports about the host
+Every minute the agent sends a sample of the host — CPU, memory, disk and inode use, 1-minute load
+and I/O wait — and, with its heartbeat, the host's facts: OS, kernel, architecture, CPU count, total
+memory and disk, uptime, 5- and 15-minute load, time zone, and whether it runs in a VM or container.
+They appear on the job page (the **Host** panel, and *Why it failed* for a failed run, which shows
+how the host looked while the run was going) and on the agent's page under Servers & agents.
+Nothing else is read: no network interfaces, no process list, no file contents.
+
+## When the network is down
+Events are written to a disk buffer and sent in order when the connection returns; the server drops
+duplicates. Corrupt lines are skipped rather than blocking the buffer.
+
+## Security
+- TLS is always verified; the server URL must be HTTPS.
+- Only environment variable **names** from an allow-list are reported, never values.
+- The systemd unit runs with `ProtectSystem=strict`, `NoNewPrivileges`, and memory and CPU limits.
+- Agent keys are stored hashed server-side and can be rotated or revoked from Servers & agents.

@@ -3,49 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { api, mutate, type Job, type Execution, INGEST_URL } from "@/lib/api";
+import { api, mutate, type Job, type Execution, type JobHost, INGEST_URL } from "@/lib/api";
+import { RunChecks, UnusualRuns } from "@/components/run-checks";
+import { HostPanel } from "@/components/host-panel";
+import { RunInspector } from "@/components/run-inspector";
 import { ago, dur, ts, statusLabel } from "@/lib/format";
 import { Page, Status, Strip, Skeleton, ErrorBox, Empty } from "@/components/ui";
-
-interface ExecDetail { execution: Execution & Record<string, any>; timeline: { sequence: number; kind: string; agent_ts: string | null; server_ts: string; payload: any }[]; logs: { stdout: string; stderr: string } }
-
-function Timeline({ id, onCompare, job }: { id: string; onCompare: (id: string) => void; job?: Job }) {
-  const q = useQuery({ queryKey: ["exec", id], queryFn: () => api<ExecDetail>(`/api/v1/executions/${id}`) });
-  if (q.isLoading) return <Skeleton rows={4} />;
-  if (q.error) return <ErrorBox error={q.error} />;
-  const { execution: e, timeline, logs } = q.data!;
-  const t0 = new Date(timeline[0]?.agent_ts ?? timeline[0]?.server_ts ?? e.scheduled_ts).getTime();
-  return (
-    <div className="card bg-panel">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line px-4 py-3 text-sm">
-        <Status s={e.status} /><span>Took <b>{dur(e.duration_ms)}</b>{e.duration_ms && job?.expected_runtime_s && e.duration_ms > job.expected_runtime_s * 1000 && <span className="ml-1 text-warn">— over expected {dur(job.expected_runtime_s * 1000)}</span>}</span>
-        <span>Exit <span className="font-mono">{e.exit_code ?? "—"}</span></span>
-        {e.host && <span>on <span className="font-mono">{e.host}</span></span>}
-        {e.skew_ms !== 0 && <span className="text-mute">clock skew {e.skew_ms} ms</span>}
-        <button className="btn ml-auto" onClick={() => onCompare(id)}>Compare with previous</button>
-      </div>
-      <ol className="px-4 py-3">
-        {timeline.map((t) => {
-          const at = new Date(t.agent_ts ?? t.server_ts).getTime();
-          return (
-            <li key={t.sequence} className="grid grid-cols-[90px_80px_1fr] gap-3 py-1 text-sm">
-              <span className="font-mono text-xs text-mute">{ts(t.agent_ts ?? t.server_ts)}</span>
-              <span className="font-mono text-xs text-mute">+{dur(at - t0)}</span>
-              <span>{({ scheduled: "Scheduled", start: "Started", started: "Started", progress: "Still running", success: "Completed", fail: "Failed" } as any)[t.kind] ?? t.kind}
-                {t.payload?.command && <span className="ml-2 font-mono text-xs text-mute">{t.payload.command}</span>}
-                {t.payload?.passive && <span className="ml-2 text-xs text-warn">passive · exit code unknown</span>}</span>
-            </li>);
-        })}
-      </ol>
-      {(logs.stderr || logs.stdout) && (
-        <div className={`grid gap-px border-t border-line bg-line ${logs.stderr && logs.stdout ? "sm:grid-cols-2" : ""}`}>
-          {(["stderr", "stdout"] as const).map((s) => logs[s] && (
-            <div key={s} className="bg-panel p-3"><div className="mb-1 text-xs text-mute">{s} (tail)</div>
-              <pre className={`max-h-64 overflow-auto whitespace-pre-wrap font-mono text-xs ${s === "stderr" ? "text-bad" : ""}`}>{logs[s]}</pre></div>))}
-        </div>)}
-    </div>
-  );
-}
 
 function Compare({ a, b, onClose }: { a: string; b: string; onClose: () => void }) {
   const q = useQuery({ queryKey: ["compare", a, b], queryFn: () => api<{ a: any; b: any; delta: { duration_ms: number; pct: number } | null }>(`/api/v1/executions/${a}/compare/${b}`) });
@@ -67,6 +30,8 @@ export default function JobPage() {
   const job = useQuery({ queryKey: ["job", id], queryFn: () => api<Job>(`/api/v1/jobs/${id}`) });
   const execs = useQuery({ queryKey: ["execs", id, 100], queryFn: () => api<Execution[]>(`/api/v1/jobs/${id}/executions?limit=100`) });
   const next = useQuery({ queryKey: ["next", id], queryFn: () => api<{ human: string | null; runs: string[] }>(`/api/v1/jobs/${id}/next-runs?n=3`) });
+  // R70: the server this job runs on — agent state, facts, 24 h of samples, sibling jobs
+  const host = useQuery({ queryKey: ["job-host", id], queryFn: () => api<JobHost>(`/api/v1/jobs/${id}/host`), refetchInterval: 60_000 });
   const [sel, setSel] = useState<string | null>(null);
   const [cmp, setCmp] = useState<[string, string] | null>(null);
   const impact = useQuery({ queryKey: ["impact", id], queryFn: () => api<{ upstream: any[]; downstream: any[] }>(`/api/v1/jobs/${id}/impact`) });
@@ -103,26 +68,32 @@ export default function JobPage() {
         <div><dt className="text-mute">Success rate (last {list.length})</dt><dd>{rate == null ? "—" : `${rate}%`}</dd></div>
         <div><dt className="text-mute">Expected runtime</dt><dd>{j.expected_runtime_s ? dur(j.expected_runtime_s * 1000) : "not set"} · grace {j.grace_s}s</dd></div>
       </dl>
-
-      <div className="mb-5">
-        <div className="mb-1 flex items-baseline justify-between text-xs text-mute"><span>Run history — bar height = duration, click to inspect</span><span>older → newer</span></div>
-        {execs.isLoading ? <div className="skeleton h-6" /> : list.length === 0 ? <Empty title="No runs recorded yet" hint={`Ping this job: curl ${INGEST}/ping/${tok}`} />
-          : <div className="rounded-md border border-line px-3 py-2"><Strip execs={list} onPick={setSel} /></div>}
-      </div>
-
-      {cmp && <Compare a={cmp[0]} b={cmp[1]} onClose={() => setCmp(null)} />}
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div>{selected ? <Timeline id={selected} onCompare={compare} job={j} /> : <p className="text-sm text-mute">Select a run.</p>}</div>
-        <div className="tbl card">
-          <div className="row grid-cols-[110px_1fr_70px_50px] th"><span>Started</span><span>Status</span><span className="text-right">Took</span><span className="text-right">Exit</span></div>
-          <div className="max-h-[520px] overflow-auto">
-            {list.map((e) => (
-              <button key={e.id} onClick={() => setSel(e.id)} className={`row w-full grid-cols-[110px_1fr_70px_50px] text-left ${selected === e.id ? "bg-accent/5" : ""}`}>
-                <span className="font-mono text-xs">{ts(e.agent_ts_start ?? e.scheduled_ts)}</span><Status s={e.status} />
-                <span className="text-right font-mono text-xs">{dur(e.duration_ms)}</span><span className="text-right font-mono text-xs">{e.exit_code ?? "—"}</span>
-              </button>))}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-4">
+          <div>
+            <div className="mb-1 flex items-baseline justify-between text-xs text-mute"><span>Run history — bar height = duration, click to inspect</span><span>older → newer</span></div>
+            {execs.isLoading ? <div className="skeleton h-6" /> : list.length === 0 ? <Empty title="No runs recorded yet" hint={`Ping this job: curl ${INGEST}/ping/${tok}`} />
+              : <div className="rounded-md border border-line px-3 py-2"><Strip execs={list} onPick={setSel} /></div>}
           </div>
+          {cmp && <Compare a={cmp[0]} b={cmp[1]} onClose={() => setCmp(null)} />}
+          {selected ? <RunInspector id={selected} onCompare={compare} job={j} host={host.data?.context} /> : list.length > 0 && <p className="text-sm text-mute">Select a run.</p>}
+          <div className="tbl card" data-testid="run-table">
+            {/* R68: four short columns fit the panel; the 640 px scrolling minimum hid Took and Exit */}
+            <div className="row grid-cols-[110px_1fr_70px_50px] th" style={{ minWidth: 0 }}><span>Started</span><span>Status</span><span className="text-right">Took</span><span className="text-right">Exit</span></div>
+            <div className="max-h-[320px] overflow-auto">
+              {list.map((e) => (
+                <button key={e.id} onClick={() => setSel(e.id)} style={{ minWidth: 0 }} aria-current={selected === e.id ? "true" : undefined} className={`row w-full grid-cols-[110px_1fr_70px_50px] text-left ${selected === e.id ? "bg-accent/5" : ""}`}>
+                  <span className="font-mono text-xs">{ts(e.agent_ts_start ?? e.scheduled_ts)}</span>
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-1.5"><Status s={e.status} />{!!e.anomalies?.length && <span className="whitespace-nowrap rounded-full bg-warn/15 px-1.5 text-[11px] text-warn" title={e.anomalies.map((a: any) => a.message).join("; ")}>Unusual</span>}</span>
+                  <span className="text-right font-mono text-xs">{dur(e.duration_ms)}</span><span className={`text-right font-mono text-xs ${e.exit_code ? "text-bad" : ""}`}>{e.exit_code ?? "—"}</span>
+                </button>))}
+            </div>
+          </div>
+          <RunChecks jobId={j.id} rules={j.assertions ?? []} canEdit />
+          <UnusualRuns jobId={j.id} sensitivity={j.anomaly_sensitivity ?? "normal"} action={j.anomaly_action ?? "warn"} />
+        </div>
+        <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+          {host.isLoading ? <div className="card bg-panel p-4"><Skeleton rows={5} /></div> : host.error ? <ErrorBox error={host.error} /> : <HostPanel ctx={host.data?.context} source={host.data?.source ?? "ping"} lastHost={host.data?.last_host} currentJobId={id} />}
         </div>
       </div>
 
@@ -143,7 +114,7 @@ H=${INGEST}/heartbeat/${tok}
 curl -fsS $H/start; ./your-job.sh && curl -fsS $H/success || curl -fsS $H/fail
 
 # agent wrapper (captures logs, duration, exit code)
-cs-run --job ${tok} -- ./your-job.sh`}</pre>
+jobwatch-run --job ${tok} -- ./your-job.sh`}</pre>
         {!freshTok && <p className="mt-2 text-xs text-mute">The full ping URL was shown once when this job was created. Lost it? Choose New ping URL above.</p>}</details>
     </Page>
   );

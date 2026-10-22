@@ -49,6 +49,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="JobWatch Ingest", version="0.1.0", lifespan=lifespan, docs_url=None)
 app.include_router(heartbeat.router)
 app.include_router(agents.agent)
+app.include_router(agents.installer)   # R62
 app.include_router(k8s.agent)
 
 

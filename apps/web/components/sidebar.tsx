@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity, AlertTriangle, BarChart3, Bell, Boxes, CreditCard, FileText, LayoutDashboard, ListChecks, LogOut,
-  Menu, Network, Plug, Search, Server, Settings, Sparkles, Siren, X,
+  Menu, Network, Plug, Search, Server, Settings, Sparkles, Siren, PhoneCall, X,
 } from "lucide-react";
 import { api, logout, type Overview } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -16,7 +16,7 @@ type Item = { href: string; label: string; icon: React.ElementType };
 const GROUPS: { title: string; items: Item[] }[] = [
   { title: "Monitor", items: [
     { href: "/", label: "Overview", icon: LayoutDashboard }, { href: "/jobs", label: "Jobs", icon: ListChecks },
-    { href: "/failures", label: "Failures", icon: AlertTriangle }, { href: "/incidents", label: "Incidents", icon: Siren },
+    { href: "/failures", label: "Failures", icon: AlertTriangle }, { href: "/incidents", label: "Incidents", icon: Siren }, { href: "/oncall", label: "On-call", icon: PhoneCall },
     { href: "/logs", label: "Logs", icon: FileText }] },
   { title: "Infrastructure", items: [
     { href: "/agents", label: "Servers & agents", icon: Server }, { href: "/kubernetes", label: "Kubernetes", icon: Boxes },
@@ -92,11 +92,11 @@ export function Sidebar() {
           {bad > 0 && <span className="rounded-full bg-bad/15 px-1.5 text-[11px] text-bad">{bad}</span>}</button>
       </header>
       {open && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setOpen(false)}>
-        <aside className="flex h-full w-72 flex-col border-r border-line bg-panel" onClick={(e) => e.stopPropagation()}>
+        <aside className="app-sidebar flex h-full w-72 flex-col border-r border-line bg-panel" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between px-4 py-4"><Brand /><button aria-label="Close menu" className="text-mute hover:text-ink" onClick={() => setOpen(false)}><X size={18} /></button></div>
           <NavList bad={bad} onNav={() => setOpen(false)} /><Footer onSignOut={signOut} />
         </aside></div>}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-panel lg:flex">
+      <aside className="app-sidebar sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-panel lg:flex">
         <div className="px-4 py-4"><Brand /></div>
         <NavList bad={bad} />
         <Footer onSignOut={signOut} />

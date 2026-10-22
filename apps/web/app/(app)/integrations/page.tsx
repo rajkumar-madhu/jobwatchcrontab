@@ -1,4 +1,5 @@
 "use client";
+import { DatadogMetrics } from "@/components/datadog-metrics";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, mutate } from "@/lib/api";
@@ -25,8 +26,9 @@ export default function IntegrationsPage() {
   const types: string[] = schema.data?.event_types ?? [];
   return (
     <Page title="Integrations">
+      <div className="mb-6"><DatadogMetrics /></div>
       <div className="max-w-3xl space-y-10 text-sm">
-        <p className="text-mute">Push JobWatch signals to AEGIS, your data platform, or any HTTPS endpoint. This is the only way telemetry leaves JobWatch — nothing downstream reads the database.</p>
+        <p className="text-mute">Push JobWatch signals to AEGIS, your data platform, or any HTTPS endpoint. Data leaves JobWatch only through the destinations you configure: signal destinations here, Datadog metrics above, alert channels (Alerting) and audit-log streams (Settings). Nothing downstream reads the database.</p>
         <section>
           <h2 className="mb-2 font-medium">Signal destinations</h2>
           {dests.error && <ErrorBox error={dests.error} />}

@@ -5,8 +5,10 @@ from sqlalchemy import text
 
 from .. import schedule
 from ..auth import Principal, audit, current_principal, require_role
+from ..config import settings
 from ..db import tenant_session
-from ..schemas import ExecutionOut, JobCreate, JobOut, JobUpdate, JobPage
+from ..schemas import ExecutionOut, JobCreate, JobHostOut, JobOut, JobUpdate, JobPage
+from .. import hostcontext
 from .. import pingtokens
 from .heartbeat import invalidate_token
 
@@ -15,7 +17,7 @@ def _ip(request: Request) -> str | None:
     return request.client.host if request.client else None
 
 
-CLEARABLE = {"description", "schedule_expr", "expected_runtime_s", "sla_target", "tags"}
+CLEARABLE = {"description", "schedule_expr", "expected_runtime_s", "sla_target", "tags", "assertions"}
 
 
 def _check_refs(s, body) -> None:
@@ -30,7 +32,7 @@ def _check_refs(s, body) -> None:
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
 _COLS = ("id, workspace_id, name, description, kind, schedule_expr, tz, expected_runtime_s, grace_s, tags, status, paused, "
-         "last_run_at, last_status, next_expected_at, reliability_score, heartbeat_token_hint, heartbeat_token_hash")
+         "last_run_at, last_status, next_expected_at, reliability_score, heartbeat_token_hint, heartbeat_token_hash, assertions, anomaly_sensitivity, anomaly_action, server_id")
 
 
 def _out(r, token: str | None = None) -> JobOut:
@@ -38,6 +40,7 @@ def _out(r, token: str | None = None) -> JobOut:
     d = dict(r._mapping)
     d.pop("heartbeat_token_hash", None)
     d["heartbeat_token"] = token
+    d["ping_url"] = f"{settings.ingest_public_url.rstrip('/')}/ping/{token}" if token and settings.ingest_public_url else None
     d["schedule_human"] = schedule.human(d["schedule_expr"]) if d["schedule_expr"] else None
     d["status"] = str(d["status"]); d["last_status"] = str(d["last_status"]) if d["last_status"] else None
     return JobOut(**d)
@@ -70,13 +73,14 @@ def create_job(body: JobCreate, request: Request, p: Principal = Depends(require
         try:
             r = s.execute(text(
                 "INSERT INTO jobs (org_id, workspace_id, environment_id, name, description, kind, heartbeat_token_hash, heartbeat_token_hint, schedule_expr, tz, "
-                "expected_runtime_s, grace_s, team_id, tags, sla_target, status, next_expected_at, owner_id) "
-                "VALUES (:org, :ws, :env, :name, :desc, :kind, :tokh, :hint, :expr, :tz, :ert, :grace, :team, :tags, :sla, :st, :nxt, :owner) "
+                "expected_runtime_s, grace_s, team_id, tags, sla_target, status, next_expected_at, owner_id, assertions, anomaly_sensitivity, anomaly_action) "
+                "VALUES (:org, :ws, :env, :name, :desc, :kind, :tokh, :hint, :expr, :tz, :ert, :grace, :team, :tags, :sla, :st, :nxt, :owner, :assertions, :asens, :aact) "
                 f"RETURNING {_COLS}"),
                 {"org": str(p.org_id), "ws": str(body.workspace_id), "env": str(body.environment_id) if body.environment_id else None,
                  "name": body.name, "desc": body.description, "kind": body.kind, "tokh": tok_hash, "hint": tok_hint,
                  "expr": body.schedule_expr, "tz": body.tz, "ert": body.expected_runtime_s, "grace": body.grace_s,
-                 "team": str(body.team_id) if body.team_id else None, "tags": body.tags, "sla": body.sla_target,
+                 "team": str(body.team_id) if body.team_id else None, "tags": body.tags, "sla": body.sla_target, "assertions": body.assertions,
+                 "asens": body.anomaly_sensitivity, "aact": body.anomaly_action,
                  "st": "healthy" if body.schedule_expr else "unknown", "nxt": nxt, "owner": str(p.user_id) if p.user_id else None}).first()
         except Exception as e:
             if "unique" in str(e).lower():
@@ -94,6 +98,19 @@ def get_job(job_id: UUID, p: Principal = Depends(current_principal)):
     return _out(r)
 
 
+@router.get("/{job_id}/host", response_model=JobHostOut)
+def job_host(job_id: UUID, p: Principal = Depends(current_principal)):
+    """R70: the server this job runs on — agent state, host facts, the latest sample, 24 h of samples
+    and the other jobs sharing the box. Ping-only jobs have no server; the UI then shows the host
+    name the last run reported."""
+    with tenant_session(p.org_id) as s:
+        j = s.execute(text("SELECT server_id FROM jobs WHERE id=:id"), {"id": str(job_id)}).first()
+        if not j: raise HTTPException(404)
+        last = s.execute(text("SELECT host FROM executions WHERE job_id=:id AND host IS NOT NULL ORDER BY scheduled_ts DESC LIMIT 1"), {"id": str(job_id)}).first()
+        ctx = hostcontext.host_context(s, j.server_id) if j.server_id else None
+    return {"job_id": job_id, "source": "agent" if ctx else "ping", "last_host": last.host if last else None, "context": ctx}
+
+
 @router.patch("/{job_id}", response_model=JobOut)
 def update_job(job_id: UUID, body: JobUpdate, request: Request, p: Principal = Depends(require_role("developer"))):
     # R40: only fields the client actually sent. Previously every None was dropped, so a field could
@@ -104,6 +121,7 @@ def update_job(job_id: UUID, body: JobUpdate, request: Request, p: Principal = D
     bad = sorted(k for k, v in fields.items() if v is None and k not in CLEARABLE)
     if bad: raise HTTPException(422, f"cannot be null: {', '.join(bad)}")
     if fields.get("tags", ...) is None: fields["tags"] = []
+    if fields.get("assertions", ...) is None: fields["assertions"] = []
     if not fields: raise HTTPException(400, "nothing to update")
     sets = ", ".join(f"{k}=:{k}" for k in fields)
     with tenant_session(p.org_id) as s:
@@ -175,7 +193,9 @@ def next_runs(job_id: UUID, n: int = Query(5, le=50), p: Principal = Depends(cur
 def job_executions(job_id: UUID, p: Principal = Depends(current_principal), limit: int = Query(50, le=200)):
     with tenant_session(p.org_id) as s:
         rows = s.execute(text(
-            "SELECT id, job_id, status, scheduled_ts, agent_ts_start, agent_ts_end, duration_ms, exit_code, host, skew_ms "
+            "SELECT id, job_id, status, scheduled_ts, agent_ts_start, agent_ts_end, duration_ms, exit_code, host, skew_ms, metrics, "
+            "COALESCE(meta->'assertion_failures', '[]'::jsonb) AS assertion_failures, "
+            "COALESCE(meta->'anomalies', '[]'::jsonb) AS anomalies "
             "FROM executions WHERE job_id=:id ORDER BY scheduled_ts DESC LIMIT :lim"), {"id": str(job_id), "lim": limit}).all()
     return [ExecutionOut(**{**dict(r._mapping), "status": str(r.status)}) for r in rows]
 

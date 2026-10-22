@@ -79,14 +79,17 @@ def test_slot_inside_a_recorded_gap_is_unobserved_not_missed(make_job, org):
     with system_session() as s:
         s.execute(text("UPDATE platform_heartbeats SET last_seen = now() - interval '40 minutes' WHERE service='ingest'"))
         assert heartbeat(s, "ingest", 20) is True                        # closes the gap on first beat back
-        gap = s.execute(text("SELECT started_at, ended_at FROM monitoring_gaps")).first()
+        gap = s.execute(text("SELECT id, started_at, ended_at FROM monitoring_gaps")).first()
         assert gap and (gap.ended_at - gap.started_at) > timedelta(minutes=39)
         inside = _slot(s, org["id"], j, datetime.now(UTC) - timedelta(minutes=30))    # deadline 20 min ago, in the gap
         reconciler.tick(s)
         assert _state(s, inside) == ("unobserved", None)
         assert s.execute(text("SELECT count(*) FROM executions WHERE job_id=:j"), {"j": j}).scalar() == 0
         assert s.execute(text("SELECT job_state FROM jobs WHERE id=:j"), {"j": j}).scalar() != "failed"
-        assert s.execute(text("SELECT slots_unobserved FROM monitoring_gaps")).scalar() == 1
+        # R66: a gap on our side is platform-wide, so every org's slots inside it become unobserved, and
+        # other tests leave pending slots in the shared database. Our own slot is checked exactly above;
+        # here, only that the gap counted it (it used to assert the database held no other slot).
+        assert s.execute(text("SELECT slots_unobserved FROM monitoring_gaps WHERE id=:g"), {"g": gap.id}).scalar() >= 1
 
 
 def test_silent_ingest_is_an_open_gap_for_the_reconciler(make_job, org):

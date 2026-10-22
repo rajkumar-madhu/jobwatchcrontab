@@ -91,13 +91,17 @@ func (c *Client) SendMetrics(ctx context.Context, m map[string]any) error {
 
 // Heartbeat reports liveness plus the interval the server should expect it at, so the server
 // can declare this agent offline relative to *its* cadence rather than a global constant.
-func (c *Client) Heartbeat(ctx context.Context, every time.Duration) error {
-	return c.post(ctx, "/agent/v1/heartbeat", map[string]any{
-		"version": Version, "agent_ts": time.Now().UTC(), "heartbeat_interval_s": int(every.Seconds()),
-	}, nil)
+// R70: `host` carries the host facts (OS, kernel, CPUs, memory, disk size, uptime) so the job
+// page can say where a job runs; nil leaves the server's copy unchanged.
+func (c *Client) Heartbeat(ctx context.Context, every time.Duration, host any) error {
+	body := map[string]any{"version": Version, "agent_ts": time.Now().UTC(), "heartbeat_interval_s": int(every.Seconds())}
+	if host != nil {
+		body["host"] = host
+	}
+	return c.post(ctx, "/agent/v1/heartbeat", body, nil)
 }
 
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 type DiscoveredJob struct {
 	Fingerprint string `json:"fingerprint"`

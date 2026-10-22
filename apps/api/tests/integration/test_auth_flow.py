@@ -376,3 +376,134 @@ def test_signup_goes_to_registration_and_lands_on_onboarding(client):
     import json as _json
     from cronsentinel.routers.auth import _r as redis_
     assert _json.loads(redis_.get(f"oauth:{q['state'][0]}"))["next"] == "/onboarding"
+
+
+# ---- R69: invitations and required MFA through the real callback ---------------------------------
+
+def _org_with_member(email=None, role="developer", require_mfa=False):
+    import uuid as _u
+
+    from cronsentinel.db import system_session
+    oid = _u.uuid4()
+    with system_session() as s:
+        s.execute(text("INSERT INTO organizations (id, name, slug, require_mfa) VALUES (:i, :n, :n, :m)"), {"i": oid, "n": f"r69-{oid.hex[:8]}", "m": require_mfa})
+        if email:
+            uid = s.execute(text("INSERT INTO users (keycloak_sub, email, name) VALUES ('kc-sub-1', :e, 'U') RETURNING id"), {"e": email}).scalar()
+            s.execute(text("INSERT INTO memberships (user_id, org_id, role) VALUES (:u, :o, :r)"), {"u": uid, "o": oid, "r": role})
+    return oid
+
+
+def _cleanup(oid):
+    from cronsentinel.db import system_session
+    with system_session() as s:
+        s.execute(text("DELETE FROM organizations WHERE id=:o"), {"o": oid})
+        s.execute(text("DELETE FROM users WHERE email='u@example.test'"))
+
+
+def _cookie(r):
+    return "cs_session" in r.cookies or any("cs_session" in h for h in r.headers.get_list("set-cookie"))
+
+
+def test_invitation_is_accepted_on_first_sign_in(client):
+    import hashlib
+
+    from cronsentinel.db import system_session
+    oid = _org_with_member()
+    with system_session() as s:
+        s.execute(text("INSERT INTO org_invites (org_id, email, role, token_hash) VALUES (:o, 'U@Example.test', 'sre', :h)"),
+                  {"o": oid, "h": hashlib.sha256(b"tok").hexdigest()})
+    try:
+        state, nonce = _login(client)
+        _state["id_token"] = _id_token(nonce)
+        r = client.get("/auth/callback", params={"code": "c", "state": state})
+        assert r.status_code in (302, 307) and r.headers["location"].endswith("/jobs") and _cookie(r)    # straight in, not onboarding
+        with system_session() as s:
+            m = s.execute(text("SELECT m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE u.email='u@example.test' AND m.org_id=:o"), {"o": oid}).scalar()
+            inv = s.execute(text("SELECT accepted_at FROM org_invites WHERE org_id=:o"), {"o": oid}).scalar()
+        assert m == "sre" and inv is not None
+    finally:
+        _cleanup(oid)
+
+
+def test_expired_or_revoked_invitations_grant_nothing(client):
+    import hashlib
+
+    from cronsentinel.db import system_session
+    oid = _org_with_member()
+    with system_session() as s:
+        s.execute(text("INSERT INTO org_invites (org_id, email, role, token_hash, expires_at) VALUES (:o, 'u@example.test', 'admin', :h, now() - interval '1 minute')"),
+                  {"o": oid, "h": hashlib.sha256(b"old").hexdigest()})
+    try:
+        state, nonce = _login(client)
+        _state["id_token"] = _id_token(nonce)
+        r = client.get("/auth/callback", params={"code": "c", "state": state})
+        assert r.headers["location"].endswith("/onboarding")
+        with system_session() as s:
+            assert s.execute(text("SELECT count(*) FROM memberships WHERE org_id=:o"), {"o": oid}).scalar() == 0
+    finally:
+        _cleanup(oid)
+
+
+def test_required_mfa_sends_a_user_without_a_second_factor_to_set_one_up(client, monkeypatch):
+    from cronsentinel import keycloak_admin as kc
+    calls = []
+    monkeypatch.setattr(kc, "mfa_methods", lambda sub, **k: calls.append(("check", sub)) or set())
+    monkeypatch.setattr(kc, "require_totp_setup", lambda sub, **k: calls.append(("require", sub)))
+    oid = _org_with_member("u@example.test", require_mfa=True)
+    try:
+        state, nonce = _login(client)
+        _state["id_token"] = _id_token(nonce)
+        r = client.get("/auth/callback", params={"code": "c", "state": state})
+        assert r.status_code in (302, 307) and not _cookie(r)                         # no session yet
+        q = parse_qs(urlparse(r.headers["location"]).query)
+        assert q["prompt"] == ["login"] and q["login_hint"] == ["u@example.test"]       # back to Keycloak to set up TOTP
+        assert calls == [("check", "kc-sub-1"), ("require", "kc-sub-1")]
+        # with an authenticator app set up, the same sign-in goes through
+        monkeypatch.setattr(kc, "mfa_methods", lambda sub, **k: {"otp"})
+        state, nonce = _login(client)
+        _state["id_token"] = _id_token(nonce)
+        r = client.get("/auth/callback", params={"code": "c", "state": state})
+        assert r.headers["location"].endswith("/jobs") and _cookie(r)
+    finally:
+        _cleanup(oid)
+
+
+def test_required_mfa_fails_closed_when_it_cannot_be_checked(client, monkeypatch):
+    from cronsentinel import keycloak_admin as kc
+    def boom(sub, **k):
+        raise kc.KeycloakAdminError("down")
+    monkeypatch.setattr(kc, "mfa_methods", boom)
+    oid = _org_with_member("u@example.test", require_mfa=True)
+    try:
+        state, nonce = _login(client)
+        _state["id_token"] = _id_token(nonce)
+        r = client.get("/auth/callback", params={"code": "c", "state": state})
+        assert r.status_code == 503 and not _cookie(r)
+    finally:
+        _cleanup(oid)
+
+
+def test_required_mfa_refuses_social_sign_in(client, monkeypatch):
+    from cronsentinel.config import settings
+    monkeypatch.setattr(settings, "auth_social_providers", "google")
+    oid = _org_with_member("u@example.test", require_mfa=True)
+    try:
+        state, nonce = _login(client)
+        _state["id_token"] = _id_token(nonce, idp="google")
+        r = client.get("/auth/callback", params={"code": "c", "state": state})
+        assert r.status_code == 403 and "multi-factor" in r.text and not _cookie(r)
+    finally:
+        _cleanup(oid)
+
+
+def test_orgs_without_required_mfa_are_unchanged(client, monkeypatch):
+    from cronsentinel import keycloak_admin as kc
+    monkeypatch.setattr(kc, "mfa_methods", lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not be called")))
+    oid = _org_with_member("u@example.test")
+    try:
+        state, nonce = _login(client)
+        _state["id_token"] = _id_token(nonce)
+        r = client.get("/auth/callback", params={"code": "c", "state": state})
+        assert r.headers["location"].endswith("/jobs") and _cookie(r)
+    finally:
+        _cleanup(oid)

@@ -66,3 +66,11 @@ Rolling the app back is safe only if the previous release works with the new sch
 exception: **0016** (hashed ping tokens) drops the plaintext token column, so a release before R41
 cannot run on a database at 0016 or later. Before deploying a release whose changelog lists a
 migration that drops or renames something, take a database backup; the backup is the rollback.
+
+
+## Agent installer (R62)
+The ingest host serves the Linux agent installer at `/agent/install.sh`, filled in with
+`AGENT_DOWNLOAD_BASE`, `AGENT_VERSION` and `INGEST_PUBLIC_URL`. The deploy workflow sets the first two
+to the GitHub release of the deployed tag, where the release job uploads the agent binaries and
+`SHA256SUMS`. Values are validated strictly (plain `https://` URLs, a tag-like version); anything else
+and the endpoint answers 503 instead of serving a script. The smoke test checks that it is served.

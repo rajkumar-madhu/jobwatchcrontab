@@ -59,7 +59,7 @@ function LogsInner() {
         <button className="btn btn-primary" type="submit">Search</button>
       </form>
       {q.error ? <ErrorBox error={q.error} /> : q.isLoading ? <Skeleton /> : items.length === 0
-        ? <Empty title="No log lines match" hint="Logs come from cs-run wrappers and JSON heartbeats with stdout_tail / stderr_tail. Widen the time range or clear filters." />
+        ? <Empty title="No log lines match" hint="Logs come from jobwatch-run wrappers and JSON heartbeats with stdout_tail / stderr_tail. Widen the time range or clear filters." />
         : <div className="space-y-2">{items.map((r, k) => (
             <div key={r.execution_id + r.stream + r.content.slice(0, 8)}>
               {(k === 0 || hourKey(r.scheduled_ts) !== hourKey(items[k - 1].scheduled_ts)) &&

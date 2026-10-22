@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
-# curl -fsSL https://<server>/install.sh | sudo bash -s -- --server https://ingest.example.com --token <bootstrap>
+# Usually run as the command shown in JobWatch (Servers & agents), which serves this script with the
+# defaults below filled in:
+#   curl -fsSL https://<ingest>/agent/install.sh | sudo bash -s -- --token <bootstrap>
+# From a release download instead: pass --server, and set CS_DOWNLOAD_BASE / CS_AGENT_VERSION.
 set -euo pipefail
-SERVER=""; TOKEN=""; VERSION="${CS_AGENT_VERSION:-0.1.0}"; BASE="${CS_DOWNLOAD_BASE:-https://downloads.example.com/agent}"
+# --- defaults: JobWatch rewrites these three lines when it serves this script (R62) ---
+DEFAULT_SERVER=""
+DEFAULT_VERSION="0.1.0"
+DEFAULT_BASE="https://downloads.example.com/agent"
+# --- end defaults ---
+SERVER="${CS_SERVER:-$DEFAULT_SERVER}"; TOKEN=""; VERSION="${CS_AGENT_VERSION:-$DEFAULT_VERSION}"; BASE="${CS_DOWNLOAD_BASE:-$DEFAULT_BASE}"
 while [[ $# -gt 0 ]]; do case "$1" in --server) SERVER="$2"; shift 2;; --token) TOKEN="$2"; shift 2;; *) shift;; esac; done
-[[ -z "$SERVER" || -z "$TOKEN" ]] && { echo "usage: install.sh --server URL --token TOKEN"; exit 1; }
+[[ -z "$SERVER" || -z "$TOKEN" ]] && { echo "usage: install.sh --token TOKEN [--server https://ingest.example.com]"; exit 1; }
 [[ $EUID -ne 0 ]] && { echo "run as root"; exit 1; }
 [[ "$SERVER" == https://* ]] || { echo "--server must be https://"; exit 1; }
 ARCH=$(uname -m); case "$ARCH" in x86_64) ARCH=amd64;; aarch64) ARCH=arm64;; *) echo "unsupported arch $ARCH"; exit 1;; esac
@@ -18,7 +26,8 @@ curl -fsSL --proto '=https' "$BASE/$VERSION/SHA256SUMS" -o "$TMP/SHA256SUMS"
   || { echo "checksum verification failed — not installing"; exit 1; }
 
 install -m 0755 "$TMP/$BIN" /usr/local/bin/cronsentinel-agent
-ln -sf /usr/local/bin/cronsentinel-agent /usr/local/bin/cs-run   # `cs-run` alias → `cronsentinel-agent exec`
+ln -sf /usr/local/bin/cronsentinel-agent /usr/local/bin/jobwatch-run   # R71: `jobwatch-run` → `cronsentinel-agent exec`
+ln -sf /usr/local/bin/cronsentinel-agent /usr/local/bin/cs-run         # older name, kept so existing crontabs keep working
 install -d -m 0750 /var/lib/cronsentinel /etc/cronsentinel
 # Spool for wrapped jobs that do not run as root: anyone may create a file, nobody but root may list
 # or read other users' files (sticky + no read bit for others). The daemon imports and deletes them.
@@ -26,4 +35,4 @@ install -d -m 1733 /var/lib/cronsentinel/spool
 /usr/local/bin/cronsentinel-agent enroll --server "$SERVER" --token "$TOKEN"
 install -m 0644 "$TMP/cronsentinel-agent.service" /etc/systemd/system/cronsentinel-agent.service
 systemctl daemon-reload && systemctl enable --now cronsentinel-agent
-echo "JobWatch agent installed. Wrap jobs with: cs-run -- /path/to/script.sh"
+echo "JobWatch agent installed. Wrap jobs with: jobwatch-run -- /path/to/script.sh"

@@ -14,6 +14,9 @@ from . import events
 from .config import settings
 from .db import engine
 from .routers import (
+    audit_streams,
+    metric_exports,
+    oncall,
     imports,
     scim,
     sso,
@@ -33,6 +36,7 @@ from .routers import (
     overview,
     platform,
     status_pages,
+    team,
     topology,
 )
 from .routers import auth as authr
@@ -56,8 +60,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="JobWatch API", version="0.1.0", lifespan=lifespan, docs_url="/docs", openapi_url="/openapi.json")
 app.add_middleware(CORSMiddleware, allow_origins=[settings.web_public_url], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.add_exception_handler(scim.ScimError, scim.scim_error_response)   # R44: RFC 7644 error bodies
-for r in (jobs.router, executions.router, org.router, overview.router, alerting.router, incidents.router, agents.admin, logs.router, authr.router, status_pages.router, status_pages.public, k8s.router, topology.router, analytics.router, copilot.router, billing.router, integrations.router, platform.router, gdpr.router, sso.router, scim.router, imports.router):
+for r in (jobs.router, executions.router, org.router, overview.router, alerting.router, incidents.router, agents.admin, logs.router, authr.router, status_pages.router, status_pages.public, k8s.router, topology.router, analytics.router, copilot.router, billing.router, integrations.router, platform.router, gdpr.router, sso.router, scim.router, imports.router, audit_streams.router, metric_exports.router, oncall.router, team.router, team.public):
     app.include_router(r)
+
+from . import apidocs  # noqa: E402  R69: documented OpenAPI (summaries, roles, auth, errors, ping endpoints)
+apidocs.install(app)
 
 
 HTTP_LAT = Histogram("cronsentinel_http_request_seconds", "HTTP latency", ["method", "path", "status"])

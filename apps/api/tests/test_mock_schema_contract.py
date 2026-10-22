@@ -58,7 +58,6 @@ UNMODELLED: set[str] = {
     # Generated from the route table at R16 — detail/drill-down reads off the dashboard's main
     # paths. Each is a known gap: nothing validates its response shape.
     "/api/v1/alerts/ledger",
-    "/api/v1/alerts/maintenance",
     "/api/v1/analytics/mttr",
     "/api/v1/analytics/report",
     "/api/v1/api-keys",
@@ -67,7 +66,8 @@ UNMODELLED: set[str] = {
     "/api/v1/clusters/{cluster_id}/cronjobs",
     "/api/v1/copilot/history",
     "/api/v1/copilot/suggestions",
-    "/api/v1/executions/{execution_id}",
+    # R70: the run's output as a plain-text download — not JSON, nothing to model.
+    "/api/v1/executions/{execution_id}/logs",
     "/api/v1/executions/{execution_id}/compare/{other_id}",
     "/api/v1/incidents/{incident_id}",
     "/api/v1/jobs/{job_id}/impact",

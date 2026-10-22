@@ -891,7 +891,7 @@ below `md`, nodes and connectors stay. Screenshot in `docs/screenshots/welcome-p
 
 The Go agent under `agents/linux-agent` had never been compiled (open since R1: no Go toolchain in
 the sandbox, `go.dev` and `proxy.golang.org` off the egress allowlist). Every claim about it on the
-landing pages — exit codes preserved, env var values never collected, `cs-run` alias — was source
+landing pages — exit codes preserved, env var values never collected, `jobwatch-run` alias — was source
 inspection. Route found: the `go-bin` wheel on PyPI carries a full Go toolchain (1.27.1). The agent
 is stdlib-only, so no module proxy is needed.
 
@@ -901,7 +901,7 @@ is stdlib-only, so no module proxy is needed.
 - `CRONSENTINEL_CONFIG` overrides `/etc/cronsentinel/agent.json` so the agent runs unprivileged
   (tests, a per-user install). The buffer path lives inside the config as before.
 - `tests/fullstack/test_linux_agent_e2e.py` drives the real chain with the real binary: API mints
-  a bootstrap token → `enroll` at ingest (token is one-time: second use → 401) → the `cs-run`
+  a bootstrap token → `enroll` at ingest (token is one-time: second use → 401) → the `jobwatch-run`
   symlink from `packaging/install.sh` wraps `sh -c 'echo …; exit 3'` with `DB_PASSWORD=<unique>`
   in its environment → `run` flushes → the exec-processor writes the execution. Asserts: wrapper
   exits 3, stdout/stderr pass through, on-disk buffer is `[start, fail]`, `env_var_names ⊆` the
@@ -916,7 +916,7 @@ is stdlib-only, so no module proxy is needed.
 Brand review of `/welcome` and `/product` (High/Medium items), resolved by evidence where the code
 backs the claim and by removal where it does not:
 - heartbeat URL `/hb/$TOKEN` → `/ping/$TOKEN` (the route is `/ping/{token}`).
-- `cs-run` stays: it is a real alias (`install.sh` symlink; `main.go` dispatches on `argv[0]`),
+- `jobwatch-run` stays: it is a real alias (`install.sh` symlink; `main.go` dispatches on `argv[0]`),
   now exercised by the E2E test above. "Environment variable values are never collected" stays for
   the same reason.
 - Pricing rebuilt from `plan_limits` and what code enforces: caps and retention (`jobs.py`,

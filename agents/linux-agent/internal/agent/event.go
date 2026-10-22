@@ -18,4 +18,7 @@ type Event struct {
 	StderrTail  string            `json:"stderr_tail,omitempty"`
 	EnvVarNames []string          `json:"env_var_names,omitempty"`
 	Meta        map[string]string `json:"meta,omitempty"`
+	// R54: numbers the job reported through $JOBWATCH_METRICS_FILE (size_bytes, rows, …), checked
+	// by the job's assertions on the server.
+	Metrics map[string]float64 `json:"metrics,omitempty"`
 }

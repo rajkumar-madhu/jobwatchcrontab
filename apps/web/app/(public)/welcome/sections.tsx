@@ -14,7 +14,7 @@ import shotAlerting from "./shots/alerting.webp";
 import shotStatus from "./shots/status.webp";
 import shotCopilot from "./shots/copilot.webp";
 
-export function ProductFrame({ src, alt, priority = false, url = "app.jobwatch.example" }: { src: StaticImageData; alt: string; priority?: boolean; url?: string }) {
+export function ProductFrame({ src, alt, priority = false, url = "jobwatch.wecrew.in" }: { src: StaticImageData; alt: string; priority?: boolean; url?: string }) {
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-panel shadow-[0_30px_80px_-40px_rgb(0_0_0/.45)]">
       <div className="flex items-center gap-2 border-b border-line bg-raised/60 px-3 py-2" aria-hidden>
@@ -31,7 +31,7 @@ export function HeroProduct() {
 }
 
 const WORKS_WITH = ["Linux cron", "systemd timers", "Kubernetes CronJobs", "GitHub Actions", "GitLab CI", "Jenkins", "Airflow",
-  "Slack", "Microsoft Teams", "PagerDuty", "Opsgenie", "Okta", "Microsoft Entra ID", "Healthchecks.io import", "Cronitor import"];
+  "Slack", "Microsoft Teams", "PagerDuty", "Opsgenie", "Okta", "Microsoft Entra ID", "Healthchecks.io import", "Cronitor import", "Sentry Crons import"];
 
 export function WorksWith() {
   return (
@@ -206,7 +206,7 @@ export function CopilotSection() {
 
 const USES: { title: string; risk: string; catch: string }[] = [
   { title: "Database backups", risk: "The job stops after a credentials change or a host rebuild, and nobody looks until a restore is needed.",
-    catch: "Missed the moment the 02:00 run does not start; failed runs arrive with their output." },
+    catch: "Missed the moment the 02:00 run does not start, and a run that exits 0 but reports an empty file fails its size check." },
   { title: "Data pipelines and ETL", risk: "An upstream export arrives late, the load runs on stale data or not at all, and reports go out wrong.",
     catch: "Late and missed runs per stage, run durations over time, alerts routed to the data team." },
   { title: "Billing and invoicing", risk: "A month-end run fails halfway, or runs twice, and finance hears about it from customers.",
@@ -244,7 +244,6 @@ export function ClosingBand() {
   return (
     <section className="px-6 py-20">
       <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-2xl bg-ink px-8 py-16 text-center text-bg sm:px-16">
-        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-60 [background:radial-gradient(40rem_20rem_at_50%_120%,rgb(var(--glow)/.55),transparent_70%)]" />
         <div className="relative">
           <h2 className="mx-auto max-w-[760px] font-display text-3xl font-semibold sm:text-5xl">Find out about the next missed run before your users do.</h2>
           <p className="mx-auto mt-4 max-w-[560px] text-bg/70">Five jobs free, no card. A ping URL working in two minutes, or the agent finding your crontabs for you.</p>
@@ -252,6 +251,38 @@ export function ClosingBand() {
             <Link href="/signup" className="btn btn-primary px-6 py-3 text-[15px]">Start monitoring free</Link>
             <Link href="/compare" className="btn border-bg/25 bg-transparent px-6 py-3 text-[15px] text-bg hover:bg-bg/10">Compare alternatives</Link>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+const INTEGRATIONS: { group: string; items: string[] }[] = [
+  { group: "Where jobs run", items: ["Linux cron", "systemd timers", "Kubernetes CronJobs", "GitHub Actions", "GitLab CI", "Jenkins", "Airflow", "Any script (ping URL)"] },
+  { group: "Alerting and on-call", items: ["Slack", "Microsoft Teams", "Discord", "Telegram", "Email", "PagerDuty", "Opsgenie", "Datadog Events", "Signed webhooks"] },
+  { group: "Observability and SIEM", items: ["Datadog metrics", "Datadog Logs", "Splunk HEC", "Any SIEM via signed webhook", "NATS and HTTPS signal streams"] },
+  { group: "Identity", items: ["Okta", "Microsoft Entra ID", "Google Workspace", "Any SAML 2.0 or OIDC provider", "SCIM users and groups"] },
+  { group: "As code", items: ["Terraform", "OpenTofu", "REST API"] },
+  { group: "Move from", items: ["Healthchecks.io", "Cronitor", "Sentry Crons"] },
+];
+
+/** R58: integrations grid (the section Datadog's homepage uses to show breadth). Names only, no logos. */
+export function Integrations() {
+  const total = INTEGRATIONS.reduce((n, g) => n + g.items.length, 0);
+  return (
+    <section className="border-b border-line" id="integrations">
+      <div className="mx-auto max-w-[1200px] px-6 py-20">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="max-w-[640px] font-display text-3xl font-semibold sm:text-4xl">Fits into the tools you already run</h2>
+          <p className="text-sm text-mute">{total} integrations; some depend on your plan (see Pricing)</p>
+        </div>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {INTEGRATIONS.map((g) => (
+            <div key={g.group} className="card p-4">
+              <h3 className="text-sm font-semibold">{g.group}</h3>
+              <ul className="mt-3 space-y-1.5 text-sm">{g.items.map((i) => <li key={i}>{i}</li>)}</ul>
+            </div>))}
         </div>
       </div>
     </section>

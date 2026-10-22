@@ -28,6 +28,30 @@ type CronJobSpec struct {
 	ActiveDeadlineS, StartingDeadlineS                           *int64
 	LastScheduleAt, LastSuccessAt                                *time.Time
 	UID                                                          string
+	// R65: spec.timeZone (schedules were treated as UTC before), and only the jobwatch.io/* annotations
+	// (other annotations can carry anything, including secrets, and are never sent).
+	TimeZone    string            `json:",omitempty"`
+	Annotations map[string]string `json:",omitempty"`
+}
+
+const annotationPrefix = "jobwatch.io/"
+
+// jobwatchAnnotations keeps at most 20 jobwatch.io/* annotations, values capped at 1,000 bytes.
+func jobwatchAnnotations(in map[string]string) map[string]string {
+	var out map[string]string
+	for k, v := range in {
+		if !strings.HasPrefix(k, annotationPrefix) || len(out) >= 20 {
+			continue
+		}
+		if out == nil {
+			out = map[string]string{}
+		}
+		if len(v) > 1000 {
+			v = v[:1000]
+		}
+		out[k] = v
+	}
+	return out
 }
 
 type ExecEvent struct {
@@ -139,6 +163,10 @@ func cronJobSpec(cj *batchv1.CronJob) CronJobSpec {
 	if cj.Spec.Suspend != nil {
 		s.Suspend = *cj.Spec.Suspend
 	}
+	if cj.Spec.TimeZone != nil {
+		s.TimeZone = *cj.Spec.TimeZone
+	}
+	s.Annotations = jobwatchAnnotations(cj.Annotations)
 	if cj.Status.LastScheduleTime != nil {
 		t := cj.Status.LastScheduleTime.Time
 		s.LastScheduleAt = &t

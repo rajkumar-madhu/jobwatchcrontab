@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from .. import oncalendar, pingtokens, ratelimit, schedule
+from ..assertions import clean_metrics
 from ..auth import (
     Principal,
     _inet,
@@ -23,10 +24,24 @@ from ..auth import (
 )
 from ..config import settings
 from ..db import system_session, tenant_session
-from ..schemas import AgentOut
+from ..schemas import AgentDetailOut, AgentOut
+from .. import hostcontext
 
 admin = APIRouter(prefix="/api/v1/agents", tags=["agents"])
 agent = APIRouter(prefix="/agent/v1", tags=["agent-ingest"])
+installer = APIRouter(tags=["agent-ingest"])   # R62: <ingest>/agent/install.sh
+
+
+@installer.get("/agent/install.sh", include_in_schema=False)
+def install_script():
+    """The Linux agent installer with this server's defaults filled in (cronsentinel/agentinstall.py)."""
+    from fastapi.responses import PlainTextResponse
+
+    from .. import agentinstall
+    if (why := agentinstall.problem()):
+        return PlainTextResponse(f"JobWatch cannot serve the agent installer: {why}\n", status_code=503)
+    return PlainTextResponse(agentinstall.render(), media_type="text/x-shellscript",
+                             headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 _r = redis.Redis.from_url(settings.redis_url, decode_responses=True)
 
 
@@ -42,16 +57,32 @@ def bootstrap_token(body: BootstrapIn, request: Request, p: Principal = Depends(
     _r.setex(f"bootstrap:{tok}", body.ttl_hours * 3600, json.dumps({"org_id": str(p.org_id), "name": body.name}))
     with tenant_session(p.org_id) as s:
         audit(s, p, "agent.bootstrap_token", "agent", tok[:12], ip=request.client.host)
-    return {"token": tok, "expires_in_s": body.ttl_hours * 3600,
-            "install": f"curl -fsSL https://<server>/install.sh | sudo bash -s -- --server https://<ingest> --token {tok}"}
+    # R62: a real command when the installer can be served; otherwise say what is missing
+    from .. import agentinstall
+    return {"token": tok, "expires_in_s": body.ttl_hours * 3600, "install": agentinstall.install_command(tok),
+            "install_problem": agentinstall.problem()}
 
 
 @admin.get("", response_model=list[AgentOut])
 def list_agents(p: Principal = Depends(current_principal)):
     with tenant_session(p.org_id) as s:
-        rows = s.execute(text("SELECT id, kind, name, host_id, version, status, last_seen_at, skew_ms, revoked_at, created_at, "
+        rows = s.execute(text("SELECT id, kind, name, host_id, version, status, last_seen_at, skew_ms, revoked_at, created_at, COALESCE(heartbeat_interval_s, 60) AS heartbeat_interval_s, "
                               "(SELECT count(*) FROM jobs j WHERE j.server_id IN (SELECT id FROM servers WHERE agent_id=agents.id)) AS jobs FROM agents ORDER BY name")).all()
-    return [dict(r._mapping) for r in rows]
+    now = datetime.now(UTC)   # R72: the list and the detail page agree on online/offline (3× the agent's own interval)
+    return [{**dict(r._mapping), "state": hostcontext.agent_state(r.last_seen_at, r.heartbeat_interval_s, r.revoked_at, now)} for r in rows]
+
+
+@admin.get("/{agent_id}", response_model=AgentDetailOut)
+def get_agent(agent_id: UUID, p: Principal = Depends(current_principal)):
+    """R70: one agent with its server's facts, the latest host sample, 24 h of samples and the jobs on it."""
+    with tenant_session(p.org_id) as s:
+        a = s.execute(text("SELECT id, kind, name, host_id, version, status, last_seen_at, skew_ms, revoked_at, created_at, COALESCE(heartbeat_interval_s, 60) AS heartbeat_interval_s, "
+                           "(SELECT id FROM servers WHERE agent_id=agents.id LIMIT 1) AS server_id FROM agents WHERE id=:id"), {"id": str(agent_id)}).first()
+        if not a: raise HTTPException(404)
+        ctx = hostcontext.host_context(s, a.server_id) if a.server_id else None
+    d = dict(a._mapping); d.pop("server_id")
+    d["state"] = hostcontext.agent_state(a.last_seen_at, a.heartbeat_interval_s, a.revoked_at, datetime.now(UTC))
+    return {**d, "jobs": len(ctx["jobs"]) if ctx else 0, "context": ctx}
 
 
 @admin.post("/{agent_id}/rotate")
@@ -282,7 +313,8 @@ async def events(body: EventsIn, request: Request, a: dict = Depends(agent_princ
                     "sequence": e.get("sequence", 0), "agent_ts": e.get("agent_ts"), "server_ts": now.isoformat(),
                     "duration_ms": e.get("duration_ms"), "exit_code": e.get("exit_code"), "host": e.get("host"),
                     "stdout_tail": e.get("stdout_tail"), "stderr_tail": e.get("stderr_tail"),
-                    "meta": {**(e.get("meta") or {}), "env_var_names": e.get("env_var_names") or []}})
+                    "meta": {**(e.get("meta") or {}), "env_var_names": e.get("env_var_names") or []},
+                    "metrics": clean_metrics(e.get("metrics") if isinstance(e.get("metrics"), dict) else {})})   # R54
         accepted += 1
     if js is not None:
         for ev in out:
@@ -324,4 +356,10 @@ def agent_heartbeat(body: dict, a: dict = Depends(agent_principal)):
         s.execute(text("UPDATE agents SET last_seen_at=now(), version=COALESCE(:v, version), skew_ms=:sk, status='active', "
                        "heartbeat_interval_s=COALESCE(:hb, heartbeat_interval_s) WHERE id=:a"),
                   {"v": body.get("version"), "sk": skew, "hb": hb, "a": a["agent_id"]})
+        # R70: host facts (os, kernel, cpus, memory, disk size, uptime …) ride on the heartbeat; whitelisted in hostcontext
+        facts = hostcontext.clean_facts(body.get("host"))
+        if facts:
+            # R72: only when something changed — this runs every heartbeat on the busiest table
+            s.execute(text("UPDATE servers SET facts=CAST(:f AS jsonb), facts_updated_at=now() WHERE org_id=:o AND agent_id=:a AND facts IS DISTINCT FROM CAST(:f AS jsonb)"),
+                      {"f": json.dumps(facts), "o": a["org_id"], "a": a["agent_id"]})
     return {"ok": True, "skew_ms": skew, "server_ts": datetime.now(UTC).isoformat()}

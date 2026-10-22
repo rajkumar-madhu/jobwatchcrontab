@@ -44,3 +44,39 @@ def test_oidc_representation_uses_discovered_endpoints_and_pkce():
 def test_disabled_representation_keeps_the_idp():
     rep = kc.idp_representation("org-1", "oidc", "Okta", {"issuer": "https://i", "client_id": "c", "client_secret": "s"}, enabled=False)
     assert rep["enabled"] is False and rep["alias"] == "org-1"
+
+
+def _kc(monkeypatch, handler):
+    monkeypatch.setattr(settings, "keycloak_issuer", "https://kc.test/realms/cronsentinel")
+    monkeypatch.setattr(settings, "keycloak_admin_client_secret", "x")
+    kc._token.clear()
+    def h(req):
+        if req.url.path.endswith("/token"):
+            return httpx.Response(200, json={"access_token": "t", "expires_in": 60})
+        return handler(req)
+    return httpx.Client(transport=httpx.MockTransport(h))
+
+
+def test_mfa_methods_reads_credentials(monkeypatch):   # R69
+    c = _kc(monkeypatch, lambda req: httpx.Response(200, json=[{"type": "password"}, {"type": "otp"}, {"type": "webauthn"}]))
+    assert kc.mfa_methods("u1", client=c) == {"otp", "webauthn"}
+    c = _kc(monkeypatch, lambda req: httpx.Response(200, json=[{"type": "password"}]))
+    assert kc.mfa_methods("u1", client=c) == set()
+    c = _kc(monkeypatch, lambda req: httpx.Response(403, json={}))
+    import pytest
+    with pytest.raises(kc.KeycloakAdminError):
+        kc.mfa_methods("u1", client=c)
+
+
+def test_require_totp_setup_adds_the_action_once(monkeypatch):   # R69
+    puts, state = [], {"actions": ["VERIFY_EMAIL"]}
+    def h(req):
+        if req.method == "GET":
+            assert req.url.path == "/admin/realms/cronsentinel/users/u1"
+            return httpx.Response(200, json={"id": "u1", "requiredActions": state["actions"]})
+        puts.append(json.loads(req.content)); state["actions"] = puts[-1]["requiredActions"]
+        return httpx.Response(204)
+    c = _kc(monkeypatch, h)
+    kc.require_totp_setup("u1", client=c)
+    kc.require_totp_setup("u1", client=c)
+    assert puts == [{"requiredActions": ["VERIFY_EMAIL", "CONFIGURE_TOTP"]}]

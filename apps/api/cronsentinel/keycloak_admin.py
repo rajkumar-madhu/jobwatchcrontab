@@ -128,3 +128,33 @@ def broker_redirect_uri(alias: str) -> str:
 
 def host_of(url: str) -> str:
     return urlsplit(url).hostname or ""
+
+
+# ---- R69: multi-factor authentication ------------------------------------------------------------
+# Needs realm-management view-users + manage-users on the jobwatch-admin service account (realm export).
+MFA_TYPES = {"otp", "webauthn", "webauthn-passwordless"}
+
+
+def mfa_methods(user_id: str, *, client: httpx.Client | None = None) -> set[str]:
+    """Second factors the Keycloak user has set up (credential types: otp, webauthn …)."""
+    c = client or _client()
+    root, realm = _base()
+    r = c.get(f"{root}/admin/realms/{realm}/users/{user_id}/credentials", headers={"Authorization": f"Bearer {_access_token(c)}"})
+    if r.status_code != 200:
+        raise KeycloakAdminError(f"could not read the user's credentials ({r.status_code})")
+    return {x.get("type") for x in r.json() if isinstance(x, dict)} & MFA_TYPES
+
+
+def require_totp_setup(user_id: str, *, client: httpx.Client | None = None) -> None:
+    """Make Keycloak ask the user to set up an authenticator app at their next sign-in."""
+    c = client or _client()
+    root, realm = _base()
+    h = {"Authorization": f"Bearer {_access_token(c)}"}
+    u = c.get(f"{root}/admin/realms/{realm}/users/{user_id}", headers=h)
+    if u.status_code != 200:
+        raise KeycloakAdminError(f"could not read the user ({u.status_code})")
+    actions = list(u.json().get("requiredActions") or [])
+    if "CONFIGURE_TOTP" not in actions:
+        r = c.put(f"{root}/admin/realms/{realm}/users/{user_id}", headers=h, json={"requiredActions": actions + ["CONFIGURE_TOTP"]})
+        if r.status_code not in (200, 204):
+            raise KeycloakAdminError(f"could not require authenticator setup ({r.status_code})")

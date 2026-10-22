@@ -78,11 +78,14 @@ def poll_slots(s, since: datetime) -> tuple[int, datetime]:
 
 
 def poll_incidents(s, since: datetime) -> tuple[int, datetime]:
-    rows = s.execute(text("""SELECT ie.created_at, ie.kind, i.id::text, i.org_id::text, i.title, i.severity::text, i.status::text,
-            i.affected_job_ids::text[] AS affected_job_ids, i.correlation_signals, i.acked_by::text, i.resolution
+    # R63: incident_events has `ts`, not `created_at`. The old query failed on every poll, so incident
+    # signals never reached destinations; no test ran it against a real database.
+    rows = s.execute(text("""SELECT ie.ts AS created_at, ie.kind, i.id::text, i.org_id::text, i.title, i.severity::text, i.status::text,
+            i.affected_job_ids::text[] AS affected_job_ids, i.correlation_signals,
+            CASE WHEN ie.kind = 'acknowledged' THEN ie.actor_id::text END AS acked_by, i.resolution
         FROM incident_events ie JOIN incidents i ON i.id = ie.incident_id
-        WHERE ie.created_at > :since AND ie.kind IN ('opened','acknowledged','note','resolved','severity_changed')
-        ORDER BY ie.created_at LIMIT 500"""), {"since": since}).all()
+        WHERE ie.ts > :since AND ie.kind IN ('opened','acknowledged','note','resolved','severity_changed')
+        ORDER BY ie.ts LIMIT 500"""), {"since": since}).all()
     kind_map = {"opened": "opened", "resolved": "resolved"}
     n, last = 0, since
     for r in rows:
@@ -95,7 +98,8 @@ def poll_incidents(s, since: datetime) -> tuple[int, datetime]:
 def poll_agents(s) -> int:
     """Emits agent.status on transitions only, using each agent's own reported heartbeat interval
     (R3 open item closed: no more fixed 10-minute threshold)."""
-    rows = s.execute(text("""SELECT a.id::text, a.org_id::text, a.name, a.host, a.kind::text, a.last_seen_at, a.heartbeat_interval_s,
+    rows = s.execute(text("""SELECT a.id::text, a.org_id::text, a.name, a.host_id AS host, a.kind::text, a.last_seen_at,
+               COALESCE(a.heartbeat_interval_s, 60) AS heartbeat_interval_s,   -- R63: was a.host (no such column)
         (SELECT count(*) FROM jobs j JOIN servers sv ON sv.id=j.server_id WHERE sv.agent_id=a.id) AS jobs_affected
         FROM agents a WHERE a.revoked_at IS NULL""")).all()
     now, n = datetime.now(UTC), 0
@@ -127,10 +131,64 @@ async def poll_loop():
         await asyncio.sleep(POLL_S)
 
 
+AUDIT_STREAM_S = 5
+
+
+async def audit_stream_loop():
+    """R57: push new audit-log events to customer SIEMs (cronsentinel/auditstream.py)."""
+    from .. import auditstream
+
+    def _once():
+        with system_session() as s:
+            return auditstream.tick(s)
+    while True:
+        try:
+            n = await asyncio.to_thread(_once)
+            if n:
+                log.info("audit events streamed", events=n)
+        except Exception as e:
+            log.error("audit stream tick failed", error=str(e))
+        await asyncio.sleep(AUDIT_STREAM_S)
+
+
+async def metrics_export_loop():
+    """R58: job metrics to Datadog (cronsentinel/metricsexport.py); each export sends once a minute."""
+    from .. import metricsexport
+
+    def _once():
+        with system_session() as s:
+            return metricsexport.tick(s)
+    while True:
+        try:
+            n = await asyncio.to_thread(_once)
+            if n:
+                log.info("job metrics exported", points=n)
+        except Exception as e:
+            log.error("metrics export tick failed", error=str(e))
+        await asyncio.sleep(15)
+
+
+async def escalation_loop():
+    """R66: move escalations on: page the next step when nobody acknowledged in time."""
+    from .. import escalation
+
+    def _once():
+        with system_session() as s:
+            return escalation.tick(s)
+    while True:
+        try:
+            n = await asyncio.to_thread(_once)
+            if n:
+                log.info("escalations advanced", runs=n)
+        except Exception as e:
+            log.error("escalation tick failed", error=str(e))
+        await asyncio.sleep(15)
+
+
 async def main():
     nc, js = await events.connect()
     log.info("outbound-exporter started")
-    await asyncio.gather(consume_jobstatus(js), poll_loop())
+    await asyncio.gather(consume_jobstatus(js), poll_loop(), audit_stream_loop(), metrics_export_loop(), escalation_loop())
 
 
 if __name__ == "__main__":

@@ -58,10 +58,13 @@ def send_pagerduty(cfg: dict, title: str, body: str, p: dict, *, client: httpx.C
                 "summary": title[:1024], "source": "JobWatch", "severity": PD_SEVERITY.get(p.get("severity", "medium"), "warning"),
                 "component": p.get("job_name"), "class": p.get("condition"), "timestamp": p.get("ts"),
                 "custom_details": {"job": p.get("job_name"), "status": f"{p.get('prev_status')} → {p.get('new_status')}",
-                                   "incident_id": p.get("incident_id"), "execution_id": p.get("execution_id"), "details": body},
+                                   "incident_id": p.get("incident_id"), "execution_id": p.get("execution_id"), "details": body,
+                                   **{k: v for k, v in (p.get("context") or {}).items() if isinstance(v, (str, int, float, list))}},
             },
         }
-        if cfg.get("dashboard_url") and p.get("job_id") and not p.get("test"):
+        if (p.get("context") or {}).get("link"):
+            trigger["links"] = [{"href": p["context"]["link"], "text": "Open in JobWatch"}]
+        elif cfg.get("dashboard_url") and p.get("job_id") and not p.get("test"):
             trigger["links"] = [{"href": f"{cfg['dashboard_url'].rstrip('/')}/jobs/{p['job_id']}", "text": "Open in JobWatch"}]
         events = [trigger]
         if p.get("test"):   # prove the key works, then close it again so nobody is left paged
@@ -83,8 +86,10 @@ def send_opsgenie(cfg: dict, title: str, body: str, p: dict, *, client: httpx.Cl
     alert = {"message": title[:130], "alias": key, "description": body[:15000], "source": "JobWatch",
              "priority": OG_PRIORITY.get(p.get("severity", "medium"), "P3"),
              "tags": [t for t in ("jobwatch", p.get("condition")) if t],
-             "details": {k: str(v) for k, v in {"job": p.get("job_name"), "status": p.get("new_status"),
-                         "incident_id": p.get("incident_id"), "execution_id": p.get("execution_id")}.items() if v}}
+             "details": {k: str(v)[:500] for k, v in {"job": p.get("job_name"), "status": p.get("new_status"),
+                         "incident_id": p.get("incident_id"), "execution_id": p.get("execution_id"),
+                         **{ck: (", ".join(map(str, cv)) if isinstance(cv, list) else cv)
+                            for ck, cv in (p.get("context") or {}).items() if not isinstance(cv, dict)}}.items() if v}}
     if cfg.get("responders"):
         alert["responders"] = cfg["responders"]
     c.post(base, json=alert, headers=headers).raise_for_status()
