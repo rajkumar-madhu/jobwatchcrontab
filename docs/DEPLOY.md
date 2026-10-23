@@ -46,12 +46,36 @@ database migrations first, smoke-tests the live URLs and rolls back if the smoke
   mail link; without it the button goes to sign-up.
 
 ## Deploying
-- **Staging:** `git tag v0.2.0 && git push origin v0.2.0`. The tag also publishes the Linux agent
-  binaries and `SHA256SUMS` to the GitHub release (what `install.sh` downloads).
-- **Production:** Actions → deploy → Run workflow → `production`, after staging looks right. Waits for a reviewer.
+- **Production:** `git tag v0.72.0 && git push origin v0.72.0`. The tag builds the images, publishes the
+  Linux agent binaries and `SHA256SUMS` to the GitHub release (what `install.sh` downloads), then runs
+  the deploy on the self-hosted runner (below) after the Environment's reviewer approves.
+- **Staging:** Actions → deploy → Run workflow → `staging` (needs the `staging` Environment with
+  `KUBECONFIG_B64` and the secrets listed at the top of `deploy.yml`).
 - Non-secret per-environment settings (replica counts, NATS size) live in `deploy/environments/*.yaml`.
 
-## Deploying from a workstation (R72)
+## Self-hosted runner (R73)
+Production is a kind cluster on a workstation, which GitHub's runners cannot reach, so the deploy job
+runs on a runner installed on that workstation. The job needs **no cluster secrets in GitHub**: it
+reuses the live release's own values (`helm upgrade --reuse-values`) and changes only the image tags.
+
+One-time setup:
+1. GitHub → repo → Settings → Environments → `production`: add yourself as a required reviewer and set
+   the variables `DOMAIN=jobwatch.wecrew.in`, `INGEST_DOMAIN=ingest.jobwatch.wecrew.in` (baked into the
+   web image) and `KIND_CLUSTER=<kind cluster name>` (images are docker-pulled and kind-loaded on the
+   runner). No secrets.
+2. GitHub → Settings → Actions → Runners → New self-hosted runner → macOS, copy the token, then on the
+   Mac: `deploy/runner/setup-mac.sh --token <token>`. It installs the runner as a launchd service with
+   the label `wecrew-prod`.
+3. Keep Docker Desktop starting at login; the job's first step checks docker, kubectl, helm, kind and
+   that the release exists.
+
+Each deploy: backs up the database (`pg_dump` from a throwaway pod, kept 30 days as a workflow
+artifact), pulls and kind-loads the images, `helm upgrade --reuse-values --atomic`, smoke test, and
+`helm rollback` if smoke fails. A job started while the laptop is asleep waits up to 24 hours for the
+runner. This is a stopgap: an always-on host (a small VPS with k3s) removes the laptop from the path
+and lets the ordinary GitHub-runner job take over unchanged.
+
+## Deploying from a workstation without the runner (R72)
 When the cluster is one you reach with `kubectl` and the GitHub Environment is not set up,
 `deploy/release-local.sh` does what the workflow does — build the images for the domain, push them
 (or `kind load` them), run the migrate hook, `helm upgrade`, smoke test, roll back on failure:

@@ -1,7 +1,12 @@
 # R49 — build images, deploy to a Kubernetes environment with Helm, smoke-test the result.
 #
-# Runs on a version tag (v*) for staging, or by hand for any environment. Production should be a
-# GitHub Environment with required reviewers, so a deploy waits for approval.
+# Runs on a version tag (v*) for production, or by hand for any environment. Production is a GitHub
+# Environment with a required reviewer, so a deploy waits for approval.
+#
+# R73: production deploys run on a SELF-HOSTED runner (labels self-hosted, wecrew-prod) on the machine
+# that reaches the cluster — see docs/DEPLOY.md, "Self-hosted runner". That job needs NO cluster secrets
+# in GitHub: it reuses the live release's values. Set the Environment variable KIND_CLUSTER when the
+# cluster is kind (images are docker-pulled and kind-loaded). Staging keeps the KUBECONFIG_B64 path.
 #
 # One-time setup per GitHub Environment (Settings → Environments → <name>):
 #   variables  DOMAIN, INGEST_DOMAIN           e.g. jobwatch-staging.example.com, ingest.jobwatch-staging.example.com
@@ -24,16 +29,16 @@ on:
       environment:
         description: "GitHub Environment to deploy to"
         required: true
-        default: staging
+        default: production
         type: choice
-        options: [staging, production]
+        options: [production, staging]
 
 permissions:
   contents: write     # attach agent binaries to the GitHub release on tags
   packages: write     # push images to GHCR
 
 concurrency:
-  group: deploy-${{ github.event.inputs.environment || 'staging' }}
+  group: deploy-${{ github.event.inputs.environment || 'production' }}
   cancel-in-progress: false   # never interrupt a Helm upgrade half way
 
 env:
@@ -42,8 +47,8 @@ env:
 
 jobs:
   images:
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'staging' }}
+    runs-on: ubuntu-24.04
+    environment: ${{ github.event.inputs.environment || 'production' }}
     strategy:
       matrix:
         include:
@@ -71,7 +76,7 @@ jobs:
 
   agent-release:
     if: github.ref_type == 'tag'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -85,22 +90,80 @@ jobs:
 
   deploy:
     needs: images
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'staging' }}
+    # R73: production runs on a self-hosted runner on the machine that reaches the cluster
+    # (labels: self-hosted, wecrew-prod); staging still uses a GitHub runner with a kubeconfig secret.
+    runs-on: ${{ (github.event.inputs.environment || 'production') == 'production' && fromJSON('["self-hosted","wecrew-prod"]') || 'ubuntu-24.04' }}
+    environment: ${{ github.event.inputs.environment || 'production' }}
     env:
       NAMESPACE: ${{ vars.NAMESPACE || 'jobwatch' }}
       RELEASE: ${{ vars.RELEASE || 'jobwatch' }}
+      ENV_NAME: ${{ github.event.inputs.environment || 'production' }}
+      # R73: a self-hosted runner has no cluster secrets in GitHub; the live release already holds them
+      REUSE_VALUES: ${{ secrets.DATABASE_URL == '' && 'true' || 'false' }}
+      KIND_CLUSTER: ${{ vars.KIND_CLUSTER }}   # set when the cluster is kind: images are docker-pulled and kind-loaded
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
+        if: runner.environment != 'self-hosted'
         with: {version: v3.16.2}
       - name: Kubeconfig
+        if: runner.environment != 'self-hosted'
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
           kubectl version --client=true
-      - name: Helm upgrade (migrations run first, as a pre-upgrade hook)
+      - name: Tools on the self-hosted runner
+        if: runner.environment == 'self-hosted'
+        run: |
+          for t in docker kubectl helm; do command -v $t >/dev/null || { echo "::error::$t is not installed on this runner"; exit 1; }; done
+          [ -z "$KIND_CLUSTER" ] || command -v kind >/dev/null || { echo "::error::kind is not installed on this runner"; exit 1; }
+          kubectl cluster-info >/dev/null || { echo "::error::the cluster is not reachable from this runner (is Docker Desktop / kind running?)"; exit 1; }
+          helm status "$RELEASE" -n "$NAMESPACE" >/dev/null || { echo "::error::release $RELEASE not found in $NAMESPACE — the first install needs secrets, see docs/DEPLOY.md"; exit 1; }
+
+      - name: Pull images and load them into kind
+        if: env.KIND_CLUSTER != ''
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "${REGISTRY}/jobwatch-api:${TAG}"
+          docker pull "${REGISTRY}/jobwatch-web:${TAG}"
+          kind load docker-image "${REGISTRY}/jobwatch-api:${TAG}" "${REGISTRY}/jobwatch-web:${TAG}" --name "$KIND_CLUSTER"
+          docker logout ghcr.io
+
+      - name: Database backup (kept 30 days as a workflow artifact)
+        id: backup
+        run: |
+          set -euo pipefail
+          URL=$(helm get values "$RELEASE" -n "$NAMESPACE" -o json | python3 -c 'import sys,json; v=json.load(sys.stdin); print(v.get("migration",{}).get("databaseUrl") or v.get("env",{}).get("DATABASE_URL") or "")')
+          [ -n "$URL" ] || { echo "::warning::no database URL in the release values; skipping backup"; exit 0; }
+          # psycopg URLs carry a "+psycopg" scheme suffix that pg_dump does not understand
+          URL=${URL/postgresql+psycopg:/postgresql:}
+          kubectl -n "$NAMESPACE" run "pgdump-${{ github.run_id }}" --rm -i --restart=Never --quiet \
+            --image=postgres:16-alpine --env="PGURL=$URL" -- sh -c 'pg_dump --no-owner "$PGURL"' > "db-before-${TAG}.sql"
+          ls -la "db-before-${TAG}.sql"; echo "file=db-before-${TAG}.sql" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: steps.backup.outputs.file != ''
+        with: {name: "db-before-${{ env.TAG }}", path: "${{ steps.backup.outputs.file }}", retention-days: 30, if-no-files-found: ignore}
+      - name: Remove the local backup copy
+        if: always()
+        run: rm -f db-before-*.sql
+
+      - name: Helm upgrade — reuse the live release's values (self-hosted, no GitHub secrets)
+        if: env.REUSE_VALUES == 'true'
+        run: |
+          set -euo pipefail
+          helm upgrade "$RELEASE" infra/helm/cronsentinel --namespace "$NAMESPACE" \
+            --reuse-values \
+            -f "deploy/environments/${ENV_NAME}.yaml" \
+            --set-string "image.api=${REGISTRY}/jobwatch-api:${TAG}" \
+            --set-string "image.web=${REGISTRY}/jobwatch-web:${TAG}" \
+            ${KIND_CLUSTER:+--set-string imagePullPolicy=IfNotPresent} \
+            --set-string "env.AGENT_DOWNLOAD_BASE=https://github.com/${{ github.repository }}/releases/download" \
+            --set-string "env.AGENT_VERSION=${TAG}" \
+            --atomic --wait --timeout 15m
+
+      - name: Helm upgrade — from GitHub Environment secrets (migrations run first, as a pre-upgrade hook)
+        if: env.REUSE_VALUES != 'true'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
@@ -128,7 +191,7 @@ jobs:
           PY
           helm upgrade --install "$RELEASE" infra/helm/cronsentinel \
             --namespace "$NAMESPACE" --create-namespace \
-            -f "deploy/environments/${{ github.event.inputs.environment || 'staging' }}.yaml" \
+            -f "deploy/environments/${ENV_NAME}.yaml" \
             -f /tmp/secret-values.yaml \
             --set-string "image.api=${REGISTRY}/jobwatch-api:${TAG}" \
             --set-string "image.web=${REGISTRY}/jobwatch-web:${TAG}" \
@@ -145,7 +208,14 @@ jobs:
       - name: Smoke test
         env:
           SMOKE_PING_TOKEN: ${{ secrets.SMOKE_PING_TOKEN }}
-        run: bash deploy/smoke.sh "https://${{ vars.DOMAIN }}" "https://${{ vars.INGEST_DOMAIN }}"
+        run: |
+          set -euo pipefail
+          # the domains come from the GitHub Environment when set, else from the live release
+          DOMAIN="${{ vars.DOMAIN }}"; INGEST="${{ vars.INGEST_DOMAIN }}"
+          if [ -z "$DOMAIN" ]; then
+            read -r DOMAIN INGEST < <(helm get values "$RELEASE" -n "$NAMESPACE" -o json | python3 -c 'import sys,json; v=json.load(sys.stdin); print(v.get("domain",""), v.get("ingestDomain",""))')
+          fi
+          bash deploy/smoke.sh "https://$DOMAIN" "https://$INGEST"
 
       - name: Roll back if the smoke test failed
         if: failure()

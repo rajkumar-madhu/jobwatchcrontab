@@ -1,3 +1,18 @@
+# R73 — production deploys from a self-hosted runner
+
+Production (a kind cluster on a workstation) is now deployed by the `deploy` workflow through a
+self-hosted runner on that workstation, so a release is a tag plus one approval instead of a manual
+session at the laptop.
+
+## What ships
+- `deploy.yml`: the production job runs on `self-hosted, wecrew-prod`; needs no cluster secrets in
+  GitHub (`helm upgrade --reuse-values` keeps the live release's values), pulls the GHCR images and
+  `kind load`s them when `KIND_CLUSTER` is set, takes a `pg_dump` into a 30-day workflow artifact before
+  the migrate hook, and keeps the smoke test + automatic rollback. Staging still uses a GitHub runner
+  with `KUBECONFIG_B64`. All GitHub-runner jobs pinned to `ubuntu-24.04`.
+- `deploy/runner/setup-mac.sh`: registers the Mac as the runner (launchd service).
+- `docs/DEPLOY.md`: the runner setup and the one-time Environment variables.
+
 # R72 — review fixes for R70/R71
 
 Eleven findings from the code review of R70 and R71, all fixed.
