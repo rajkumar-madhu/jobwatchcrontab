@@ -37,7 +37,7 @@ the repository so strangers can read what they are asked to run as root, and be 
   `SELF_MONITOR_ORG_ID`; Dockerfile.web takes `NEXT_PUBLIC_BOOKING_URL`.
 
 ## Tests
-API 1,066 passed (69 skipped); vitest 30; Playwright 136 passed, 2 skipped, on desktop and mobile.
+API 1,066 passed (69 skipped); vitest 30; Playwright 140 passed, 2 skipped, on desktop and mobile.
 
 # R73 — production deploys from a self-hosted runner
 

@@ -20,6 +20,7 @@ build-backend = "setuptools.build_meta"
 include = ["cronsentinel*"]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]   # tests import each other as `tests.integration.…`; CI's cwd is not on sys.path by default
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 

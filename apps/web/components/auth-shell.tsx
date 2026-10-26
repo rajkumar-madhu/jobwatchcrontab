@@ -76,7 +76,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
           <Link href="/security" className="hover:text-ink">Security</Link>
           <Link href="/docs/sso" className="hover:text-ink">Single sign-on guide</Link>
           <Link href="/docs" className="hover:text-ink">Docs</Link>
-          <Link href="/contact" className="hover:text-ink">Contact sales</Link>
+          <Link href="/contact" className="hover:text-ink">Talk to a human</Link>
         </nav>
       </div>
       <aside className="auth-panel relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-center lg:px-12 xl:px-16" aria-label="About JobWatch">
