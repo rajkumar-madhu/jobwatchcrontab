@@ -58,8 +58,16 @@ if __name__ == "__main__":
     sub = ap.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("bootstrap"); b.add_argument("--org", required=True); b.add_argument("--email", required=True)
     p_ = sub.add_parser("purge-org", help="delete an organization and all of its data"); p_.add_argument("--org-id", required=True); p_.add_argument("--yes", action="store_true")
+    sm = sub.add_parser("selfmonitor", help="R74: create the jobs through which JobWatch monitors its own workers"); sm.add_argument("--org", required=True, help="organisation id (set SELF_MONITOR_ORG_ID to the same value)")
     a = ap.parse_args()
     if a.cmd == "bootstrap":
         bootstrap(a.org, a.email)
     elif a.cmd == "purge-org":
         raise SystemExit(purge_org(a.org_id, a.yes))
+    elif a.cmd == "selfmonitor":
+        from .selfmonitor import ensure_jobs
+        with system_session() as s:
+            rows = ensure_jobs(s, a.org)
+        for r in rows:
+            print(f"{r['service']:<20} job_id={r['job_id']} {'created' if r['created'] else 'exists'}")
+        print(f"\nset SELF_MONITOR_ORG_ID={a.org} on the reconciler, schedule-generator and scorer, then restart them")

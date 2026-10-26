@@ -4,16 +4,25 @@ import { Building2, Check, Cloud, KeyRound, ShieldCheck, Workflow } from "lucide
 import { SiteNav, SiteFooter, ScheduleTape, Mark } from "@/components/marketing";
 import { BeforeAfter, ClosingBand, CopilotSection, HeroProduct, Integrations, PlatformLayers, ProductTour, UseCases, WorksWith } from "./sections";
 import { GROUPS, VENDORS } from "@/lib/compare";
+import { BOOKING_URL, TALK } from "@/lib/site";
 
 const INGEST = "https://ingest.jobwatch.wecrew.in";
 
+// R74: the first-run path is one line in a crontab; the agent is the upgrade, not the entry fee.
+const SIXTY = `# the job you would least like to find out about in a week
+15 2 * * *  /opt/jobs/pg-backup.sh
+
+# the same line, monitored: missed or failed → alert at 02:20
+15 2 * * *  /opt/jobs/pg-backup.sh && curl -fsS -m 10 --retry 5 \\
+            ${INGEST}/ping/<token>`;
+
 const WAYS: { title: string; body: string; code: string }[] = [
-  { title: "Install the agent on a server", body: "It reads crontabs and systemd timers, read-only, and lists every job it finds. Wrap the ones you care about to get exit codes and output.",
-    code: "curl -fsSL $JOBWATCH/install.sh \\\n  | sudo bash -s -- --server $JOBWATCH --token $BOOTSTRAP\n\n# then, in a crontab line\njobwatch-run -- /opt/jobs/backup.sh" },
-  { title: "Add the chart to a cluster", body: "One agent per cluster watches CronJobs, Jobs and pods. Schedules come from the CronJob spec, so there is nothing to copy by hand.",
+  { title: "Start with one line", body: "Paste a crontab entry at sign-up: JobWatch takes the schedule from it and gives the line back with a ping appended. Nothing to install, nothing running as root.",
+    code: `15 2 * * *  /opt/jobs/pg-backup.sh \\\n  && curl -fsS -m 10 --retry 5 \\\n     ${INGEST}/ping/<token>` },
+  { title: "Add the agent where it earns its place", body: "When a failure needs more than \"it didn't run\": exit codes, stdout and stderr, duration, and what the host's disk, memory and load looked like during the run. Read-only on your crontabs; queues on disk when offline.",
+    code: "curl -fsSL $JOBWATCH/install.sh \\\n  | sudo bash -s -- --server $JOBWATCH --token $BOOTSTRAP\n\n# then wrap a job\njobwatch-run -- /opt/jobs/backup.sh" },
+  { title: "Or the chart, for a cluster", body: "One agent per cluster watches CronJobs, Jobs and pods. Schedules come from the CronJob spec, so there is nothing to copy by hand.",
     code: "helm install jobwatch-agent ./infra/helm/cronsentinel-agent \\\n  --set server=$JOBWATCH \\\n  --set bootstrapToken=$BOOTSTRAP" },
-  { title: "Or call one URL", body: "Anything that can make an HTTP request can report: CI pipelines, database jobs, Lambda functions, scripts on a laptop.",
-    code: `# last line of the script\ncurl -fsS -m 10 --retry 5 \\\n  ${INGEST}/ping/<token>` },
 ];
 
 
@@ -79,13 +88,11 @@ export default function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link href="/signup" className="btn btn-primary px-6 py-3 text-[15px]">Start monitoring free</Link>
-              <Link href="/contact" className="btn px-6 py-3 text-[15px]">Talk to sales</Link>
+              <a href={BOOKING_URL} className="btn px-6 py-3 text-[15px]" {...(BOOKING_URL.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>{TALK}</a>
             </div>
-            <p className="mt-4 text-sm text-mute">5 jobs free, no card. Or self-host the whole platform with Helm. <Link href="/product" className="underline hover:text-ink">Take the product tour</Link></p>
-            <ul className="mx-auto mt-8 flex max-w-[760px] flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-mute" aria-label="Enterprise controls">
-              {["SAML and OIDC single sign-on", "SCIM", "Multi-factor sign-in", "Audit log streaming", "Row-level tenant isolation", "Self-hosted with Helm"].map((t) => (
-                <li key={t} className="flex items-center gap-1.5"><Check size={13} className="text-ok" aria-hidden />{t}</li>))}
-            </ul>
+            <p className="mt-4 text-sm text-mute">5 jobs free, no card, nothing to install. Open source (AGPL), self-host it with Helm. <Link href="/product" className="underline hover:text-ink">Take the product tour</Link></p>
+            <pre className="mx-auto mt-8 max-w-[720px] overflow-x-auto rounded-lg border border-line bg-panel/70 p-4 text-left font-mono text-[12.5px] leading-relaxed text-ink/90" aria-label="One line in a crontab" data-testid="sixty-seconds">{SIXTY}</pre>
+            <p className="mt-2 text-xs text-mute">Sixty seconds, no agent. <code className="font-mono">&amp;&amp;</code> means a failing job never pings; a job that never ran never pings; both alert at the deadline.</p>
           </div>
           <div className="relative mx-auto mt-14 max-w-[1100px]">
             <HeroProduct />
@@ -103,8 +110,8 @@ export default function Landing() {
       <Integrations />
 
       <section className="mx-auto max-w-[1200px] px-6 py-20" id="start">
-        <h2 className="font-display text-3xl font-semibold">Three ways to connect, mixed freely</h2>
-        <p className="mt-3 max-w-[640px] text-mute">Most teams use all three: the agent on servers, the chart in clusters, and a ping URL for everything else.</p>
+        <h2 className="font-display text-3xl font-semibold">Start with one line. Add the agent when you want more.</h2>
+        <p className="mt-3 max-w-[640px] text-mute">Most teams end up with all three: a ping on anything that can run curl, the agent on the servers whose failures need explaining, and the chart in clusters.</p>
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
           {WAYS.map((w) => (
             <div key={w.title} className="card flex min-w-0 flex-col p-5">
@@ -123,8 +130,12 @@ export default function Landing() {
               <p className="text-sm font-medium text-accent">Enterprise</p>
               <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">Built to pass your security review</h2>
               <p className="mt-3 max-w-[640px] text-mute">Monitoring sees your schedules, hostnames and job output. These controls keep it from becoming the weak point, on our cloud or yours.</p>
+              <ul className="mt-5 flex max-w-[760px] flex-wrap gap-x-5 gap-y-2 text-xs text-mute" aria-label="Enterprise controls">
+                {["SAML and OIDC single sign-on", "SCIM", "Multi-factor sign-in", "Audit log streaming", "Row-level tenant isolation", "Self-hosted with Helm", "Source available to read, AGPL"].map((t) => (
+                  <li key={t} className="flex items-center gap-1.5"><Check size={13} className="text-ok" aria-hidden />{t}</li>))}
+              </ul>
             </div>
-            <div className="flex flex-wrap gap-2"><Link href="/contact" className="btn btn-primary">Talk to sales</Link><Link href="/security" className="btn">Security overview</Link></div>
+            <div className="flex flex-wrap gap-2"><a href={BOOKING_URL} className="btn btn-primary">{TALK}</a><Link href="/security" className="btn">Security overview</Link></div>
           </div>
           <div className="mt-12 grid gap-8 lg:grid-cols-3">
             {ENTERPRISE.map(({ icon: Icon, title, items }) => (
@@ -180,7 +191,7 @@ export default function Landing() {
               <div className="flex items-center justify-between"><h3 className="font-medium">{name}</h3>{i === 2 && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] text-accent">Most teams</span>}</div>
               <div className="mt-3 font-display text-3xl font-semibold">{price}{price.startsWith("$") && price !== "$0" && <span className="text-sm font-normal text-mute"> /month</span>}</div>
               <ul className="mt-4 flex-1 space-y-2 text-sm text-mute">{feats.map((f) => <li key={f} className="flex gap-2"><Check size={14} className="mt-0.5 shrink-0 text-ok" aria-hidden />{f}</li>)}</ul>
-              <Link href={i === 4 ? "/contact" : "/signup"} className={`btn mt-6 w-full ${i === 2 ? "btn-primary" : ""}`}>{i === 4 ? "Talk to sales" : `Start ${name}`}</Link>
+              <Link href={i === 4 ? "/contact" : "/signup"} className={`btn mt-6 w-full ${i === 2 ? "btn-primary" : ""}`}>{i === 4 ? TALK : `Start ${name}`}</Link>
             </div>))}
         </div>
         <p className="mt-4 text-xs text-mute">Prices in US dollars, excluding taxes. Card billing opens soon: start free today and choose a plan when it does — your jobs and history stay.</p>

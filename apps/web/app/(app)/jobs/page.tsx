@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { api, mutate, type Job, type Execution } from "@/lib/api";
+import { api, mutate, INGEST_URL, type Job, type Execution } from "@/lib/api";
+import { browserZone, parseCrontabLine, withPing } from "@/lib/crontab";
 import { ago } from "@/lib/format";
 import { Page, Status, Strip, Skeleton, ErrorBox, Empty } from "@/components/ui";
 
@@ -52,14 +53,41 @@ function NewJob({ onDone }: { onDone: () => void }) {
   const ws = useQuery({ queryKey: ["workspaces"], queryFn: () => api<{ id: string; name: string }[]>("/api/v1/workspaces") });
   const [f, setF] = useState({ name: "", schedule_expr: "", tz: "UTC", grace_s: 300, expected_runtime_s: "" });
   const [preview, setPreview] = useState<{ human: string } | null>(null);
+  // R74: the response carries the ping token exactly once. It used to be dropped here (the panel
+  // closed), so the job page's "shown once at creation" was never true. Show it, with the crontab line.
+  const [created, setCreated] = useState<Job | null>(null);
   const m = useMutation({
     mutationFn: () => mutate("/api/v1/jobs", "post", { body: { ...f, workspace_id: ws.data?.[0].id!, schedule_expr: f.schedule_expr || null, expected_runtime_s: f.expected_runtime_s ? Number(f.expected_runtime_s) : null } }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["jobs"] }); onDone(); },
+    onSuccess: (j) => { qc.invalidateQueries({ queryKey: ["jobs"] }); setCreated(j as Job); },
   });
   const check = async () => { if (!f.schedule_expr) return setPreview(null); try { setPreview(await mutate("/api/v1/jobs/schedule/preview", "post", { query: { expr: f.schedule_expr, tz: f.tz } }) as { human: string }); } catch { setPreview({ human: "Invalid expression" }); } };
+  // R74: paste a crontab line and the name, schedule and zone fill themselves
+  const fromLine = (line: string) => { const e = parseCrontabLine(line); if (e) setF({ ...f, name: e.name, schedule_expr: e.schedule, tz: browserZone() }); return e; };
+  const [line, setLine] = useState(""); const parsed = line.trim() ? parseCrontabLine(line) : undefined;
+  if (created) {
+    const url = `${INGEST_URL}/ping/${(created as any).heartbeat_token ?? "<token>"}`;
+    const text = parsed ? withPing(parsed, url) : `curl -fsS -m 10 --retry 5 ${url}`;
+    return (
+      <div className="mb-4 rounded-lg border border-ok/40 bg-ok/5 p-4" data-testid="job-created">
+        <div className="font-medium">{created.name} created. Copy the ping URL now: it is stored hashed and will not be shown again.</div>
+        <p className="mt-1 text-sm text-mute">{parsed ? <>Replace the line in <code className="font-mono">crontab -e</code> with this one. <code className="font-mono">&amp;&amp;</code> means a failing command never pings.</> : "Call this at the end of the job, script or pipeline step."}</p>
+        <pre className="mt-3 overflow-auto rounded-md border border-line bg-bg p-3 font-mono text-xs">{text}</pre>
+        <div className="mt-3 flex gap-2">
+          <button className="btn btn-primary" onClick={async () => { try { await navigator.clipboard.writeText(text); } catch {} }}>Copy</button>
+          <Link href={`/jobs/${created.id}`} className="btn">Open job</Link>
+          <button className="btn" onClick={onDone}>Done</button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mb-4 rounded-lg border border-line bg-panel p-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <label className="block text-sm">From a crontab line <span className="text-mute">(optional)</span>
+        <input className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 font-mono" value={line} placeholder="15 2 * * *  /opt/jobs/pg-backup.sh" spellCheck={false}
+          onChange={(e) => { setLine(e.target.value); fromLine(e.target.value); }} onBlur={check} />
+        {parsed === null && <span className="text-xs text-warn">Not a crontab entry: five schedule fields (or @daily) and a command.</span>}
+        {parsed && <span className="text-xs text-mute">Filled in below; the ping line to paste back is shown after the job is created.</span>}</label>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="text-sm">Name<input className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="nightly-database-backup" /></label>
         <label className="text-sm">Schedule (cron, optional)<input className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 font-mono" value={f.schedule_expr} onChange={(e) => setF({ ...f, schedule_expr: e.target.value })} onBlur={check} placeholder="0 2 * * *" />
           {preview && <span className="text-xs text-mute">{preview.human}</span>}</label>

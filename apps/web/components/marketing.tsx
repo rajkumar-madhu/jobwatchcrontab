@@ -21,7 +21,7 @@ export function SiteNav() {
         </nav>
         <div className="hidden items-center gap-2 lg:flex">
           <ThemeToggle />
-          <Link href="/contact" className="px-2 text-sm text-mute hover:text-ink">Contact sales</Link>
+          <Link href="/contact" className="px-2 text-sm text-mute hover:text-ink">Talk to a human</Link>
           <Link href="/login" className="btn border-transparent bg-transparent">Sign in</Link>
           <Link href="/signup" className="btn btn-primary">Start free</Link>
         </div>
@@ -29,7 +29,7 @@ export function SiteNav() {
       </div>
       {open && <nav className="border-t border-line px-6 py-3 lg:hidden" aria-label="Site (mobile)">
         {LINKS.map(([h, l]) => <Link key={h} href={h} onClick={() => setOpen(false)} className="block py-2 text-sm">{l}</Link>)}
-        <Link href="/contact" onClick={() => setOpen(false)} className="block py-2 text-sm">Contact sales</Link>
+        <Link href="/contact" onClick={() => setOpen(false)} className="block py-2 text-sm">Talk to a human</Link>
         <div className="mt-2 flex gap-2"><Link href="/login" className="btn flex-1">Sign in</Link><Link href="/signup" className="btn btn-primary flex-1">Start free</Link></div>
         <ThemeToggle className="mt-2" />
       </nav>}
@@ -39,7 +39,7 @@ export function SiteNav() {
 
 const FOOT: [string, [string, string][]][] = [
   ["Product", [["/product", "Feature tour"], ["/welcome#enterprise", "Enterprise"], ["/welcome#pricing", "Pricing"], ["/status/demo", "Status page example"]]],
-  ["Trust", [["/security", "Security"], ["/docs/sso", "Single sign-on"], ["/docs/scim", "Directory sync"], ["/contact", "Contact sales"]]],
+  ["Trust", [["/security", "Security"], ["/docs/sso", "Single sign-on"], ["/docs/scim", "Directory sync"], ["/contact", "Talk to a human"]]],
   ["Docs", [["/docs/quickstart", "Quick start"], ["/docs/pings", "Pings and heartbeat API"], ["/docs/linux-agent", "Linux agent"], ["/docs/api", "API reference"]]],
   ["Tools", [["/tools/cron", "Cron expression checker"], ["/compare#behind", "Where we are behind"], ["/login", "Sign in"]]],
 ];

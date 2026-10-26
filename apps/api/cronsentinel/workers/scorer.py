@@ -21,6 +21,7 @@ import time
 import structlog
 from sqlalchemy import text
 
+from .. import selfmonitor
 from ..db import system_session
 
 log = structlog.get_logger()
@@ -197,7 +198,8 @@ async def main():
     log.info("scorer started")
     while True:
         t0 = time.monotonic()
-        n, d = tick()
+        with selfmonitor.timed(system_session, "scorer"):   # R74: phases log their own failures; an uncaught one is a failed run
+            n, d = tick()
         log.info("scored", jobs=n, retention_deleted=d, took_s=round(time.monotonic() - t0, 1))
         await asyncio.sleep(max(0, 3600 - (time.monotonic() - t0)))
 

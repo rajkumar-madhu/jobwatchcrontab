@@ -8,12 +8,13 @@ import { useState } from "react";
 import { Activity, Check } from "lucide-react";
 import { api, mutate, INGEST_URL } from "@/lib/api";
 import { ErrorBox } from "@/components/ui";
+import { browserZone, parseCrontabLine, withPing } from "@/lib/crontab";
 
 const API = process.env.NEXT_PUBLIC_API_URL; const INGEST = INGEST_URL;
 const METHODS = [
-  ["agent", "Linux servers", "The agent finds crontabs and systemd timers and reports exit codes, duration and output."],
+  ["heartbeat", "A crontab line", "Paste the entry you most worry about. Nothing to install: one curl appended to it, and the schedule is read from the line."],
+  ["agent", "Linux servers", "The agent finds crontabs and systemd timers and reports exit codes, duration, output and the host's state. Install it later, where it earns its place."],
   ["k8s", "Kubernetes", "A Helm-installed agent watches CronJobs and Jobs in the whole cluster or chosen namespaces."],
-  ["heartbeat", "Ping URL", "One curl at the end of any script, pipeline step or container. Works anywhere."],
   ["api", "API", "Post status, duration and exit code as JSON from your own code."],
 ] as const;
 const STEPS = ["Organization", "Connect", "Install", "First signal", "Team", "Alerts"];
@@ -30,10 +31,20 @@ export default function Onboarding() {
   const [step, setStep] = useState(1); const [org, setOrg] = useState(""); const [method, setMethod] = useState<string>("heartbeat");
   const [job, setJob] = useState<any>(null); const [tok, setTok] = useState<any>(null);
   const [cluster, setCluster] = useState("production");
+  const [cronLine, setCronLine] = useState("");                       // R74: the pasted crontab entry
+  const entry = parseCrontabLine(cronLine);
   const [invites, setInvites] = useState([{ email: "", role: "developer" }]);
   const [sent, setSent] = useState<{ email: string; url?: string | null }[]>([]);
   const createOrg = useMutation({ mutationFn: () => mutate("/auth/orgs" as any, "post", { body: { name: org } } as any) as Promise<{ org_id: string }>, onSuccess: () => { sess.refetch(); setStep(2); } });
-  const mkJob = useMutation({ mutationFn: async () => { const ws = await api<{ id: string }[]>("/api/v1/workspaces"); return mutate("/api/v1/jobs", "post", { body: { workspace_id: ws[0].id, name: "my-first-job", grace_s: 300 } as any }); }, onSuccess: (j) => { setJob(j); setStep(4); } });
+  const mkJob = useMutation({ mutationFn: async () => {
+    const ws = await api<{ id: string }[]>("/api/v1/workspaces");
+    // R74: with a pasted crontab line the job carries the schedule, so the first missing run is detected
+    // at its deadline — nothing to infer. Without one it is a plain heartbeat job (failures only).
+    const body = entry
+      ? { workspace_id: ws[0].id, name: entry.name, description: entry.command.slice(0, 500), schedule_expr: entry.schedule, tz: browserZone(), grace_s: 300, tags: ["crontab"] }
+      : { workspace_id: ws[0].id, name: "my-first-job", grace_s: 300 };
+    return mutate("/api/v1/jobs", "post", { body: body as any });
+  }, onSuccess: (j) => { setJob(j); setStep(4); } });
   const mkTok = useMutation({ mutationFn: () => mutate("/api/v1/agents/bootstrap-token" as any, "post", { body: {} } as any), onSuccess: (t) => { setTok(t); setStep(4); } });
   const sendInvites = useMutation({ mutationFn: async () => {
     const out: { email: string; url?: string | null }[] = [];
@@ -67,13 +78,23 @@ export default function Onboarding() {
         {method === "k8s" && <><p className="mt-1 text-sm text-mute">Name the cluster as it should appear in alerts, then generate a one-time token (valid 24 hours) for the Helm install.</p>
           <label className="mt-4 block text-sm font-medium" htmlFor="cluster">Cluster name</label><input id="cluster" className="input mt-1.5 max-w-xs" value={cluster} onChange={(e) => setCluster(e.target.value)} />
           <button className="btn btn-primary mt-4 block" disabled={mkTok.isPending || !cluster.trim()} onClick={() => mkTok.mutate()}>Generate Helm command</button></>}
-        {(method === "heartbeat" || method === "api") && <><p className="mt-1 text-sm text-mute">We will create a first job and give you its URL.</p><button className="btn btn-primary mt-4" disabled={mkJob.isPending} onClick={() => mkJob.mutate()}>Create my first job</button></>}
+        {method === "heartbeat" && <><p className="mt-1 text-sm text-mute">Paste one line from <code className="font-mono">crontab -l</code>, the job you would least like to find out about in a week. We take its schedule, name the job after the command, and give the line back with one curl appended.</p>
+          <label className="mt-4 block text-sm font-medium" htmlFor="cronline">Crontab line</label>
+          <textarea id="cronline" className="input mt-1.5 h-20 w-full font-mono text-xs" placeholder="15 2 * * *  /opt/jobs/pg-backup.sh" value={cronLine} onChange={(e) => setCronLine(e.target.value)} spellCheck={false} />
+          <p className="mt-1.5 text-xs" aria-live="polite" data-testid="cron-parse">{entry
+            ? <span className="text-ok">Job <b>{entry.name}</b>, schedule <code className="font-mono">{entry.schedule}</code>, in your zone {browserZone()}.</span>
+            : cronLine.trim() ? <span className="text-warn">Not a crontab entry: expected five schedule fields (or @daily) and a command. You can continue without one; the job then detects failures but not missed runs.</span>
+            : <span className="text-mute">Or leave it empty for a plain ping URL you call from anywhere.</span>}</p>
+          <button className="btn btn-primary mt-4" disabled={mkJob.isPending} onClick={() => mkJob.mutate()}>{entry ? "Create the job" : "Create a ping URL"}</button></>}
+        {method === "api" && <><p className="mt-1 text-sm text-mute">We will create a first job and give you its URL.</p><button className="btn btn-primary mt-4" disabled={mkJob.isPending} onClick={() => mkJob.mutate()}>Create my first job</button></>}
         {(mkTok.error || mkJob.error) && <div className="mt-3"><ErrorBox error={mkTok.error ?? mkJob.error} /></div>}</>}
       {step === 4 && <><h1 className="text-xl font-semibold">Waiting for the first signal</h1>
         {tok && method === "agent" && (tok.install ? <Pre>{tok.install}</Pre>
           : <p className="mt-3 rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm">The installer cannot be served yet: {tok.install_problem ?? "the server's agent download settings are incomplete"}. See <Link className="underline" href="/docs/linux-agent">Linux agent</Link> for a manual install with token <code className="font-mono">{token}</code>.</p>)}
         {tok && method === "k8s" && <Pre>{`helm upgrade --install jobwatch-agent infra/helm/cronsentinel-agent -n jobwatch --create-namespace \\\n  --set server=${INGEST} \\\n  --set clusterName=${cluster.trim() || "production"} \\\n  --set bootstrapToken=${token}`}</Pre>}
-        {job && <Pre>{method === "api"
+        {job && method === "heartbeat" && entry && <><p className="mt-1 text-sm text-mute">Replace the line in <code className="font-mono">crontab -e</code> with this one. <code className="font-mono">&amp;&amp;</code> means a failing command never pings, so a failure and a run that never happened both show as the job missing its deadline.</p>
+          <Pre>{withPing(entry, `${INGEST}/ping/${job.heartbeat_token}`)}</Pre></>}
+        {job && !(method === "heartbeat" && entry) && <Pre>{method === "api"
           ? `curl -X POST ${INGEST}/api/v1/heartbeat/${job.heartbeat_token} \\\n  -H 'Content-Type: application/json' \\\n  -d '{"status":"success","duration_ms":1240,"exit_code":0}'`
           : `# add to the end of your script or pipeline step\ncurl -fsS ${INGEST}/ping/${job.heartbeat_token}`}</Pre>}
         {job && <p className="mt-2 text-xs text-mute">Copy this now. The token is stored hashed and shown only once; you can issue a new one from the job page.</p>}

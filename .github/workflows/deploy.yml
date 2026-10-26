@@ -71,6 +71,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=https://${{ vars.DOMAIN }}
             NEXT_PUBLIC_INGEST_URL=https://${{ vars.INGEST_DOMAIN }}
+            NEXT_PUBLIC_BOOKING_URL=${{ vars.BOOKING_URL }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 

@@ -22,6 +22,7 @@ import structlog
 from sqlalchemy import text
 
 from ..db import system_session
+from .. import selfmonitor
 from .platform_health import heartbeat
 from ..schedule_engine import HORIZON, generation_window, slots_between
 
@@ -112,8 +113,17 @@ async def main():
                     break
             if slots:
                 log.info("slots generated", slots=slots, jobs=jobs, batches=batches, took_s=round(time.monotonic() - t0, 2))
+            if selfmonitor.enabled():   # R74
+                with system_session() as s:
+                    selfmonitor.report(s, "schedule-generator", duration_ms=int((time.monotonic() - t0) * 1000))
         except Exception as e:
             log.error("generator tick failed", error=str(e))
+            if selfmonitor.enabled():
+                try:
+                    with system_session() as s:
+                        selfmonitor.report(s, "schedule-generator", ok=False, error=str(e))
+                except Exception:   # noqa: BLE001
+                    pass
         await asyncio.sleep(max(0, INTERVAL_S - (time.monotonic() - t0)))
 
 

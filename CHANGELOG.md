@@ -1,3 +1,44 @@
+# R74 — one line in a crontab, open source, and JobWatch watching itself
+
+The 26 Oct brainstorm converged on one move: lead with the path that needs nothing installed, open
+the repository so strangers can read what they are asked to run as root, and be able to answer
+"do you use it yourself?". This release is that move.
+
+## What ships
+- **Paste a crontab line.** Onboarding's default (and *Jobs → Add job → From a crontab line*) takes
+  one `crontab -l` entry, reads the schedule from it (five fields or `@daily`-style macros, with the
+  user column of `/etc/crontab` handled), names the job after the command (skipping `cd`, env
+  assignments, `sudo`/`nice`/`flock`/`timeout`/interpreters), uses the browser's time zone, and hands
+  the same line back with `&& curl -fsS -m 10 --retry 5 …/ping/<token>` appended. The job carries a
+  schedule from the first second, so a missed run is detected at its deadline; no inference.
+  `apps/web/lib/crontab.ts`, 9 unit tests, 3 Playwright tests.
+- **Fix: the in-app Add job form dropped the ping token.** The create response carries it exactly
+  once; the panel used to close on success, so the job page's "shown once at creation" was never
+  true. The panel now shows the ping URL (or the completed crontab line) with Copy / Open job / Done.
+- **Homepage leads with the sixty-second path**: before/after crontab block under the headline; the
+  three-ways section is now "Start with one line. Add the agent when you want more."; the enterprise
+  chips moved into the enterprise section. "Talk to sales" is "Talk to a human" everywhere, and
+  becomes "Book 20 minutes with the founder" when `NEXT_PUBLIC_BOOKING_URL` (Cal.com, Calendly …)
+  is set at build time (`vars.BOOKING_URL` in deploy.yml; `BOOKING_URL` for release-local.sh).
+- **Licence.** Server (`apps/`, `infra/`, `integrations/`, `deploy/`): AGPL-3.0 (`LICENSE`). Agents
+  (`agents/`): Apache-2.0 (`agents/LICENSE`) — copyleft has no place on a customer's production box.
+  `CONTRIBUTING.md` (tests, change rules, contribution licence incl. commercial dual-licensing grant),
+  root `SECURITY.md` (disclosure address and response times). README rewritten to open with the
+  crontab line, then why, then self-host.
+- **JobWatch monitors itself** (`cronsentinel/selfmonitor.py`, `docs/SELF_MONITORING.md`). With
+  `SELF_MONITOR_ORG_ID` set and `python -m cronsentinel.cli selfmonitor --org <id>` run once, the
+  reconciler, schedule-generator and scorer passes are jobs `jobwatch/<service>` in that org: history,
+  uptime, and alerts through the ordinary rules. A pass that raises is a failed run with the traceback
+  as stderr. Reports go through `processor.process()` in-process (no HTTP, no token in the
+  environment), never raise, and are throttled to one success per minute per service. Limit stated in
+  the doc: a dead reconciler is marked missed only when it returns; use an external check on
+  `/healthz` for "the whole platform is down". 5 integration tests.
+- `docs/QUICKSTART.md` step 2 is now the crontab line. `.env.example` and the Helm values carry
+  `SELF_MONITOR_ORG_ID`; Dockerfile.web takes `NEXT_PUBLIC_BOOKING_URL`.
+
+## Tests
+API 1,066 passed (69 skipped); vitest 30; Playwright 136 passed, 2 skipped, on desktop and mobile.
+
 # R73 — production deploys from a self-hosted runner
 
 Production (a kind cluster on a workstation) is now deployed by the `deploy` workflow through a

@@ -41,7 +41,8 @@ echo "==> current release:"; helm -n "$NS" history "$REL" --max 3 2>/dev/null ||
 echo "==> building images"
 docker build -q -f infra/docker/Dockerfile.api -t "$API_IMG" .
 docker build -q -f infra/docker/Dockerfile.web -t "$WEB_IMG" \
-  --build-arg "NEXT_PUBLIC_API_URL=https://$DOMAIN" --build-arg "NEXT_PUBLIC_INGEST_URL=https://$INGEST" .
+  --build-arg "NEXT_PUBLIC_API_URL=https://$DOMAIN" --build-arg "NEXT_PUBLIC_INGEST_URL=https://$INGEST" \
+  --build-arg "NEXT_PUBLIC_BOOKING_URL=${BOOKING_URL:-}" .     # R74: optional Cal.com/Calendly link for "talk to a human"
 
 if [ -n "$KIND" ]; then
   echo "==> loading images into kind cluster $KIND"

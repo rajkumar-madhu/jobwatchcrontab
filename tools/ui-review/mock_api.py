@@ -264,6 +264,14 @@ def bill(): return {"subscription": {"plan": "team", "status": "trialing", "tria
 def st(slug: str): return {"title": "Acme scheduled jobs", "overall": "degraded", "jobs": [{"name": j["name"], "status": j["status"], "last_run_at": j["last_run_at"], "uptime_90d": round(99.9 - (100 - j["reliability_score"]) / 4, 2), "recent": [e["status"] for e in EX[j["id"]]][:30], "show_duration": False} for j in JOBS[:5]], "incidents": [{"title": INC[1]["title"], "severity": "medium", "status": "resolved", "started_at": INC[1]["started_at"], "resolved_at": INC[1]["resolved_at"]}], "maintenance": [{"starts_at": iso(now + timedelta(days=2)), "ends_at": iso(now + timedelta(days=2, hours=2))}]}
 @app.get("/api/v1/workspaces")
 def ws(): return [{"id": "ws", "name": "default", "created_at": CREATED}]
+@app.post("/api/v1/jobs", status_code=201)   # R74: onboarding creates the first job from a pasted crontab line
+def create_job(body: dict):
+    j = {**JOBS[0], "id": str(uuid.uuid4()), "name": body.get("name", "my-first-job"), "description": body.get("description"), "kind": "heartbeat",
+         "schedule_expr": body.get("schedule_expr"), "schedule_human": body.get("schedule_expr"), "tz": body.get("tz", "UTC"), "grace_s": body.get("grace_s", 300),
+         "tags": body.get("tags", []), "status": "healthy" if body.get("schedule_expr") else "unknown", "last_run_at": None, "last_status": None,
+         "next_expected_at": None, "reliability_score": None, "heartbeat_token": "tok_" + uuid.uuid4().hex, "heartbeat_token_hint": "mock", "assertions": [], "server_id": None}
+    JOBS.append(j); byid[j["id"]] = j; EX[j["id"]] = []
+    return j
 @app.get("/api/v1/status-pages")
 def sp(): return [{"id": "p1", "slug": "demo", "title": "Acme scheduled jobs", "visibility": "public", "job_ids": [j["id"] for j in JOBS[:5]]}]
 @app.get("/auth/providers")   # R51

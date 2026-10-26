@@ -21,6 +21,7 @@ from .. import events
 from ..config import settings
 from ..db import system_session
 from ..job_state import recompute_state  # single source of truth for the four-state
+from .. import selfmonitor
 from .platform_health import GAP_MULTIPLIER, IN_GAP_SQL, INGEST_HEARTBEAT_S, OBSERVING_SERVICES, heartbeat
 
 log = structlog.get_logger()
@@ -202,8 +203,17 @@ async def main():
                 changes += len(changed)
             if changes:
                 log.info("reconciled", changes=changes, jobs=len(touched), took_s=round(time.monotonic() - t0, 2))
+            if selfmonitor.enabled():   # R74: this pass as a run of jobwatch/reconciler
+                with system_session() as s:
+                    selfmonitor.report(s, "reconciler", duration_ms=int((time.monotonic() - t0) * 1000))
         except Exception as e:
             log.error("reconciler tick failed", error=str(e))
+            if selfmonitor.enabled():
+                try:
+                    with system_session() as s:
+                        selfmonitor.report(s, "reconciler", ok=False, error=str(e))
+                except Exception:   # noqa: BLE001 — never let self-monitoring compound the failure
+                    pass
         await asyncio.sleep(max(0, settings.reconciler_interval_s - (time.monotonic() - t0)))
 
 

@@ -23,7 +23,7 @@ test("sign-in: SSO-first copy and no horizontal overflow", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Sign in to JobWatch" })).toBeVisible();
   await expect(page.getByLabel("Work email")).toBeVisible();
   await expect(page.getByText(/multi-factor|authenticator/i).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Contact sales" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Talk to a human" }).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
 });
 
@@ -96,7 +96,9 @@ test("contact sales: topic preselected, sent, confirmation", async ({ page }) =>
 
 test("landing and security pages carry the enterprise content and navigation", async ({ page, isMobile }) => {
   await page.goto("/welcome");
-  await expect(page.getByRole("link", { name: "Talk to sales" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Talk to a human" }).first()).toBeVisible();   // R74: BOOKING_URL unset → /contact
+  await expect(page.getByTestId("sixty-seconds")).toContainText("&& curl -fsS -m 10 --retry 5");
+  await expect(page.locator("#start")).toContainText("Start with one line");
   await expect(page.locator("#enterprise")).toContainText("Built to pass your security review");
   await expect(page.locator("#enterprise")).toContainText("Self-hosted");
   await page.getByText("Is JobWatch SOC 2 certified?").click();

@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     ingest_rate_per_min: int = 600
     api_rate_per_min: int = 1200
     reconciler_interval_s: int = 30
+    # R74: organisation whose dashboard shows the platform's own reconciler/generator/scorer passes as
+    # jobs (cronsentinel/selfmonitor.py). Empty = off. Create the jobs with `cli selfmonitor --org`.
+    self_monitor_org_id: str = ""
     max_log_bytes_per_execution: int = 256 * 1024
     log_level: str = "INFO"
 
