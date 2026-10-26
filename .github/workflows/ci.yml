@@ -33,6 +33,11 @@ jobs:
           CREATE DATABASE cronsentinel_nonsuperuser_check;
           \c cronsentinel_nonsuperuser_check
           CREATE ROLE migrator LOGIN PASSWORD 'migrator' NOSUPERUSER CREATEROLE;
+          -- R74: roles are cluster-wide, so jobwatch_app / jobwatch_system already exist here from the
+          -- superuser pass above and a CREATEROLE user cannot administer roles it did not create
+          -- (Postgres 16). Hand them over, as a DBA would when a migrator role is provisioned.
+          GRANT jobwatch_app TO migrator WITH ADMIN OPTION;
+          GRANT jobwatch_system TO migrator WITH ADMIN OPTION;
           ALTER SCHEMA public OWNER TO migrator;
           GRANT CONNECT, TEMP, CREATE ON DATABASE cronsentinel_nonsuperuser_check TO migrator;
           SQL
@@ -73,7 +78,7 @@ jobs:
       - run: |
           cd tools/ui-review && uvicorn mock_api:app --port 8000 &
           cd apps/web && cp -r .next/static .next/standalone/.next/ && PORT=3000 node .next/standalone/server.js &   # R39: output=standalone
-          npx wait-on http://localhost:8000/api/v1/jobs http://localhost:3000 -t 60000
+          npx wait-on http-get://localhost:8000/api/v1/jobs http-get://localhost:3000 -t 60000   # http-get: wait-on 8 probes with HEAD, which FastAPI answers 405
         working-directory: .
       - run: cd apps/web && npm run test:e2e
       - uses: actions/upload-artifact@v4

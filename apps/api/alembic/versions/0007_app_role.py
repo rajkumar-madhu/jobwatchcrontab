@@ -41,7 +41,15 @@ def upgrade():
       END IF;
     END $$;""")
     if pw:
-        op.execute("ALTER ROLE jobwatch_app WITH LOGIN PASSWORD '%s'" % pw.replace("'", "''"))
+        # R74: a non-superuser migrator (CREATEROLE) can set the password only on a role it created
+        # or administers. When jobwatch_app already exists from another owner (CI's non-superuser
+        # check reuses the cluster; a DBA who pre-created the role), leave the password alone and say so.
+        op.execute("""
+        DO $$ BEGIN
+          ALTER ROLE jobwatch_app WITH LOGIN PASSWORD '%s';
+        EXCEPTION WHEN insufficient_privilege THEN
+          RAISE NOTICE 'jobwatch_app exists and is not administered by %%; password left unchanged', current_user;
+        END $$;""" % pw.replace("'", "''").replace("%", "%%"))
     op.execute(f"""
     GRANT CONNECT ON DATABASE "{db}" TO jobwatch_app;
     GRANT USAGE ON SCHEMA public TO jobwatch_app;
