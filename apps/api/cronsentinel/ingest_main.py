@@ -3,10 +3,11 @@ import asyncio
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from sqlalchemy import text
 
 from . import events
-from .db import system_session
+from .db import engine, system_session
 from .routers import agents, heartbeat, k8s
 from .workers.platform_health import INGEST_HEARTBEAT_S, heartbeat as platform_heartbeat
 
@@ -56,3 +57,13 @@ app.include_router(k8s.agent)
 @app.get("/healthz")
 def healthz():
     return {"status": "ok", "nats": getattr(app.state, "js", None) is not None and events.is_connected()}
+
+
+@app.get("/readyz")
+def readyz():
+    with engine.connect() as c:
+        c.execute(text("SELECT 1"))
+    nats_ok = getattr(app.state, "js", None) is not None and events.is_connected()
+    if not nats_ok:
+        raise HTTPException(503, "nats unavailable")
+    return {"status": "ready", "nats": True}

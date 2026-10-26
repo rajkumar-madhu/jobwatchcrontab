@@ -12,8 +12,18 @@ kind: Ingress
 # limit; the ingest host must not inherit it — one server running many cron jobs pings from one IP,
 # and at the top of the hour 100+ jobs fire together (same failure mode as the R47 app-level bug).
 # Ingest is protected per job by the application's own rate limiter instead.
-metadata: {name: {{ include "cs.fullname" . }}, namespace: {{ .Release.Namespace }}, annotations: {nginx.ingress.kubernetes.io/limit-rps: {{ .Values.ingress.appLimitRps | quote }}}}
+metadata:
+  name: {{ include "cs.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rps: {{ .Values.ingress.appLimitRps | quote }}
+    {{- range $k, $v := .Values.ingress.annotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
 spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
   tls: [{hosts: [{{ .Values.domain }}], secretName: {{ include "cs.fullname" . }}-tls}]
   rules:
     - host: {{ .Values.domain }}
@@ -33,7 +43,13 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/limit-rps: {{ .Values.ingress.ingestLimitRps | quote }}
     nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    {{- range $k, $v := .Values.ingress.annotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
 spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
   tls: [{hosts: [{{ .Values.ingestDomain }}], secretName: {{ include "cs.fullname" . }}-ingest-tls}]
   rules:
     - host: {{ .Values.ingestDomain }}

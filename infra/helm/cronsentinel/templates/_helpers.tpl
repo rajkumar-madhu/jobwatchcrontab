@@ -19,8 +19,8 @@ spec:
           envFrom: [{secretRef: {name: {{ include "cs.fullname" .root }}-env}}]
           {{- if .port }}
           ports: [{containerPort: {{ .port }}}]
-          readinessProbe: {httpGet: {path: /readyz, port: {{ .port }}}, periodSeconds: 10}
-          livenessProbe: {httpGet: {path: /healthz, port: {{ .port }}}, periodSeconds: 20}
+          readinessProbe: {httpGet: {path: {{ .readinessPath | default "/readyz" | quote }}, port: {{ .port }}}, periodSeconds: 10, initialDelaySeconds: {{ .readinessInitialDelay | default 0 }}}
+          livenessProbe: {httpGet: {path: {{ .livenessPath | default "/healthz" | quote }}, port: {{ .port }}}, periodSeconds: 20, initialDelaySeconds: {{ .livenessInitialDelay | default 0 }}}
           {{- end }}
           resources: {{ toYaml .resources | nindent 12 }}
 {{- end -}}
