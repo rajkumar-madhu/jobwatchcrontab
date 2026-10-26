@@ -72,6 +72,7 @@ def test_delivery_actually_publishes_and_a_real_subscriber_receives_it(client, k
     async def _subscribe_and_wait():
         nc = await nats_lib.connect(servers=[os.environ["NATS_URL"]])
         sub = await nc.subscribe(f"{prefix}.>")
+        await nc.flush()   # the subscription must reach the server before the publisher's message does
         try:
             from cronsentinel.outbound.deliver import deliver_signal
             # deliver_signal runs asyncio.run() internally (see _publish_nats) — exactly as a real
@@ -80,7 +81,7 @@ def test_delivery_actually_publishes_and_a_real_subscriber_receives_it(client, k
             # forbids; a real worker never has that conflict, since it isn't itself inside a loop.
             await asyncio.to_thread(deliver_signal.apply, args=[str(org["id"]), str(dest_id),
                 {"signal_id": "sig-1", "event_type": "job.state_changed", "org_id": str(org["id"])}])
-            msg = await asyncio.wait_for(sub.next_msg(), timeout=5)
+            msg = await sub.next_msg(timeout=5)   # next_msg defaults to 1 s, which a cold worker thread on a CI runner exceeds
             return msg
         finally:
             await nc.close()

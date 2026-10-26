@@ -44,9 +44,10 @@ def test_report_records_a_run_and_throttles_successes(selfmon):
         assert selfmonitor.report(s, "reconciler", duration_ms=120) is True
         assert selfmonitor.report(s, "reconciler", duration_ms=130) is False     # within THROTTLE_S
         assert selfmonitor.report(s, "reconciler", duration_ms=140, force=True) is True
-    runs = _runs(jid)
+    runs = _runs(jid)   # both land in the same millisecond, so their order is not defined
     assert [r.status for r in runs] == ["success", "success"]
-    assert runs[0].duration_ms == 120 and runs[0].exit_code == 0 and runs[0].host
+    assert sorted(r.duration_ms for r in runs) == [120, 140]
+    assert all(r.exit_code == 0 and r.host for r in runs)
 
 
 def test_failure_is_always_recorded_with_the_error(selfmon):
