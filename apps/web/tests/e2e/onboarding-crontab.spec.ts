@@ -46,3 +46,32 @@ test("jobs page: Add job accepts a crontab line and shows the ping URL once", as
   await box.getByRole("button", { name: "Done" }).click();
   await expect(box).toHaveCount(0);
 });
+
+// R75: pricing by jobs, USD or INR, monthly or yearly; Enterprise shows a floor instead of "contact sales"
+test("pricing section: currency and interval toggles, enterprise floor", async ({ page }) => {
+  await page.goto("/welcome#pricing");
+  const sec = page.locator("#pricing");
+  await expect(sec).toContainText("100 jobs");
+  await expect(sec).toContainText("1,000 jobs");
+  await expect(sec).toContainText("Unlimited jobs");
+  await expect(sec).toContainText("from $6,000 /year");
+  await expect(sec).toContainText("$190");                               // yearly is the default
+  await sec.getByRole("radio", { name: "Monthly" }).click();
+  await expect(sec).toContainText("$19");
+  await sec.getByRole("radio", { name: "INR" }).click();
+  await expect(sec).toContainText("₹799");
+  await expect(sec).toContainText("18% GST");
+  await sec.getByRole("radio", { name: /Yearly/ }).click();
+  await expect(sec).toContainText("₹7,999");
+});
+
+test("billing page: INR toggle explains what is missing when Razorpay is not configured", async ({ page }) => {
+  await page.goto("/billing");
+  const t = page.getByTestId("billing-toggles");
+  await t.getByRole("radio", { name: /INR/ }).click();
+  await expect(page.getByText(/INR billing is not configured/)).toBeVisible();
+  await expect(page.getByText("₹7,999/yr")).toBeVisible();
+  await t.getByRole("radio", { name: /USD/ }).click();
+  await expect(page.getByText("$190/yr")).toBeVisible();
+  await expect(page.getByText("from $6,000/yr")).toBeVisible();
+});

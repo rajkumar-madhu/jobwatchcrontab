@@ -208,3 +208,11 @@ def test_tls_verifies_against_the_hostname_not_the_ip(tmp_path, monkeypatch):
                 c.post(f"https://wrong-name.example:{port}/", content=b"{}")
     finally:
         srv.shutdown()
+
+
+def test_resolve_nats_host_brackets_ipv6_and_prefers_ipv4(monkeypatch):
+    # R75: found in CI — localhost resolved to ::1 first and the URL came out as nats://::1:4222
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **k: [(0, 0, 0, "", ("2606:4700::6810:1", 4222, 0, 0)), (0, 0, 0, "", ("93.184.216.34", 4222))])
+    assert netguard.resolve_nats_host("nats://broker.example.com:4222/").startswith("nats://93.184.216.34:4222")
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **k: [(0, 0, 0, "", ("2606:4700::6810:1", 4222, 0, 0))])
+    assert netguard.resolve_nats_host("nats://broker.example.com/").startswith("nats://[2606:4700::6810:1]:4222")

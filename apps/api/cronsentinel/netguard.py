@@ -142,7 +142,12 @@ def resolve_nats_host(url: str) -> str:
     if not addrs:
         raise BlockedDestination(f"{u.hostname} has no permitted address")
     userinfo = f"{u.username}:{u.password}@" if u.username else ""
-    return u._replace(netloc=f"{userinfo}{addrs[0]}:{port}").geturl()
+    # R75: an IPv6 literal must be bracketed in a URL, or "::1:4222" parses as host "" — found when CI's
+    # `localhost` resolved to ::1 first and every NATS delivery silently went nowhere. IPv4 first when
+    # both exist: the common case for a NATS bound on 0.0.0.0 only.
+    addrs.sort(key=lambda a: ipaddress.ip_address(a).version)
+    host = f"[{addrs[0]}]" if ":" in addrs[0] else addrs[0]
+    return u._replace(netloc=f"{userinfo}{host}:{port}").geturl()
 
 
 def check_host(host: str, port: int) -> None:

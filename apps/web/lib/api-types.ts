@@ -10009,6 +10009,8 @@ export interface operations {
         parameters: {
             query: {
                 plan: string;
+                currency?: string;
+                interval?: string;
             };
             header?: never;
             path?: never;

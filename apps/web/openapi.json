@@ -7298,6 +7298,7 @@
           "billing"
         ],
         "summary": "Start a checkout",
+        "description": "Returns a hosted checkout URL for the chosen plan.",
         "operationId": "checkout_api_v1_billing_checkout_post",
         "parameters": [
           {
@@ -7307,6 +7308,26 @@
             "schema": {
               "type": "string",
               "title": "Plan"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "usd",
+              "title": "Currency"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "month",
+              "title": "Interval"
             }
           }
         ],
@@ -7371,7 +7392,6 @@
             }
           }
         },
-        "description": "Returns a hosted checkout URL for the chosen plan.",
         "x-min-role": "admin",
         "security": [
           {

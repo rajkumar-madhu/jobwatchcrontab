@@ -49,7 +49,7 @@ jobs:
           SECRET_ENCRYPTION_KEY: ci-only-not-a-secret
           ALLOW_INSECURE_SECRET: "true"   # CI key is public by definition; keys.py refuses it otherwise
           REDIS_URL: "redis://localhost:6379/0"
-          NATS_URL: "nats://localhost:4222"
+          NATS_URL: "nats://127.0.0.1:4222"   # the docker-run NATS listens on IPv4; localhost is ::1 first on the runner
   # note: R13 mock/real contract tests run in the `api` job (tests/test_mock_contract.py and
   # tests/integration/test_mock_shape_contract.py); they guard the mock the web e2e job depends on.
   web:

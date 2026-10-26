@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import { Building2, Check, Cloud, KeyRound, ShieldCheck, Workflow } from "lucide-react";
 import { SiteNav, SiteFooter, ScheduleTape, Mark } from "@/components/marketing";
 import { BeforeAfter, ClosingBand, CopilotSection, HeroProduct, Integrations, PlatformLayers, ProductTour, UseCases, WorksWith } from "./sections";
@@ -48,12 +49,15 @@ const DEPLOY: { icon: typeof Cloud; title: string; body: string; points: string[
     points: ["Air-gapped friendly: no third-party requests", "Your database, your encryption keys", "Bring your own model for the copilot"] },
 ];
 
-const PLANS: [string, string, string[]][] = [
-  ["Free", "$0", ["5 jobs", "7 days of history", "Email alerts"]],
-  ["Developer", "$19", ["50 jobs", "30 days of history", "Slack and webhooks"]],
-  ["Team", "$79", ["500 jobs", "90 days of history", "Teams, Discord and Telegram", "PagerDuty and Opsgenie", "AI copilot"]],
-  ["Business", "$299", ["5,000 jobs", "1 year of history", "Single sign-on and SCIM", "Everything in Team"]],
-  ["Enterprise", "Custom", ["Unlimited jobs", "Self-hosted or private deployment", "Custom retention", "Security review support", "Priority support"]],
+// R75: prices from the go-to-market research (docs/BILLING.md). usd/inr are monthly; yearly is two months free.
+// INR prices are what Indian teams pay through Razorpay (UPI AutoPay, cards, net banking), GST extra.
+type Plan = { name: string; usd: number | null; inr: number | null; inrYear?: number; floor?: string; feats: string[] };
+const PLANS: Plan[] = [
+  { name: "Free", usd: 0, inr: 0, feats: ["5 jobs", "7 days of history", "Email, Slack and webhook alerts", "Unlimited team members"] },
+  { name: "Developer", usd: 19, inr: 799, inrYear: 7999, feats: ["100 jobs", "30 days of history", "Email, Slack and webhooks", "Unlimited team members"] },
+  { name: "Team", usd: 79, inr: 3299, inrYear: 32999, feats: ["1,000 jobs", "12 months of history", "Teams, Discord, Telegram, PagerDuty, Opsgenie", "On-call schedules and escalation", "AI copilot, agent fleet view, status page"] },
+  { name: "Business", usd: 299, inr: 12499, inrYear: 124999, feats: ["Unlimited jobs", "2 years of history", "Single sign-on, SCIM and MFA", "Audit log streaming", "Invoice billing", "Everything in Team"] },
+  { name: "Enterprise", usd: null, inr: null, floor: "from $6,000 /year", feats: ["Self-hosted or private deployment", "Licence for the enterprise features", "Custom retention", "Security review support", "Support SLA"] },
 ];
 
 const FAQ: [string, string][] = [
@@ -68,6 +72,45 @@ const FAQ: [string, string][] = [
   ["Is JobWatch SOC 2 certified?", "Not yet. We answer security questionnaires and walk your team through the controls, and you can self-host the whole platform so no data leaves your network. See the security page."],
   ["How are Enterprise plans bought?", "Through sales: the deployment, payment method and contract terms are agreed with you."],
 ];
+
+function PricingSection() {
+  const [cur, setCur] = useState<"usd" | "inr">("usd");
+  const [yearly, setYearly] = useState(true);
+  const fmt = (p: Plan) => {
+    if (p.usd == null) return p.floor ?? "Custom";
+    const m = cur === "inr" ? p.inr! : p.usd;
+    if (m === 0) return cur === "inr" ? "₹0" : "$0";
+    const v = yearly ? (cur === "inr" ? p.inrYear ?? m * 10 : m * 10) : m;   // INR yearly figures are the flat plan prices in plan_limits
+    return (cur === "inr" ? "₹" : "$") + v.toLocaleString(cur === "inr" ? "en-IN" : "en-US");
+  };
+  return (
+    <section className="mx-auto max-w-[1200px] px-6 py-20" id="pricing">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div><h2 className="font-display text-3xl font-semibold">Pricing</h2>
+          <p className="mt-3 text-mute">Priced by jobs, never by seats: every plan includes unlimited team members. Team is free for 14 days on every new workspace.</p></div>
+        <div className="flex flex-wrap gap-2 text-sm" data-testid="pricing-toggles">
+          <div role="radiogroup" aria-label="Currency" className="inline-flex rounded-md border border-line bg-panel">
+            {(["usd", "inr"] as const).map((c) => <button key={c} type="button" role="radio" aria-checked={cur === c} onClick={() => setCur(c)} className={`px-3 py-1.5 ${cur === c ? "text-accent" : "text-mute"}`}>{c === "usd" ? "USD" : "INR"}</button>)}
+          </div>
+          <div role="radiogroup" aria-label="Billing interval" className="inline-flex rounded-md border border-line bg-panel">
+            <button type="button" role="radio" aria-checked={!yearly} onClick={() => setYearly(false)} className={`px-3 py-1.5 ${!yearly ? "text-accent" : "text-mute"}`}>Monthly</button>
+            <button type="button" role="radio" aria-checked={yearly} onClick={() => setYearly(true)} className={`px-3 py-1.5 ${yearly ? "text-accent" : "text-mute"}`}>Yearly <span className="text-xs text-mute">· 2 months free</span></button>
+          </div>
+        </div>
+      </div>
+      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {PLANS.map((p, i) => (
+          <div key={p.name} className={`card flex flex-col p-5 ${i === 2 ? "border-2 border-accent" : ""}`}>
+            <div className="flex items-center justify-between"><h3 className="font-medium">{p.name}</h3>{i === 2 && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] text-accent">Most teams</span>}</div>
+            <div className={`mt-3 font-display font-semibold ${p.usd == null ? "text-xl leading-9" : "text-3xl"}`}>{fmt(p)}{p.usd != null && p.usd !== 0 && <span className="text-sm font-normal text-mute"> /{yearly ? "year" : "month"}</span>}</div>
+            <ul className="mt-4 flex-1 space-y-2 text-sm text-mute">{p.feats.map((f) => <li key={f} className="flex gap-2"><Check size={14} className="mt-0.5 shrink-0 text-ok" aria-hidden />{f}</li>)}</ul>
+            {i === 4 ? <a href={BOOKING_URL} className="btn mt-6 w-full">{TALK}</a> : <Link href="/signup" className={`btn mt-6 w-full ${i === 2 ? "btn-primary" : ""}`}>Start {p.name}</Link>}
+          </div>))}
+      </div>
+      <p className="mt-4 text-xs text-mute">{cur === "inr" ? "Indian rupee prices exclude 18% GST and are paid through Razorpay (UPI AutoPay, cards, net banking); a GST invoice is issued for every charge." : "US dollar prices exclude taxes and are paid by card through Stripe."} Start free today; your jobs and history stay when you pick a plan. Enterprise is a self-hosted or private deployment with a licence for the enterprise features and a support SLA, from the stated annual figure.</p>
+    </section>
+  );
+}
 
 export default function Landing() {
   const summary = GROUPS.filter((g) => g.summary).flatMap((g) => g.rows);
@@ -182,20 +225,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1200px] px-6 py-20" id="pricing">
-        <h2 className="font-display text-3xl font-semibold">Pricing</h2>
-        <p className="mt-3 text-mute">Every plan includes unlimited team members. Team is free for 14 days on every new workspace.</p>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {PLANS.map(([name, price, feats], i) => (
-            <div key={name} className={`card flex flex-col p-5 ${i === 2 ? "border-2 border-accent" : ""}`}>
-              <div className="flex items-center justify-between"><h3 className="font-medium">{name}</h3>{i === 2 && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] text-accent">Most teams</span>}</div>
-              <div className="mt-3 font-display text-3xl font-semibold">{price}{price.startsWith("$") && price !== "$0" && <span className="text-sm font-normal text-mute"> /month</span>}</div>
-              <ul className="mt-4 flex-1 space-y-2 text-sm text-mute">{feats.map((f) => <li key={f} className="flex gap-2"><Check size={14} className="mt-0.5 shrink-0 text-ok" aria-hidden />{f}</li>)}</ul>
-              <Link href={i === 4 ? "/contact" : "/signup"} className={`btn mt-6 w-full ${i === 2 ? "btn-primary" : ""}`}>{i === 4 ? TALK : `Start ${name}`}</Link>
-            </div>))}
-        </div>
-        <p className="mt-4 text-xs text-mute">Prices in US dollars, excluding taxes. Card billing opens soon: start free today and choose a plan when it does — your jobs and history stay.</p>
-      </section>
+      <PricingSection />
 
       <section className="border-t border-line bg-panel/40">
         <div className="mx-auto grid max-w-[1200px] gap-12 px-6 py-20 lg:grid-cols-[1fr_2fr]">

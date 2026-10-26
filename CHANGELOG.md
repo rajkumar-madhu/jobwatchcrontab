@@ -1,3 +1,38 @@
+# R75 — prices from the research, INR plans, Razorpay
+
+The go-to-market research (26 Oct) found the planned $19-for-50-jobs tier was twice the market's
+per-job anchor. The dollars stay; the caps move; India gets flat rupee plans paid the way Indian
+teams pay.
+
+## What ships
+- **Tiers** (migration 0030, `docs/BILLING.md`): Developer 100 jobs / 30 days at $19; Team 1,000 jobs /
+  12 months at $79; Business unlimited jobs / 2 years at $299 with SSO, SCIM, audit streaming and
+  invoice billing; Enterprise shows a published floor ("from $6,000 a year") instead of "contact
+  sales"; Free keeps 5 jobs and gains Slack and webhook alerts. Yearly is two months free. Priced by
+  jobs, never by seats.
+- **INR plans**: ₹799 / ₹7,999 (Developer), ₹3,299 / ₹32,999 (Team), ₹12,499 / ₹1,24,999 (Business),
+  GST extra — starting points from the 40–60 % heuristic, flagged as untested. The public pricing
+  section and the in-app billing page both have USD/INR and monthly/yearly toggles; the billing page
+  defaults to INR in Indian time zones.
+- **Razorpay** as a second processor: `POST /api/v1/billing/checkout?plan=&currency=inr&interval=`
+  creates a Razorpay customer and subscription and returns the hosted page; `POST
+  /api/v1/billing/razorpay/webhook` verifies HMAC-SHA256 over the raw body, de-duplicates on
+  `X-Razorpay-Event-Id` (`razorpay_events`), grants on activated/charged/resumed, marks past_due on
+  pending/halted, drops to free on cancelled/completed/expired, ignores events for subscriptions it did
+  not create. `subscriptions.provider` records who bills the org; switching currency while billed
+  elsewhere is a 409. Settings `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
+  (Helm values, `.env.example`). Portal for Razorpay orgs opens the hosted subscription page.
+- **Fix (CI)**: `netguard.resolve_nats_host` built `nats://::1:4222` when a name resolved to IPv6
+  first — unbracketed, so every NATS delivery on such a host silently went nowhere. IPv6 literals are
+  now bracketed and IPv4 preferred; CI points at 127.0.0.1 anyway.
+- Docs: `BILLING.md` (prices, why, Razorpay and Stripe setup, GST notes), `/docs/billing` and
+  `/docs/self-monitoring` pages; CI: runner pin, pytest pythonpath, wait-on http-get, non-superuser
+  migration check grants.
+
+## Tests
+API 1,072 passed (69 skipped); vitest 30; Playwright 144 passed, 2 skipped. New: `test_razorpay.py` (5),
+netguard IPv6 case, pricing-section and billing-page toggles.
+
 # R74 — one line in a crontab, open source, and JobWatch watching itself
 
 The 26 Oct brainstorm converged on one move: lead with the path that needs nothing installed, open

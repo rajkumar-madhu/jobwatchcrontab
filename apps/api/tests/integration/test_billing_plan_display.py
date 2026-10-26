@@ -47,7 +47,7 @@ def test_billing_reports_the_orgs_real_plan_with_no_subscriptions_row(client, or
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["subscription"]["effective_plan"] == "team", body["subscription"]
-    assert body["limits"]["max_jobs"] == 500, body["limits"]  # Team's real limit, not Free's 5
+    assert body["limits"]["max_jobs"] == 1000, body["limits"]  # Team's real limit (R75), not Free's 5
 
 
 def test_billing_still_prefers_a_real_subscriptions_row_when_one_exists(client, org, api_key):

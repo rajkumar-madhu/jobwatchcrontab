@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     copilot_internal_suffixes: str = ".svc,.cluster.local,.internal,.local,.lan"
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    # R75: Razorpay (INR plans, UPI AutoPay). key_id:key_secret for the REST API; the webhook secret is set
+    # per webhook in the Razorpay dashboard. Both empty = INR checkout shows "coming soon".
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
     # No default on purpose: every session cookie, CSRF token and encrypted channel config is keyed off
     # this. A known default ("change-me") meant an install that forgot to set it would accept forged
     # session cookies for any user in any org. keys.py refuses empty/known/short values at first use.

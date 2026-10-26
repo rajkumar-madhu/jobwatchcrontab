@@ -102,7 +102,7 @@ def fill(path: str, seeded: dict) -> str:
 # Endpoints that legitimately leave the API: they must exist and refuse unauthenticated callers,
 # but calling them for real would hit Stripe / an LLM / an OIDC provider / send mail.
 EXTERNAL = {
-    "/api/v1/billing/checkout", "/api/v1/billing/portal", "/api/v1/billing/webhook",
+    "/api/v1/billing/checkout", "/api/v1/billing/portal", "/api/v1/billing/webhook", "/api/v1/billing/razorpay/webhook",
     "/api/v1/copilot/ask", "/api/v1/alerts/channels/{channel_id}/test",
     "/api/v1/integrations/destinations/{dest_id}/test",
     "/auth/login", "/auth/callback",
@@ -120,7 +120,7 @@ SCIM = {"/scim/v2/ServiceProviderConfig", "/scim/v2/ResourceTypes", "/scim/v2/Sc
         "/scim/v2/Users/{uid}", "/scim/v2/Groups", "/scim/v2/Groups{rest}"}
 # Public by design — no auth expected.
 PUBLIC = {"/healthz", "/readyz", "/metrics", "/public/status/{slug}", "/auth/logout",
-          "/api/v1/integrations/schema"} | {"/auth/login", "/auth/callback", "/api/v1/billing/webhook", "/auth/sso",
+          "/api/v1/integrations/schema"} | {"/auth/login", "/auth/callback", "/api/v1/billing/webhook", "/api/v1/billing/razorpay/webhook", "/auth/sso",
                                           "/auth/signup", "/auth/providers", "/auth/discover",
                                           "/auth/invite/{token}", "/public/contact"} | SCIM   # R69: invite preview and contact form are public by design   # R51: public sign-in routes
 # Writes that are destructive or need a body we cannot synthesise generically.

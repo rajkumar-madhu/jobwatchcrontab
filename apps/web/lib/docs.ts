@@ -30,6 +30,8 @@ const PAGES: Omit<DocMeta, "title">[] = [
   { slug: "terraform", file: "TERRAFORM.md", group: "Integrations", summary: "Jobs and maintenance windows as code.", related: ["maintenance", "run-checks"] },
   { slug: "how-it-works", file: "HOW_IT_WORKS.md", group: "Self-hosting", summary: "The services and how a ping becomes an alert." , related: ["deploy", "security"] },
   { slug: "deploy", file: "DEPLOY.md", group: "Self-hosting", summary: "Run JobWatch in your own Kubernetes cluster." , related: ["how-it-works", "security"] },
+  { slug: "billing", file: "BILLING.md", group: "Self-hosting", summary: "Plans and prices in USD and INR; Stripe and Razorpay setup; GST notes.", related: ["deploy", "self-monitoring"] },
+  { slug: "self-monitoring", file: "SELF_MONITORING.md", group: "Self-hosting", summary: "JobWatch watches its own workers as jobs in your organisation.", related: ["deploy", "how-it-works"] },
 ];
 const BY_FILE = Object.fromEntries(PAGES.map((p) => [p.file, p.slug]));
 

@@ -19,6 +19,7 @@ pytestmark = pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="needs pos
 # Endpoints deliberately outside the role system, with the reason.
 UNGATED = {
     "/api/v1/billing/webhook": "authenticated by Stripe signature, not by a principal",
+    "/api/v1/billing/razorpay/webhook": "authenticated by Razorpay signature, not by a principal (R75)",
     "/api/v1/jobs/schedule/preview": "pure cron-expression utility, touches no tenant data",
 }
 # Calls that would leave the process (Stripe, LLM, outbound HTTP). The 403 case is still checked —
