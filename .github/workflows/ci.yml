@@ -2,7 +2,7 @@ name: ci
 on: [push, pull_request]
 jobs:
   api:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # R72: ubuntu-latest moved to 26.04, which Playwright 1.56 has no Chromium build for
     services:
       postgres: {image: postgres:16-alpine, env: {POSTGRES_USER: cronsentinel, POSTGRES_PASSWORD: cronsentinel, POSTGRES_DB: cronsentinel}, ports: ["5432:5432"], options: --health-cmd pg_isready --health-interval 5s --health-retries 10}
       redis: {image: "redis:7-alpine", ports: ["6379:6379"]}
@@ -48,7 +48,7 @@ jobs:
   # note: R13 mock/real contract tests run in the `api` job (tests/test_mock_contract.py and
   # tests/integration/test_mock_shape_contract.py); they guard the mock the web e2e job depends on.
   web:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # R72: ubuntu-latest moved to 26.04, which Playwright 1.56 has no Chromium build for
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -80,7 +80,7 @@ jobs:
         if: failure()
         with: {name: playwright-report, path: apps/web/playwright-report, retention-days: 7}
   agents:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # R72: ubuntu-latest moved to 26.04, which Playwright 1.56 has no Chromium build for
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -97,7 +97,7 @@ jobs:
     # own include/toYaml/required) these two charts use, and additionally checks every rendered
     # document for the exact class of bug that shipped (a null value inside annotations/labels,
     # which is always the result of an unquoted comma/colon splitting one flow-map entry into two).
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # R72: ubuntu-latest moved to 26.04, which Playwright 1.56 has no Chromium build for
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -115,7 +115,7 @@ jobs:
   terraform-provider:
     # R64: build, vet and unit-test the Terraform provider. go.sum is generated here (it is not committed:
     # the development sandbox fetched modules through GitHub mirrors, whose checksums differ).
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # R72: ubuntu-latest moved to 26.04, which Playwright 1.56 has no Chromium build for
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -124,7 +124,7 @@ jobs:
   images:
     needs: [api, web, agents, helm, terraform-provider]
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # R72: ubuntu-latest moved to 26.04, which Playwright 1.56 has no Chromium build for
     steps:
       - uses: actions/checkout@v4
       - run: docker build -f infra/docker/Dockerfile.api -t ghcr.io/${{ github.repository }}/api:${{ github.sha }} . && docker build -f infra/docker/Dockerfile.web -t ghcr.io/${{ github.repository }}/web:${{ github.sha }} .

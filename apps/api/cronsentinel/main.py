@@ -63,7 +63,7 @@ app.add_exception_handler(scim.ScimError, scim.scim_error_response)   # R44: RFC
 for r in (jobs.router, executions.router, org.router, overview.router, alerting.router, incidents.router, agents.admin, logs.router, authr.router, status_pages.router, status_pages.public, k8s.router, topology.router, analytics.router, copilot.router, billing.router, integrations.router, platform.router, gdpr.router, sso.router, scim.router, imports.router, audit_streams.router, metric_exports.router, oncall.router, team.router, team.public):
     app.include_router(r)
 
-from . import apidocs  # noqa: E402  R69: documented OpenAPI (summaries, roles, auth, errors, ping endpoints)
+from . import apidocs  # noqa: E402  # R69: documented OpenAPI (summaries, roles, auth, errors, ping endpoints)
 apidocs.install(app)
 
 
