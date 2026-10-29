@@ -56,6 +56,11 @@ jobs:
           - {name: web, context: ., file: infra/docker/Dockerfile.web}
           - {name: k8s-agent, context: agents/k8s-agent, file: agents/k8s-agent/Dockerfile}
     steps:
+      - name: Environment variables are set
+        # The web bundle bakes these URLs in at build time. Without them the image would point the
+        # browser at "https://" and the smoke test would roll the release back — fail here instead.
+        run: |
+          [ -n "${{ vars.DOMAIN }}" ] && [ -n "${{ vars.INGEST_DOMAIN }}" ] || { echo "::error::Set DOMAIN and INGEST_DOMAIN on the '${{ github.event.inputs.environment || 'production' }}' Environment (Settings → Environments) before deploying. See docs/DEPLOY.md."; exit 1; }
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
