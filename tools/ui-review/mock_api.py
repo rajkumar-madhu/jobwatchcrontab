@@ -279,7 +279,7 @@ def providers(): return {"social": [{"alias": "google", "label": "Google"}, {"al
 @app.get("/auth/discover")   # R51
 def discover(email: str): return {"sso": email.endswith("@acme.com"), "provider": "Okta" if email.endswith("@acme.com") else None}
 @app.get("/auth/session")
-def sess(): return {"user": {"id": "u", "email": "le@finspot.in", "name": "LE"}, "org_id": "o", "orgs": [{"id": "o", "name": "Acme", "slug": "acme", "plan": "team", "role": "owner"}]}
+def sess(): return {"user": {"id": "u", "email": "owner@acme.io", "name": "Owner"}, "org_id": "o", "orgs": [{"id": "o", "name": "Acme", "slug": "acme", "plan": "team", "role": "owner"}]}
 # R66: on-call
 _PEOPLE = [{"id": "7a000000-0000-4000-8000-000000000001", "name": "Ana Rao", "email": "ana@acme.io"},
            {"id": "7a000000-0000-4000-8000-000000000002", "name": "Ben Ito", "email": "ben@acme.io"},
@@ -364,7 +364,7 @@ def import_cronitor(body: dict): return _import_preview("cronitor", body)
 def import_healthchecks(body: dict): return _import_preview("healthchecks", body)
 # R69: team, security and invitations
 _MEMBERS = [{"user_id": str(uuid.uuid5(uuid.NAMESPACE_DNS, e)), "email": e, "name": n, "role": r, "joined_at": iso(now - timedelta(days=d)), "managed_by_directory": m}
-            for e, n, r, d, m in [("le@finspot.in", "LE", "owner", 210, False), ("ana@acme.io", "Ana Rao", "admin", 180, False), ("ben@acme.io", "Ben Ito", "sre", 120, True),
+            for e, n, r, d, m in [("owner@acme.io", "Owner", "owner", 210, False), ("ana@acme.io", "Ana Rao", "admin", 180, False), ("ben@acme.io", "Ben Ito", "sre", 120, True),
                                   ("chen@acme.io", "Chen Li", "developer", 60, True), ("dev@acme.io", "Devi Nair", "viewer", 12, False)]]
 _INVITES = [{"id": "9b000000-0000-4000-8000-000000000001", "email": "farah@acme.io", "role": "developer", "created_at": iso(now - timedelta(days=2)), "expires_at": iso(now + timedelta(days=5)), "status": "pending", "invite_url": None}]
 _SECURITY = {"require_mfa": False, "mfa_checkable": True, "sso_enforced": False}

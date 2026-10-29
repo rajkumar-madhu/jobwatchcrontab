@@ -1,0 +1,33 @@
+name: "Install notes"
+description: "You tried JobWatch on a real server. Tell us what was confusing, slow or wrong — this is the most useful issue you can open."
+title: "Install notes: "
+labels: ["install-notes"]
+body:
+  - type: dropdown
+    id: path
+    attributes:
+      label: Which path did you take?
+      options: ["Crontab line + ping URL (nothing installed)", "Linux agent (install.sh)", "Kubernetes agent (Helm)", "Self-hosted the whole platform"]
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen, and what happened instead?
+      description: Anything that made you pause counts — a word you did not understand, a step that felt risky, an alert that arrived late or not at all.
+    validations: { required: true }
+  - type: input
+    id: env
+    attributes:
+      label: Where did you run it?
+      placeholder: "Ubuntu 24.04 on a Hetzner VPS; cron; Postgres backups"
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or screenshots (optional)
+      description: Paste terminal output here. Remove tokens and hostnames you do not want public.
+      render: shell
+  - type: checkboxes
+    id: call
+    attributes:
+      label: Would you do a 20-minute screen-shared install with the founder?
+      options: [{ label: "Yes, contact me at the email on my GitHub profile" }]

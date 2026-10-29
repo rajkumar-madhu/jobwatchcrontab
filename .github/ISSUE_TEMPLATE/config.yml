@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security issue
+    url: https://github.com/rajkumar-madhu/jobwatchcrontab/blob/main/SECURITY.md
+    about: Please do not open a public issue for a vulnerability; SECURITY.md has the address.
+  - name: Hosted service
+    url: https://jobwatch.wecrew.in
+    about: 5 jobs free, nothing to install.
