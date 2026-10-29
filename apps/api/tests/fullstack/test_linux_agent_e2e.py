@@ -19,7 +19,9 @@ Skipped unless JOBWATCH_FULLSTACK=1 (needs scripts/fullstack.sh up) and either A
 or a `go` toolchain is on PATH.
 """
 import json
+import re
 import os
+import pathlib
 import shutil
 import signal
 import subprocess
@@ -158,4 +160,7 @@ def test_agent_enrolls_wraps_and_delivers(agent_bin, tenant, tmp_path):
                            {"o": tenant["org"], "v": f"%{SECRET_VALUE}%"}).scalar()
         agent_row = s.execute(text("SELECT status::text, last_seen_at, version FROM agents WHERE org_id=:o"), {"o": tenant["org"]}).first()
     assert leaked == 0
-    assert agent_row is not None and agent_row.last_seen_at is not None and agent_row.version == "0.1.0"
+    # the version the agent reports is whatever agents/linux-agent/internal/agent/client.go says — read it, don't hard-code it
+    src = (pathlib.Path(__file__).resolve().parents[4] / "agents/linux-agent/internal/agent/client.go").read_text()
+    want = re.search(r'const Version = "([^"]+)"', src).group(1)
+    assert agent_row is not None and agent_row.last_seen_at is not None and agent_row.version == want, (agent_row, want)
