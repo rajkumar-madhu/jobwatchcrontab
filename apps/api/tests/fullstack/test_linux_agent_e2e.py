@@ -129,12 +129,17 @@ def test_agent_enrolls_wraps_and_delivers(agent_bin, tenant, tmp_path):
     # 4. daemon flushes the buffer to the ingest service
     daemon = subprocess.Popen([agent_bin, "run"], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     try:
-        def _row():
+        def _rows():
+            # R75: two wrapped runs were buffered (exit 3, then exit 0); wait for both and read them in order.
+            # `.first()` with no ORDER BY picked whichever the planner returned, which failed nightly from 27 Oct.
             with system_session() as s:
-                return s.execute(text("SELECT status::text, exit_code, host, env_var_names, meta::text, duration_ms FROM executions "
-                                      "WHERE org_id=:o AND job_id=:j AND status IN ('failed','success')"),
-                                 {"o": tenant["org"], "j": job.json()["id"]}).first()
-        row = _wait(_row, 60, "execution row from the exec-processor", every=2)
+                rows = s.execute(text("SELECT status::text, exit_code, host, env_var_names, meta::text, duration_ms FROM executions "
+                                      "WHERE org_id=:o AND job_id=:j AND status IN ('failed','success') ORDER BY scheduled_ts, id"),
+                                 {"o": tenant["org"], "j": job.json()["id"]}).all()
+            return rows if len(rows) >= 2 else None
+        rows = _wait(_rows, 60, "both execution rows from the exec-processor", every=2)
+        row = rows[0]
+        assert (rows[1][0], rows[1][1]) == ("success", 0), rows
     finally:
         daemon.send_signal(signal.SIGTERM)
         try:
