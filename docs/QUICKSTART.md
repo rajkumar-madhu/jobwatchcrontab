@@ -1,11 +1,11 @@
 # Quick start
 
-JobWatch expects every scheduled run before it is due, so a job that fails, runs late or never starts
+Argus expects every scheduled run before it is due, so a job that fails, runs late or never starts
 is caught on time. This page gets a first job monitored in a few minutes.
 
 ## 1. Create an account
 Sign up with your work email (or Google, GitHub or Microsoft if your installation offers them). If your
-company already uses JobWatch with single sign-on, you join its workspace automatically.
+company already uses Argus with single sign-on, you join its workspace automatically.
 
 ## 2. Paste one crontab line
 At sign-up (or **Jobs → Add job → From a crontab line**) paste the entry you would least like to find
@@ -13,7 +13,7 @@ out about in a week, as it appears in `crontab -l`:
 ```
 15 2 * * *  /opt/jobs/pg-backup.sh
 ```
-JobWatch takes the schedule from it, names the job after the command (`pg-backup`), uses your
+Argus takes the schedule from it, names the job after the command (`pg-backup`), uses your
 browser's time zone (change it on the job page if the server runs in another), and gives the line
 back with one curl appended. Replace the line in `crontab -e`:
 ```
@@ -21,7 +21,7 @@ back with one curl appended. Replace the line in `crontab -e`:
 ```
 `&&` means a failing command never pings. So a failure and a run that never happened both show as
 the job missing its 02:15 deadline (plus the 5-minute grace), and you are alerted at 02:20. The token
-is shown once; JobWatch stores only a hash. Nothing is installed and nothing runs as root.
+is shown once; Argus stores only a hash. Nothing is installed and nothing runs as root.
 
 To tell failures from misses, report start and exit codes, or ping from pipelines and containers, see
 [Pings and heartbeat API](pings).

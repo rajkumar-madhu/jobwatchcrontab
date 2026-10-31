@@ -14,7 +14,7 @@ import httpx
 PD_HOSTS = {"us": "https://events.pagerduty.com", "eu": "https://events.eu.pagerduty.com"}
 OG_HOSTS = {"us": "https://api.opsgenie.com", "eu": "https://api.eu.opsgenie.com"}
 
-# JobWatch rule severity → vendor severity / priority
+# Argus rule severity → vendor severity / priority
 PD_SEVERITY = {"critical": "critical", "high": "error", "medium": "warning", "low": "info"}
 OG_PRIORITY = {"critical": "P1", "high": "P2", "medium": "P3", "low": "P4"}
 
@@ -55,7 +55,7 @@ def send_pagerduty(cfg: dict, title: str, body: str, p: dict, *, client: httpx.C
         trigger = {
             "routing_key": cfg["routing_key"], "event_action": "trigger", "dedup_key": key,
             "payload": {
-                "summary": title[:1024], "source": "JobWatch", "severity": PD_SEVERITY.get(p.get("severity", "medium"), "warning"),
+                "summary": title[:1024], "source": "Argus", "severity": PD_SEVERITY.get(p.get("severity", "medium"), "warning"),
                 "component": p.get("job_name"), "class": p.get("condition"), "timestamp": p.get("ts"),
                 "custom_details": {"job": p.get("job_name"), "status": f"{p.get('prev_status')} → {p.get('new_status')}",
                                    "incident_id": p.get("incident_id"), "execution_id": p.get("execution_id"), "details": body,
@@ -63,9 +63,9 @@ def send_pagerduty(cfg: dict, title: str, body: str, p: dict, *, client: httpx.C
             },
         }
         if (p.get("context") or {}).get("link"):
-            trigger["links"] = [{"href": p["context"]["link"], "text": "Open in JobWatch"}]
+            trigger["links"] = [{"href": p["context"]["link"], "text": "Open in Argus"}]
         elif cfg.get("dashboard_url") and p.get("job_id") and not p.get("test"):
-            trigger["links"] = [{"href": f"{cfg['dashboard_url'].rstrip('/')}/jobs/{p['job_id']}", "text": "Open in JobWatch"}]
+            trigger["links"] = [{"href": f"{cfg['dashboard_url'].rstrip('/')}/jobs/{p['job_id']}", "text": "Open in Argus"}]
         events = [trigger]
         if p.get("test"):   # prove the key works, then close it again so nobody is left paged
             events.append({"routing_key": cfg["routing_key"], "event_action": "resolve", "dedup_key": key})
@@ -79,11 +79,11 @@ def send_opsgenie(cfg: dict, title: str, body: str, p: dict, *, client: httpx.Cl
     headers = {"Authorization": f"GenieKey {cfg['api_key']}"}
     key = alert_key(p)
     close = lambda: c.post(f"{base}/{key}/close", params={"identifierType": "alias"},  # noqa: E731
-                           json={"source": "JobWatch", "note": "Recovered"}, headers=headers).raise_for_status()
+                           json={"source": "Argus", "note": "Recovered"}, headers=headers).raise_for_status()
     if _resolving(p):
         close()
         return
-    alert = {"message": title[:130], "alias": key, "description": body[:15000], "source": "JobWatch",
+    alert = {"message": title[:130], "alias": key, "description": body[:15000], "source": "Argus",
              "priority": OG_PRIORITY.get(p.get("severity", "medium"), "P3"),
              "tags": [t for t in ("jobwatch", p.get("condition")) if t],
              "details": {k: str(v)[:500] for k, v in {"job": p.get("job_name"), "status": p.get("new_status"),

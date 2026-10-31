@@ -63,7 +63,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
       <div className="flex flex-col px-5 py-6 sm:px-12 sm:py-8">
         <div className="flex items-center justify-between">
           <Link href="/welcome" className="flex items-center gap-2 font-display font-semibold">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-accent"><Activity size={15} aria-hidden /></span>WeCrew JobWatch</Link>
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-accent"><Activity size={15} aria-hidden /></span>WeCrew Argus</Link>
           <ThemeToggle />
         </div>
         <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-10">
@@ -79,9 +79,9 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
           <Link href="/contact" className="hover:text-ink">Talk to a human</Link>
         </nav>
       </div>
-      <aside className="auth-panel relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-center lg:px-12 xl:px-16" aria-label="About JobWatch">
+      <aside className="auth-panel relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-center lg:px-12 xl:px-16" aria-label="About Argus">
         <h2 className="max-w-[520px] font-display text-[30px] font-semibold leading-tight text-balance">Every scheduled run, accounted for.</h2>
-        <p className="mt-3 max-w-[520px] text-[15px] opacity-80">JobWatch expects each run before it is due, so a job that never starts is caught on time, not found weeks later.</p>
+        <p className="mt-3 max-w-[520px] text-[15px] opacity-80">Argus expects each run before it is due, so a job that never starts is caught on time, not found weeks later.</p>
         <div className="mt-8 max-w-[640px] [&_figure]:shadow-[0_30px_80px_-40px_rgb(0_0_0/.6)]"><ScheduleTape callout={false} /></div>
         <ul className="mt-10 grid max-w-[640px] gap-x-8 gap-y-4 xl:grid-cols-2">{CONTROLS.map(([t, d]) => (
           <li key={t} className="flex gap-3"><Check size={16} className="mt-0.5 shrink-0 opacity-70" aria-hidden />

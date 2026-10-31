@@ -8,7 +8,7 @@ they are not marked missed, they raise no alerts, and they do not count against 
 
 | Field | Meaning |
 |---|---|
-| Name | Shown in JobWatch and on public status pages, e.g. "Database patching" |
+| Name | Shown in Argus and on public status pages, e.g. "Database patching" |
 | Starts, lasts | When it begins and how long it lasts (up to 14 days; daily windows up to 24 hours) |
 | Repeats | Once, every day, or every week on chosen days |
 | Time zone | Repeating windows keep their local time across daylight-saving changes |

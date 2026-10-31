@@ -1,15 +1,15 @@
 # Linux agent
 
 A single static binary (Linux amd64 and arm64) that runs as a systemd service. It finds your scheduled
-jobs, reports every run, and keeps events on disk if the network or JobWatch is unavailable.
+jobs, reports every run, and keeps events on disk if the network or Argus is unavailable.
 
 ## Install
-In **Servers & agents**, choose **Install an agent** (or **Get install command**). JobWatch creates a
+In **Servers & agents**, choose **Install an agent** (or **Get install command**). Argus creates a
 one-time bootstrap token (valid 24 hours) and shows the command. Run it on the server as root:
 ```bash
 curl -fsSL https://ingest.example.com/agent/install.sh | sudo bash -s -- --token csb_…
 ```
-The installer is served by your JobWatch ingest host with its defaults filled in: which release to
+The installer is served by your Argus ingest host with its defaults filled in: which release to
 download and which server to enroll with. It downloads the agent for your architecture, **verifies it
 against the release's SHA256SUMS before installing anything**, enrolls the host and starts the systemd
 service. The host receives its own agent key; the bootstrap token cannot be reused.

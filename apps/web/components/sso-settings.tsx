@@ -38,7 +38,7 @@ export function SsoSettings({ role }: { role?: string }) {
   const [newTok, setNewTok] = useState<string | null>(null);
   const mkTok = useMutation({ mutationFn: () => mutate("/api/v1/sso/scim-tokens", "post", { body: { name: "Directory sync" } }),
     onSuccess: (r: any) => { setNewTok(r?.token ?? null); qc.invalidateQueries({ queryKey: ["scim-tokens"] }); } });
-  // R56: directory groups and the JobWatch role each one grants (owners only)
+  // R56: directory groups and the Argus role each one grants (owners only)
   const groups = useQuery({ queryKey: ["scim-groups"], queryFn: () => api<{ id: string; display_name: string; role: string | null; members: number }[]>("/api/v1/sso/scim-groups"), enabled: isAdmin });
   const mapRole = useMutation({ mutationFn: ({ id, role }: { id: string; role: string | null }) =>
       mutate("/api/v1/sso/scim-groups/{group_id}/role", "put", { path: { group_id: id }, body: { role } as any }),
@@ -136,7 +136,7 @@ export function SsoSettings({ role }: { role?: string }) {
                   </select>
                 </div>
               </div>))}</div>
-          ) : <p className="mt-2 text-xs text-mute">No groups yet. Assign groups to the JobWatch app in your directory and push them.</p>}
+          ) : <p className="mt-2 text-xs text-mute">No groups yet. Assign groups to the Argus app in your directory and push them.</p>}
           {role !== "owner" && <p className="mt-2 text-xs text-mute">Only owners can change group roles.</p>}
         </div>
       </div>

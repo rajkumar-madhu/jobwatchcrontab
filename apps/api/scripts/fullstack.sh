@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R17 — run the whole JobWatch backend as local processes, mirroring infra/docker/docker-compose.yml
+# R17 — run the whole Argus backend as local processes, mirroring infra/docker/docker-compose.yml
 # service-for-service, for the full-chain test in tests/fullstack/.
 #
 # Why not compose: this is what CI/sandboxes without Docker can run, and it exercises the same

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R73 — register this Mac as the GitHub Actions runner that deploys JobWatch production.
+# R73 — register this Mac as the GitHub Actions runner that deploys Argus production.
 #
 #   deploy/runner/setup-mac.sh --token <registration token> [--labels wecrew-prod] [--name macbook-air]
 #

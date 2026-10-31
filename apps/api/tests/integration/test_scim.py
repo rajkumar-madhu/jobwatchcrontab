@@ -60,7 +60,7 @@ def test_okta_lifecycle_create_find_deactivate_reactivate(scim, org):
     found = c.get("/scim/v2/Users", headers=h, params={"filter": f'userName eq "{email.upper()}"'}).json()
     assert found["totalResults"] == 1 and found["Resources"][0]["id"] == uid
     assert c.post("/scim/v2/Users", headers=h, json={"userName": email}).status_code == 409
-    # promote in JobWatch, then deactivate (Okta: value object) — membership gone, role remembered
+    # promote in Argus, then deactivate (Okta: value object) — membership gone, role remembered
     from cronsentinel.db import system_session
     with system_session() as s:
         s.execute(text("UPDATE memberships SET role='sre' WHERE org_id=:o AND user_id=:u"), {"o": org["id"], "u": uid})

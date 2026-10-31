@@ -1,4 +1,4 @@
-# Deploying JobWatch (R49)
+# Deploying Argus (R49)
 
 Pushes a version tag → GitHub Actions builds three images, deploys to Kubernetes with Helm, runs the
 database migrations first, smoke-tests the live URLs and rolls back if the smoke test fails.

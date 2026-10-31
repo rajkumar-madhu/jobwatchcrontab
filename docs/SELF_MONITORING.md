@@ -1,6 +1,6 @@
-# JobWatch monitoring itself (R74)
+# Argus monitoring itself (R74)
 
-"Do you use it yourself?" — yes. The platform's own recurring work runs as ordinary JobWatch jobs in
+"Do you use it yourself?" — yes. The platform's own recurring work runs as ordinary Argus jobs in
 the operator's organisation, so it shows on the dashboard, keeps history and uptime, and alerts
 through the same rules and channels as any customer job.
 

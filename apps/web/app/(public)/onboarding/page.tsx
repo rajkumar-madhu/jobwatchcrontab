@@ -127,7 +127,7 @@ function Wrap({ step, children }: { step: number; children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-bg">
       <header className="border-b border-line bg-panel"><div className="mx-auto flex max-w-3xl items-center gap-2 px-5 py-4 font-display font-semibold">
-        <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-accent"><Activity size={15} aria-hidden /></span>Set up WeCrew JobWatch</div></header>
+        <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-accent"><Activity size={15} aria-hidden /></span>Set up WeCrew Argus</div></header>
       <div className="mx-auto max-w-3xl px-5 py-10">
         {step > 0 && <ol className="mb-10 grid grid-cols-3 gap-2 sm:grid-cols-6" aria-label="Setup steps">{STEPS.map((s, i) => {
           const n = i + 1, done = n < step, cur = n === step;

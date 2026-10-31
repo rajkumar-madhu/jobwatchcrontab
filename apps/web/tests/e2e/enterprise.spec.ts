@@ -20,7 +20,7 @@ test("overview: range switch, KPI tiles and widgets", async ({ page }) => {
 
 test("sign-in: SSO-first copy and no horizontal overflow", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "Sign in to JobWatch" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to Argus" })).toBeVisible();
   await expect(page.getByLabel("Work email")).toBeVisible();
   await expect(page.getByText(/multi-factor|authenticator/i).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Talk to a human" }).first()).toBeVisible();
@@ -35,7 +35,7 @@ test("sign-up: free-mail advice, then an invitation shows who invited you", asyn
   await expect(page.getByText(/Use your work email if you can/)).toHaveCount(0);
 
   await page.goto("/signup?invite=demo-invite-token-0123456789abcdef");
-  await expect(page.getByRole("heading", { name: "Join Acme on JobWatch" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Join Acme on Argus" })).toBeVisible();
   await expect(page.getByText(/Ana Rao invited/)).toBeVisible();
   await expect(page.getByLabel("Work email")).toHaveValue("farah@acme.io");
   await expect(page.getByLabel("Work email")).toHaveAttribute("readonly", "");
@@ -101,7 +101,7 @@ test("landing and security pages carry the enterprise content and navigation", a
   await expect(page.locator("#start")).toContainText("Start with one line");
   await expect(page.locator("#enterprise")).toContainText("Built to pass your security review");
   await expect(page.locator("#enterprise")).toContainText("Self-hosted");
-  await page.getByText("Is JobWatch SOC 2 certified?").click();
+  await page.getByText("Is Argus SOC 2 certified?").click();
   await expect(page.getByText(/Not yet/).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
 

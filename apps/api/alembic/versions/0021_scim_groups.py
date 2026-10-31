@@ -1,7 +1,7 @@
 """R56 — SCIM groups and group → role mapping.
 
 scim_groups         groups pushed by the directory (Okta, Entra ID …); `role` is set by an org owner in
-                    JobWatch (never 'owner'); NULL = the group does not affect roles
+                    Argus (never 'owner'); NULL = the group does not affect roles
 scim_group_members  who is in each group (users provisioned to this org over SCIM)
 scim_users.role_from_group  whether the person's current role came from a mapped group, so leaving every
                     mapped group reverts it to the default role, while a role set by hand is left alone

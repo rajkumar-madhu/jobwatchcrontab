@@ -25,13 +25,13 @@ const PAGES: Omit<DocMeta, "title">[] = [
   { slug: "sso", file: "SSO.md", group: "Security and identity", summary: "SAML and OpenID Connect with verified domains." , related: ["scim", "security"] },
   { slug: "scim", file: "SCIM.md", group: "Security and identity", summary: "Directory sync for people and groups." , related: ["sso", "audit-streaming"] },
   { slug: "audit-streaming", file: "AUDIT_STREAMING.md", group: "Security and identity", summary: "Stream the audit log to your SIEM." , related: ["datadog", "security"] },
-  { slug: "security", file: "SECURITY_OVERVIEW.md", group: "Security and identity", summary: "How JobWatch protects your data." , related: ["sso", "audit-streaming", "deploy"] },
+  { slug: "security", file: "SECURITY_OVERVIEW.md", group: "Security and identity", summary: "How Argus protects your data." , related: ["sso", "audit-streaming", "deploy"] },
   { slug: "datadog", file: "DATADOG.md", group: "Integrations", summary: "Alerts as events, audit logs and job metrics." , related: ["alerts", "audit-streaming"] },
   { slug: "terraform", file: "TERRAFORM.md", group: "Integrations", summary: "Jobs and maintenance windows as code.", related: ["maintenance", "run-checks"] },
   { slug: "how-it-works", file: "HOW_IT_WORKS.md", group: "Self-hosting", summary: "The services and how a ping becomes an alert." , related: ["deploy", "security"] },
-  { slug: "deploy", file: "DEPLOY.md", group: "Self-hosting", summary: "Run JobWatch in your own Kubernetes cluster." , related: ["how-it-works", "security"] },
+  { slug: "deploy", file: "DEPLOY.md", group: "Self-hosting", summary: "Run Argus in your own Kubernetes cluster." , related: ["how-it-works", "security"] },
   { slug: "billing", file: "BILLING.md", group: "Self-hosting", summary: "Plans and prices in USD and INR; Stripe and Razorpay setup; GST notes.", related: ["deploy", "self-monitoring"] },
-  { slug: "self-monitoring", file: "SELF_MONITORING.md", group: "Self-hosting", summary: "JobWatch watches its own workers as jobs in your organisation.", related: ["deploy", "how-it-works"] },
+  { slug: "self-monitoring", file: "SELF_MONITORING.md", group: "Self-hosting", summary: "Argus watches its own workers as jobs in your organisation.", related: ["deploy", "how-it-works"] },
 ];
 const BY_FILE = Object.fromEntries(PAGES.map((p) => [p.file, p.slug]));
 

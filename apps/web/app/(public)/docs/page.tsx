@@ -8,9 +8,9 @@ export default function DocsHome() {
   const docs = listDocs();
   return (
     <div>
-      <h1 className="font-display text-4xl font-semibold">JobWatch documentation</h1>
+      <h1 className="font-display text-4xl font-semibold">Argus documentation</h1>
       <p className="mt-3 max-w-[640px] text-[17px] text-mute">Monitor every scheduled job: cron, systemd timers, Kubernetes CronJobs, backups and pipelines.</p>
-      <div className="mt-6"><DocsSearchHero index={[...searchIndex(), { slug: "api", title: "API reference", text: "Every endpoint of the JobWatch API" }]} /></div>
+      <div className="mt-6"><DocsSearchHero index={[...searchIndex(), { slug: "api", title: "API reference", text: "Every endpoint of the Argus API" }]} /></div>
       <div className="mt-4 flex flex-wrap gap-2 text-sm">
         <span className="py-1 text-mute">Popular:</span>
         {[["quickstart", "Quick start"], ["pings", "Pings and heartbeat API"], ["linux-agent", "Linux agent"], ["api", "API reference"]].map(([s, l]) => (
@@ -30,7 +30,7 @@ export default function DocsHome() {
         <section aria-labelledby="g-ref">
           <h2 id="g-ref" className="mb-3 font-display text-lg font-semibold">Reference</h2>
           <Link href="/docs/api" className="card block max-w-sm p-4 transition hover:border-accent/60">
-            <div className="font-medium">API reference</div><p className="mt-1 text-sm text-mute">Every endpoint of the JobWatch API, by area.</p>
+            <div className="font-medium">API reference</div><p className="mt-1 text-sm text-mute">Every endpoint of the Argus API, by area.</p>
           </Link>
         </section>
       </div>

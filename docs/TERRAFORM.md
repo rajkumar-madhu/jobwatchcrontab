@@ -1,6 +1,6 @@
 # Terraform
 
-Manage JobWatch jobs and maintenance windows as code with the `wecrew/jobwatch` provider. It works
+Manage Argus jobs and maintenance windows as code with the `wecrew/jobwatch` provider. It works
 with Terraform and OpenTofu.
 
 ## Configure
@@ -51,7 +51,7 @@ output "backup_ping_url" {
 | `ping_token_hint` (computed) | The token's last characters, to recognise it without exposing it. |
 
 > [!IMPORTANT]
-> JobWatch shows a ping URL only once, at creation, so the provider keeps it in Terraform state.
+> Argus shows a ping URL only once, at creation, so the provider keeps it in Terraform state.
 > Protect your state accordingly (an encrypted remote backend). Jobs brought in with
 > `terraform import jobwatch_job.x <job id>` have no `ping_url`: keep using the existing one, or
 > choose **New ping URL** in the app.

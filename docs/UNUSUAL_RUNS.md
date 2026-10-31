@@ -3,7 +3,7 @@
 A job can exit 0 and still be wrong: a backup that finished in 3 seconds instead of 20 minutes, an
 export that ran four times longer than ever before, a dump of 1.2 KB where it is usually 4 GB.
 [Run checks](run-checks) catch these if you write the rule. **Unusual runs** catch them without a
-rule: JobWatch learns what is normal for each job from its own history.
+rule: Argus learns what is normal for each job from its own history.
 
 It is on for every job at **Normal** sensitivity. It only warns: nothing reaches anyone until you
 add an alert rule for it, so turning it on changed no one's alerts.

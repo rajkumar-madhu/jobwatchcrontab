@@ -1,9 +1,9 @@
 """R4 — the AEGIS-downstream boundary.
 
-JobWatch is upstream. AEGIS (and anything else) consumes JobWatch through *this* contract only:
+Argus is upstream. AEGIS (and anything else) consumes Argus through *this* contract only:
 a versioned, self-describing signal envelope pushed to destinations the tenant configures.
-Nothing downstream ever reads JobWatch's database, NATS, or internal APIs, and nothing in
-JobWatch imports from AEGIS. That keeps JobWatch sellable standalone and keeps the data boundary
+Nothing downstream ever reads Argus's database, NATS, or internal APIs, and nothing in
+Argus imports from AEGIS. That keeps Argus sellable standalone and keeps the data boundary
 honest — a tenant's job telemetry leaves only where they pointed it.
 
 Contract rules (breaking any of these is a major version bump):

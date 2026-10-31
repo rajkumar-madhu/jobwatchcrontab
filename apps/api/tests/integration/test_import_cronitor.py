@@ -102,7 +102,7 @@ def _execs(org_id, name):
 def test_import_then_ping_with_cronitor_paths(fake_cronitor, clients, org):
     api, ingest, h = clients
     req = {"api_key": fake.READ_KEY, "telemetry_key": TK, "base_url": fake_cronitor, "workspace_id": str(org["ws"])}
-    # a script already pointed at JobWatch before the import: 404 (and cached as unknown)
+    # a script already pointed at Argus before the import: 404 (and cached as unknown)
     assert ingest.get(f"/cronitor/p/{TK}/nightly-backup").status_code == 404
     dry = api.post("/api/v1/import/cronitor", headers=h, json={**req, "dry_run": True}).json()
     from cronsentinel.db import system_session

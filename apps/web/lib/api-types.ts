@@ -1446,7 +1446,7 @@ export interface paths {
         };
         /**
          * List monitoring gaps
-         * @description Periods when JobWatch itself was not watching your schedules, and how many expected runs could not be checked. Shown so you never mistake our outage for your jobs being fine.
+         * @description Periods when Argus itself was not watching your schedules, and how many expected runs could not be checked. Shown so you never mistake our outage for your jobs being fine.
          */
         get: operations["monitoring_gaps_api_v1_platform_monitoring_gaps_get"];
         put?: never;
@@ -2327,7 +2327,7 @@ export interface components {
             last_seen_at?: string | null;
             /**
              * Skew Ms
-             * @description Difference between the reporting host's clock and JobWatch's, in milliseconds.
+             * @description Difference between the reporting host's clock and Argus's, in milliseconds.
              */
             skew_ms?: number | null;
             /**
@@ -2389,7 +2389,7 @@ export interface components {
             last_seen_at?: string | null;
             /**
              * Skew Ms
-             * @description Difference between the reporting host's clock and JobWatch's, in milliseconds.
+             * @description Difference between the reporting host's clock and Argus's, in milliseconds.
              */
             skew_ms?: number | null;
             /**
@@ -2925,7 +2925,7 @@ export interface components {
             host: string | null;
             /**
              * Skew Ms
-             * @description Difference between the reporting host's clock and JobWatch's, in milliseconds.
+             * @description Difference between the reporting host's clock and Argus's, in milliseconds.
              */
             skew_ms: number;
             /**
@@ -3089,7 +3089,7 @@ export interface components {
             last_seen_at?: string | null;
             /**
              * Skew Ms
-             * @description Difference between the reporting host's clock and JobWatch's, in milliseconds.
+             * @description Difference between the reporting host's clock and Argus's, in milliseconds.
              */
             skew_ms?: number | null;
             /**
@@ -4455,7 +4455,7 @@ export interface components {
         };
         /**
          * ScimGroupOut
-         * @description R56: a directory group and the JobWatch role it grants (None = no effect on roles).
+         * @description R56: a directory group and the Argus role it grants (None = no effect on roles).
          */
         ScimGroupOut: {
             /**

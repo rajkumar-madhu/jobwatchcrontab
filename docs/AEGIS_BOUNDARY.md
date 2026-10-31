@@ -1,11 +1,11 @@
 # AEGIS-downstream boundary (R4)
 
-JobWatch is **upstream** of AEGIS. AEGIS is one consumer among any the tenant configures.
+Argus is **upstream** of AEGIS. AEGIS is one consumer among any the tenant configures.
 
 ## The rule
-- Nothing downstream reads JobWatch's database, NATS streams, Redis, or internal APIs.
-- Nothing in JobWatch imports from, calls, or depends on AEGIS. JobWatch runs and sells standalone.
-- Telemetry leaves JobWatch through **one door**: tenant-configured *signal destinations*
+- Nothing downstream reads Argus's database, NATS streams, Redis, or internal APIs.
+- Nothing in Argus imports from, calls, or depends on AEGIS. Argus runs and sells standalone.
+- Telemetry leaves Argus through **one door**: tenant-configured *signal destinations*
   (`/api/v1/integrations/destinations`), carrying the `jobwatch.signal/1` envelope.
 - A tenant's data goes only where that tenant pointed it. There is no platform-level fan-out to AEGIS.
 
@@ -38,7 +38,7 @@ Destination URLs pointing at loopback / link-local / `*.internal` are refused at
 
 ## What AEGIS does with it (out of scope here)
 OpsGraph ingests `job.state_changed` and `incident.*` as nodes/edges; ChangeGraph can join
-`slot.settled` against deploy events. That mapping lives in AEGIS's connector, not in JobWatch.
+`slot.settled` against deploy events. That mapping lives in AEGIS's connector, not in Argus.
 
 ## Open items
 - `nats` destination kind is schema-present but delivery raises `not implemented` — needs an

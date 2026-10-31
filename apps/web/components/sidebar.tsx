@@ -57,7 +57,7 @@ function Brand() {
   return (
     <span className="flex items-center gap-2">
       <span className="grid h-6 w-6 place-items-center rounded-md bg-accent/15 text-accent"><Activity size={14} aria-hidden /></span>
-      <span className="font-display text-[15px] font-semibold tracking-tight">JobWatch</span>
+      <span className="font-display text-[15px] font-semibold tracking-tight">Argus</span>
     </span>
   );
 }

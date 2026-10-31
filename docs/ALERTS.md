@@ -25,7 +25,7 @@ the `context` object in signed webhooks), each shown only when known:
 | Started, Finished, Duration, Exit code | the run that triggered the alert |
 | Failed checks, Metrics | run checks the run broke and the numbers it reported |
 | Last error | last line of the run's stderr, **redacted** (passwords, tokens, keys are masked) |
-| Incident, Run, Open in JobWatch | ids and a direct link to the job |
+| Incident, Run, Open in Argus | ids and a direct link to the job |
 
 Commands are deliberately left out: command lines often carry credentials in arguments. Set
-`WEB_PUBLIC_URL` so the link points at your JobWatch.
+`WEB_PUBLIC_URL` so the link points at your Argus.

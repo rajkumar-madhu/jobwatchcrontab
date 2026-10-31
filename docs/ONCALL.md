@@ -33,7 +33,7 @@ Pages are delivered through one of your alert channels:
 Every page includes the alert's full context and an acknowledge link.
 
 > [!NOTE]
-> JobWatch pages by email, chat and webhooks. It does not make phone calls or send SMS; to page by
+> Argus pages by email, chat and webhooks. It does not make phone calls or send SMS; to page by
 > phone, send alerts to PagerDuty or Opsgenie instead.
 
 ## Route alerts to a policy

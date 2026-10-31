@@ -94,7 +94,7 @@ def checkout(plan: str, request: Request, currency: str = "usd", interval: str =
             if not rp_plan: raise HTTPException(400, f"plan {plan} has no Razorpay {interval}ly plan configured")
             cust = s.execute(text("SELECT razorpay_customer_id FROM subscriptions WHERE org_id=:o"), {"o": str(p.org_id)}).scalar()
             if not cust:
-                name = s.execute(text("SELECT name FROM organizations WHERE id=:o"), {"o": str(p.org_id)}).scalar() or "JobWatch customer"
+                name = s.execute(text("SELECT name FROM organizations WHERE id=:o"), {"o": str(p.org_id)}).scalar() or "Argus customer"
                 cust = _razorpay("POST", "/customers", {"name": name[:50], **({"email": email} if email else {}), "fail_existing": "0", "notes": {"org_id": str(p.org_id)}})["id"]
                 s.execute(text("UPDATE subscriptions SET razorpay_customer_id=:c WHERE org_id=:o"), {"c": cust, "o": str(p.org_id)})
             # total_count: Razorpay subscriptions need a finite number of cycles; 10 years is the dashboard's own ceiling.

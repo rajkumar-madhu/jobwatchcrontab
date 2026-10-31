@@ -5,12 +5,12 @@ import { HostSelector } from "@/components/docs-enhance";
 import { GROUPS, listDocs, searchIndex } from "@/lib/docs";
 import { apiNav } from "@/lib/api-reference";
 
-export const metadata = { title: "Docs · WeCrew JobWatch" };
+export const metadata = { title: "Docs · WeCrew Argus" };
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   const items = [...listDocs().map(({ slug, title, group }) => ({ slug, title, group })), { slug: "api", title: "API reference", group: "Reference" }];
   const api = apiNav();
-  const index = [...searchIndex(), { slug: "api", title: "API reference", text: "Every endpoint of the JobWatch API, by area" },
+  const index = [...searchIndex(), { slug: "api", title: "API reference", text: "Every endpoint of the Argus API, by area" },
     ...api.flatMap((g) => g.ops.map((o) => ({ slug: `api/${g.slug}#${o.id}`, title: o.summary, text: `${g.name} · ${o.method} ${o.path}` })))];
   return (
     <div className="min-h-screen bg-bg text-ink">

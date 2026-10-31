@@ -101,7 +101,7 @@ def fetch(auth_token: str, organization: str, base_url: str = "https://sentry.io
                 keys[pid] = active[0]["public"].lower() if active else None
                 if len(active) > 1:
                     warnings.append(f"project {pslug} has {len(active)} active client keys; check-ins must use the first one "
-                                    f"(…{active[0]['public'][-4:]}) to reach JobWatch")
+                                    f"(…{active[0]['public'][-4:]}) to reach Argus")
                 elif not active:
                     warnings.append(f"project {pslug} has no active client key — its jobs get new ping URLs")
     except netguard.BlockedDestination as e:
@@ -157,16 +157,16 @@ def map_monitor(mon: dict, public_key: str | None) -> dict:
     grace = _minutes("checkin_margin", DEFAULT_MARGIN_MIN) * 60
     runtime = _minutes("max_runtime", DEFAULT_RUNTIME_MIN) * 60
     if mon.get("isMuted"):
-        notes.append("muted in Sentry; imported active — pause it in JobWatch to keep it quiet")
+        notes.append("muted in Sentry; imported active — pause it in Argus to keep it quiet")
     try:
         fails = int(cfg.get("failure_issue_threshold") or 1)
     except (TypeError, ValueError):
         fails = 1
     if fails > 1:
-        notes.append(f"Sentry waited for {fails} failed check-ins before alerting; JobWatch alerts on the first")
+        notes.append(f"Sentry waited for {fails} failed check-ins before alerting; Argus alerts on the first")
     envs = [e.get("name") for e in (mon.get("environments") or []) if isinstance(e, dict) and e.get("name")]
     if len(envs) > 1:
-        notes.append(f"Sentry tracked {len(envs)} environments ({', '.join(envs[:4])}); in JobWatch all check-ins go to this job")
+        notes.append(f"Sentry tracked {len(envs)} environments ({', '.join(envs[:4])}); in Argus all check-ins go to this job")
     project = mon.get("project") or {}
     pid = project.get("id")
     tags = ["sentry"] + ([f"project:{project['slug']}"[:60]] if project.get("slug") else [])

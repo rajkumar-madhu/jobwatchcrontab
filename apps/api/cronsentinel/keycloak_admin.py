@@ -1,6 +1,6 @@
 """R43 — the slice of the Keycloak Admin REST API that single sign-on needs.
 
-JobWatch authenticates with a dedicated confidential client (`jobwatch-admin`, service account with
+Argus authenticates with a dedicated confidential client (`jobwatch-admin`, service account with
 realm-management roles manage-identity-providers + view-identity-providers only — see the realm
 export). It never uses an admin user's password.
 

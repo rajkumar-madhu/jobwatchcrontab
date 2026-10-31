@@ -140,7 +140,7 @@ plan_limits.expected_runs_retention_days), `cronsentinel/outbound/{schema,delive
 Closed R3 open items: expected_runs retention + partition creation in scorer; agent-offline threshold is now
 3× the agent's own reported `heartbeat_interval_s` (Linux agent sends it; K8s agent still does not).
 
-Also fixed: rename had produced `X-WeCrew JobWatch-Signature` (invalid header, space) → `X-JobWatch-Signature`.
+Also fixed: rename had produced `X-WeCrew Argus-Signature` (invalid header, space) → `X-JobWatch-Signature`.
 
 Tests: `tests/test_outbound_schema.py` (9 contract tests). 49 passed / 1 skipped.
 
@@ -993,7 +993,7 @@ eye. That caught two real defects before either shipped:
    confirming the leniency-when-omitted design is intentional, not incidental.
 
 Also fixed in `deploy/keycloak/cronsentinel-realm.json`/`import.sh` from the same session: the
-export stays deliberately role-and-group-free (JobWatch's `memberships.role` in Postgres is the
+export stays deliberately role-and-group-free (Argus's `memberships.role` in Postgres is the
 sole authority — Keycloak only proves identity), confirmed by two full `import.sh` runs against
 the live server (create, then idempotent update, same rotated-then-preserved secret both times).
 

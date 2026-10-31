@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R64 end-to-end check of the provider against a real JobWatch API, with OpenTofu or Terraform.
+# R64 end-to-end check of the provider against a real Argus API, with OpenTofu or Terraform.
 #   PROVIDER_BIN=./terraform-provider-jobwatch TF=tofu JOBWATCH_API_URL=… JOBWATCH_API_KEY=… ./run.sh
 # The API needs INGEST_PUBLIC_URL set (ping_url) and the key's org a workspace. Everything it creates
 # is destroyed at the end.

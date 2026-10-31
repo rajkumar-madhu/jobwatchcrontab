@@ -13,7 +13,7 @@ Rules, all enforced here:
   * Users are global (one person can be in several orgs); SCIM only ever touches this org's
     membership, never the user row's identity, so one org cannot affect another.
 
-Groups are not supported (empty list, 501 on writes); assign roles in JobWatch.
+Groups are not supported (empty list, 501 on writes); assign roles in Argus.
 """
 import json
 import re
@@ -324,7 +324,7 @@ def delete_user(uid: str, request: Request, authorization: str | None = Header(N
     with system_session() as s:
         r = _get(s, org_id, uid)
         if _is_owner(s, org_id, r.user_id):
-            raise ScimError(403, "owners are managed in JobWatch, not by provisioning")
+            raise ScimError(403, "owners are managed in Argus, not by provisioning")
         s.execute(text("DELETE FROM memberships WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": r.user_id})
         s.execute(text("DELETE FROM scim_users WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": r.user_id})
         s.execute(text("DELETE FROM scim_group_members WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": r.user_id})   # R56
@@ -337,13 +337,13 @@ def _apply_active(s, org_id, uid, active: bool, tok) -> None:
     if current == active:
         return
     if not active and _is_owner(s, org_id, uid):
-        raise ScimError(403, "owners are managed in JobWatch, not by provisioning")
+        raise ScimError(403, "owners are managed in Argus, not by provisioning")
     _set_active(s, org_id, uid, active)
     audit(s, _actor(org_id, tok), "scim.user_activate" if active else "scim.user_deactivate", "user", str(uid))
 
 
 # ---- Groups (R56) -------------------------------------------------------------------------------
-# Groups come from the directory; an org owner maps a group to a JobWatch role in Settings. A person's
+# Groups come from the directory; an org owner maps a group to a Argus role in Settings. A person's
 # role is the highest role among their mapped groups. Owners are never changed, deactivated people keep
 # no access, and a person in no mapped group keeps (or, if a group set it, reverts to) the default role.
 
@@ -359,7 +359,7 @@ def recompute_roles(s, org_id, user_ids, tok=None, principal: Principal | None =
             continue
         current = s.execute(text("SELECT role FROM memberships WHERE org_id=:o AND user_id=:u"), {"o": org_id, "u": uid}).scalar()
         if current == "owner":
-            continue                                        # owners are managed in JobWatch only
+            continue                                        # owners are managed in Argus only
         mapped = [r for (r,) in s.execute(text("""SELECT g.role FROM scim_group_members m JOIN scim_groups g ON g.id = m.group_id
             WHERE m.org_id=:o AND m.user_id=:u AND g.role IS NOT NULL"""), {"o": org_id, "u": uid}).all()]
         if mapped:

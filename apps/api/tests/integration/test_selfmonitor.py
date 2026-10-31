@@ -1,4 +1,4 @@
-"""R74 — JobWatch monitors its own workers as ordinary jobs in the operator's organisation."""
+"""R74 — Argus monitors its own workers as ordinary jobs in the operator's organisation."""
 import pytest
 from sqlalchemy import text
 

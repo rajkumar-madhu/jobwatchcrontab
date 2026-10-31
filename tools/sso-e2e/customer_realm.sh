@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Creates realm `acme-idp` (a fake customer identity provider) with users and OIDC + SAML clients
-# that trust the JobWatch realm's broker. Idempotent enough for repeated staging runs.
+# that trust the Argus realm's broker. Idempotent enough for repeated staging runs.
 set -euo pipefail
 : "${KEYCLOAK_URL:?}" "${KEYCLOAK_ADMIN_PASSWORD:?}"
 K=${KCADM:-kcadm.sh}; R=acme-idp; JW=${JW_REALM:-cronsentinel}
@@ -25,7 +25,7 @@ $K get clients -r $R -q clientId="$SP" --fields id | grep -q id || $K create cli
   {"name":"firstName","protocol":"saml","protocolMapper":"saml-user-property-mapper","config":{"user.attribute":"firstName","attribute.name":"firstName","attribute.nameformat":"Basic"}},
   {"name":"lastName","protocol":"saml","protocolMapper":"saml-user-property-mapper","config":{"user.attribute":"lastName","attribute.name":"lastName","attribute.nameformat":"Basic"}}]}
 JSON
-# Start each run clean: remove brokered copies of the test users from the JobWatch realm, so Keycloak
+# Start each run clean: remove brokered copies of the test users from the Argus realm, so Keycloak
 # treats every sign-in as a first broker login (leftovers trigger its "account already exists" page).
 for e in alice@acme.test bob@acme.test carol@acme-saml.test victim@other-corp.test; do
   for id in $($K get users -r $JW -q email=$e --fields id --format csv --noquotes 2>/dev/null); do $K delete users/$id -r $JW; done

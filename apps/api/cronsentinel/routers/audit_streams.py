@@ -147,7 +147,7 @@ def test_stream(stream_id: UUID, p: Principal = Depends(require_role("owner"))):
         if not r: raise HTTPException(404)
     ev = {"id": 0, "time": datetime.now(UTC).isoformat().replace("+00:00", "Z"), "org_id": str(p.org_id), "action": "audit_stream.test",
           "actor": {"type": "user" if p.user_id else "api_key", "id": str(p.user_id or p.api_key_id)}, "target": {"type": "audit_stream", "id": str(stream_id)},
-          "ip": None, "details": {"message": "Test event from JobWatch"}, "source": "jobwatch"}
+          "ip": None, "details": {"message": "Test event from Argus"}, "source": "jobwatch"}
     try:
         auditstream.send(r.kind, decrypt_json(r.config_enc), [ev])
     except (auditstream.DeliveryError, netguard.BlockedDestination) as e:

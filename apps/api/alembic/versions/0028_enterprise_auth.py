@@ -1,6 +1,6 @@
 """R69 — enterprise sign-in: require MFA per organization, team invitations, contact-sales requests.
 
-organizations.require_mfa   members who sign in with a JobWatch password must have an authenticator
+organizations.require_mfa   members who sign in with a Argus password must have an authenticator
                             app (TOTP) or security key; SSO members get MFA from their own IdP
 org_invites                 invite a teammate by email with a role; the link is single use, expires
                             after 7 days and is stored only as a hash; accepted on the invitee's

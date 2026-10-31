@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 test.describe("auth pages", () => {
   test("sign-in shows configured providers and routes email by SSO discovery", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("heading", { name: "Sign in to JobWatch" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in to Argus" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Continue with GitHub" })).toHaveAttribute("href", /\/auth\/login\?.*idp=github/);
     // a domain with SSO goes to /auth/sso
     let target = "";

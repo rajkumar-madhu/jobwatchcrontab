@@ -10,8 +10,8 @@ const KINDS: Record<string, { label: string; fields: [string, string][] }> = {
   slack: { label: "Slack", fields: [["webhook_url", "Incoming webhook URL"]] }, teams: { label: "Microsoft Teams", fields: [["webhook_url", "Incoming webhook URL"]] },
   discord: { label: "Discord", fields: [["webhook_url", "Webhook URL"]] }, telegram: { label: "Telegram", fields: [["bot_token", "Bot token"], ["chat_id", "Chat ID"]] },
   webhook: { label: "Webhook", fields: [["url", "URL"], ["secret", "HMAC secret (optional)"]] },
-  // R42: on-call tools. Alerts stay open there until the job recovers, then JobWatch resolves them.
-  pagerduty: { label: "PagerDuty", fields: [["routing_key", "Integration key (Events API v2)"], ["region", "Region: us or eu (default us)"], ["dashboard_url", "JobWatch URL for links (optional)"]] },
+  // R42: on-call tools. Alerts stay open there until the job recovers, then Argus resolves them.
+  pagerduty: { label: "PagerDuty", fields: [["routing_key", "Integration key (Events API v2)"], ["region", "Region: us or eu (default us)"], ["dashboard_url", "Argus URL for links (optional)"]] },
   opsgenie: { label: "Opsgenie", fields: [["api_key", "API integration key"], ["region", "Region: us or eu (default us)"]] },
   // R58: Datadog Events — alerts appear in the Datadog event stream, tagged by job, host, env and team
   datadog: { label: "Datadog", fields: [["api_key", "Datadog API key"], ["site", "Site (default datadoghq.com; e.g. datadoghq.eu, us5.datadoghq.com)"]] },

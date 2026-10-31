@@ -1,4 +1,4 @@
-// Package client is a small JobWatch API client for the Terraform provider (R64).
+// Package client is a small Argus API client for the Terraform provider (R64).
 package client
 
 import (
@@ -35,7 +35,7 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
-	return fmt.Sprintf("JobWatch API answered HTTP %d: %s", e.Status, e.Body)
+	return fmt.Sprintf("Argus API answered HTTP %d: %s", e.Status, e.Body)
 }
 
 func (c *Client) do(ctx context.Context, method, path string, in, out any) error {

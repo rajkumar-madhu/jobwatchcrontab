@@ -1,4 +1,4 @@
-"""Mock JobWatch API for UI review — demo data only, no DB."""
+"""Mock Argus API for UI review — demo data only, no DB."""
 import random
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -330,7 +330,7 @@ def audit_streams(): return [{"id": "6f1c2d3e-0000-4000-8000-0000000000b1", "kin
                               "delivered_total": 9211, "pending": 37, "last_success_at": "2026-10-05T11:41:10Z", "last_error": "destination answered HTTP 503",
                               "last_error_at": "2026-10-05T11:57:40Z", "next_attempt_at": "2026-10-05T12:02:40Z", "created_at": "2026-09-14T09:00:00Z"}]
 @app.get("/api/v1/sso/scim-groups")   # R56
-def scim_groups(): return [{"id": "6f1c2d3e-0000-4000-8000-0000000000a1", "display_name": "JobWatch Admins", "role": "admin", "members": 2, "updated_at": "2026-10-05T09:00:00Z"},
+def scim_groups(): return [{"id": "6f1c2d3e-0000-4000-8000-0000000000a1", "display_name": "Argus Admins", "role": "admin", "members": 2, "updated_at": "2026-10-05T09:00:00Z"},
                            {"id": "6f1c2d3e-0000-4000-8000-0000000000a2", "display_name": "SRE", "role": "sre", "members": 7, "updated_at": "2026-10-05T09:00:00Z"},
                            {"id": "6f1c2d3e-0000-4000-8000-0000000000a3", "display_name": "All Engineering", "role": None, "members": 42, "updated_at": "2026-10-05T09:00:00Z"}]
 @app.get("/api/v1/sso/scim-tokens")   # R44
@@ -350,10 +350,10 @@ def _import_preview(source: str, body: dict):
     rows = [("Nightly backup", "imported", None, "0 2 * * *", True), ("Queue drain", "converted", "'every 5 minutes' became '*/5 * * * *' with extra grace 300 s; review the schedule", "*/5 * * * *", True),
             ("Monthly invoices", "converted", "'every 1 month' became '0 0 1 * *' with extra grace 1 day; review the schedule", "0 0 1 * *", True),
             ("Odd interval", "needs_schedule", "'every 90 minutes' has no cron equivalent; imported without a schedule — set one to detect missed runs", None, True),
-            ("Noisy", "imported", "muted in Sentry; imported active — pause it in JobWatch to keep it quiet; Sentry waited for 3 failed check-ins before alerting; JobWatch alerts on the first", "0 * * * *", True),
+            ("Noisy", "imported", "muted in Sentry; imported active — pause it in Argus to keep it quiet; Sentry waited for 3 failed check-ins before alerting; Argus alerts on the first", "0 * * * *", True),
             ("Old report", "exists", "a job with this name already exists in the workspace; left unchanged", "0 * * * *", False)]
     dry = body.get("dry_run", True)
-    return {"dry_run": dry, "warnings": ["project batch has 2 active client keys; check-ins must use the first one (…ffff) to reach JobWatch"] if source == "sentry" else [],
+    return {"dry_run": dry, "warnings": ["project batch has 2 active client keys; check-ins must use the first one (…ffff) to reach Argus"] if source == "sentry" else [],
             "ping_host_change": "SDKs: change the host in the DSN you use for crons, e.g. https://<key>@o1.ingest.sentry.io/<project id> → https://<key>@ingest.example.com/sentry/<project id>. HTTP check-ins: replace https://<your Sentry ingest host>/api/ with https://ingest.example.com/sentry/api/ (status=in_progress|ok|error and check_in_id keep working).",
             "results": [{"name": n, "status": s, "note": note, "job_id": None if dry or s == "exists" else str(uuid.uuid4()), "schedule_expr": e, "kept_ping_url": k and s != "exists", "new_ping_url": None} for n, s, note, e, k in rows]}
 @app.post("/api/v1/import/sentry")

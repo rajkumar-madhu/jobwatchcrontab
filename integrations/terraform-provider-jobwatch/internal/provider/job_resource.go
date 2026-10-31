@@ -50,7 +50,7 @@ func (r *jobResource) Metadata(_ context.Context, req resource.MetadataRequest, 
 func (r *jobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	keep := []planmodifier.String{stringplanmodifier.UseStateForUnknown()}
 	resp.Schema = schema.Schema{
-		Description: "A scheduled job JobWatch expects to run. Report runs to `ping_url`, or let the agent discover the job.",
+		Description: "A scheduled job Argus expects to run. Report runs to `ping_url`, or let the agent discover the job.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{Computed: true, PlanModifiers: keep},
 			"workspace_id": schema.StringAttribute{Optional: true, Computed: true,
@@ -79,7 +79,7 @@ func (r *jobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 			"unusual_runs_action": schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("warn"),
 				Description: "`warn` keeps an unusual run successful and raises the Unusual run alert condition; `fail` counts it as a failure."},
 			"ping_url": schema.StringAttribute{Computed: true, Sensitive: true, PlanModifiers: []planmodifier.String{keepStoredPingURL{}},
-				Description: "The job's ping URL. JobWatch shows it only once, at creation, so it lives only in Terraform state; " +
+				Description: "The job's ping URL. Argus shows it only once, at creation, so it lives only in Terraform state; " +
 					"imported jobs have none (use New ping URL in the app)."},
 			"ping_token_hint": schema.StringAttribute{Computed: true, PlanModifiers: keep,
 				Description: "Last characters of the ping token, to recognise it without exposing it."},
@@ -102,7 +102,7 @@ func (keepStoredPingURL) PlanModifyString(_ context.Context, req planmodifier.St
 	}
 }
 
-// sameRunChecks: run checks that differ only in spacing are the same rules (JobWatch collapses spaces),
+// sameRunChecks: run checks that differ only in spacing are the same rules (Argus collapses spaces),
 // so plan no change. Matters after import, where state starts from the server's spelling.
 type sameRunChecks struct{}
 
@@ -237,7 +237,7 @@ func (r *jobResource) Create(ctx context.Context, req resource.CreateRequest, re
 	fromAPI(ctx, j, &plan, &resp.Diagnostics)
 	if url == nil && token != nil {
 		resp.Diagnostics.AddWarning("ping_url is empty",
-			"The JobWatch server has no INGEST_PUBLIC_URL set, so it returned only the token. ping_token_hint identifies it.")
+			"The Argus server has no INGEST_PUBLIC_URL set, so it returned only the token. ping_token_hint identifies it.")
 	}
 	plan.RunChecks = keepPlannedList(plan.RunChecks, in.Assertions, ctx, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -346,5 +346,5 @@ func (r *jobResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 func (r *jobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 	resp.Diagnostics.AddWarning("Imported jobs have no ping_url",
-		"JobWatch never shows a ping URL again after creation. Keep using the existing URL, or choose New ping URL in the app.")
+		"Argus never shows a ping URL again after creation. Keep using the existing URL, or choose New ping URL in the app.")
 }

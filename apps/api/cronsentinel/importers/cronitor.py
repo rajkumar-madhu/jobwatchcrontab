@@ -110,7 +110,7 @@ def map_monitor(mon: dict, telemetry_key: str | None) -> dict:
     mtype = mon.get("type")
     if mtype not in ("job", "heartbeat"):
         return {"job": None, "token": None, "status": "skipped",
-                "note": f"Cronitor {mtype or 'unknown'} monitor (HTTP uptime / browser) — JobWatch monitors scheduled work"}
+                "note": f"Cronitor {mtype or 'unknown'} monitor (HTTP uptime / browser) — Argus monitors scheduled work"}
     notes: list[str] = []
     scheds = mon.get("schedules") or ([mon["schedule"]] if mon.get("schedule") else [])
     scheds = [s for s in scheds if isinstance(s, str) and s.strip()]
@@ -136,7 +136,7 @@ def map_monitor(mon: dict, telemetry_key: str | None) -> dict:
     token = f"{telemetry_key}/{key}" if telemetry_key and KEY_RE.fullmatch(key) else None
     status = "imported" if cron and not any("became" in x for x in notes) else ("converted" if cron else "needs_schedule")
     if mon.get("environments"):
-        notes.append("Cronitor environments are not separated in JobWatch; all pings go to this job")
+        notes.append("Cronitor environments are not separated in Argus; all pings go to this job")
     return {"job": {"name": name, "description": (mon.get("note") or None), "tags": tags, "kind": "heartbeat",
                     "paused": bool(mon.get("paused")), "tz": mon.get("timezone") or "UTC", "schedule_expr": cron,
                     "grace_s": grace + extra_grace, "expected_runtime_s": runtime, "assertions": rules[:assertions.MAX_ASSERTIONS]},

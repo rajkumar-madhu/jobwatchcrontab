@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Usually run as the command shown in JobWatch (Servers & agents), which serves this script with the
+# Usually run as the command shown in Argus (Servers & agents), which serves this script with the
 # defaults below filled in:
 #   curl -fsSL https://<ingest>/agent/install.sh | sudo bash -s -- --token <bootstrap>
 # From a release download instead: pass --server, and set CS_DOWNLOAD_BASE / CS_AGENT_VERSION.
 set -euo pipefail
-# --- defaults: JobWatch rewrites these three lines when it serves this script (R62) ---
+# --- defaults: Argus rewrites these three lines when it serves this script (R62) ---
 DEFAULT_SERVER=""
 DEFAULT_VERSION="0.1.0"
 DEFAULT_BASE="https://downloads.example.com/agent"
@@ -35,4 +35,4 @@ install -d -m 1733 /var/lib/cronsentinel/spool
 /usr/local/bin/cronsentinel-agent enroll --server "$SERVER" --token "$TOKEN"
 install -m 0644 "$TMP/cronsentinel-agent.service" /etc/systemd/system/cronsentinel-agent.service
 systemctl daemon-reload && systemctl enable --now cronsentinel-agent
-echo "JobWatch agent installed. Wrap jobs with: jobwatch-run -- /path/to/script.sh"
+echo "Argus agent installed. Wrap jobs with: jobwatch-run -- /path/to/script.sh"

@@ -30,7 +30,7 @@ export function DatadogMetrics() {
   return (
     <section className="card p-4" aria-labelledby="dd-h">
       <h2 id="dd-h" className="font-medium">Datadog metrics</h2>
-      <p className="mt-1 text-sm text-mute">Every minute, JobWatch sends job metrics to Datadog for dashboards and monitors. Alerts can also go to Datadog
+      <p className="mt-1 text-sm text-mute">Every minute, Argus sends job metrics to Datadog for dashboards and monitors. Alerts can also go to Datadog
         as events (Alerting → Add channel → Datadog) and the audit log to Datadog Logs (Settings → Audit log streaming).</p>
       <ul className="mt-3 grid gap-1 text-xs sm:grid-cols-2">{METRICS.map(([m, d]) => <li key={m}><code className="font-mono">{m}</code> <span className="text-mute">{d}</span></li>)}</ul>
       {q.error && <p className="mt-3 text-xs text-mute">Admins can set this up; metrics export is on the Team plan and above.</p>}

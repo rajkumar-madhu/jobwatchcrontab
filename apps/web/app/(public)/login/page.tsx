@@ -30,16 +30,16 @@ export default function Login() {
     if (d.sso) { setSso(d.provider ?? "your company"); location.href = `${API}/auth/sso?${qs({ email })}`; return; }
     if (mode === "sso") {
       setBusy(false);
-      setMsg(`${email.split("@")[1] ?? "This domain"} does not have single sign-on set up with JobWatch. Sign in with your email and password, or ask your administrator to connect your identity provider.`);
+      setMsg(`${email.split("@")[1] ?? "This domain"} does not have single sign-on set up with Argus. Sign in with your email and password, or ask your administrator to connect your identity provider.`);
       return;
     }
     location.href = `${API}/auth/login?${qs({ login_hint: email })}`;
   };
 
   return (
-    <AuthShell title={mode === "sso" ? "Sign in with single sign-on" : "Sign in to JobWatch"}
+    <AuthShell title={mode === "sso" ? "Sign in with single sign-on" : "Sign in to Argus"}
       subtitle={mode === "sso" ? "Enter your work email. We will send you to your company's identity provider." : "Welcome back."}
-      footer={<>New to JobWatch? <Link href="/signup" className="font-medium text-accent hover:underline">Create an account</Link>
+      footer={<>New to Argus? <Link href="/signup" className="font-medium text-accent hover:underline">Create an account</Link>
         <p className="mt-3 text-xs">Automating? Use an <Link href="/docs/api" className="underline">API key</Link> instead of signing in.</p></>}>
       {mode === "email" && <>
         <ProviderButtons providers={providers} href={(a) => `${API}/auth/login?${qs({ idp: a })}`} />
@@ -58,7 +58,7 @@ export default function Login() {
           : <button type="button" className="text-accent hover:underline" onClick={() => { setMode("email"); setMsg(null); }}>Use email and password instead</button>}
       </div>
       <p className="mt-4 text-xs text-mute">{mode === "sso"
-        ? "Your administrator connects JobWatch to Okta, Microsoft Entra ID, Google Workspace or another SAML or OIDC provider."
+        ? "Your administrator connects Argus to Okta, Microsoft Entra ID, Google Workspace or another SAML or OIDC provider."
         : "Companies with single sign-on go straight to it. Everyone else enters a password on the next step, where you can also reset it. If your organization requires it, you will be asked for a code from your authenticator app."}</p>
     </AuthShell>
   );

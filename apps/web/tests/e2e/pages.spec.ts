@@ -68,7 +68,7 @@ test("public status page renders without auth", async ({ page }) => {
 
 test("landing page renders", async ({ page }) => {
   await page.goto("/welcome");
-  await expect(page.locator("body")).toContainText(/JobWatch/i);
+  await expect(page.locator("body")).toContainText(/Argus/i);
 });
 
 // R35 brand review: the public pages only promise what the code delivers. The heartbeat route is

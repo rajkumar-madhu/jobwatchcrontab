@@ -1,4 +1,4 @@
-# Contributing to JobWatch
+# Contributing to Argus
 
 Thanks for looking. The fastest way to help right now is to **run it on a real server and tell us what
 was confusing** — open an issue titled "Install notes: …" with what you expected and what happened.

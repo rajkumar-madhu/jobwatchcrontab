@@ -4,7 +4,7 @@ import { APP_BASE, INGEST_BASE, apiReference } from "@/lib/api-reference";
 import { Snippet } from "@/components/api-code";
 
 export const dynamic = "force-static";
-export const metadata = { title: "API reference · JobWatch docs", description: "The JobWatch REST API: authentication, roles, errors, pagination, rate limits and every endpoint." };
+export const metadata = { title: "API reference · Argus docs", description: "The Argus REST API: authentication, roles, errors, pagination, rate limits and every endpoint." };
 
 const ROLES: [string, string][] = [
   ["Viewer", "Read jobs, runs, incidents, analytics and configuration."],
@@ -39,7 +39,7 @@ export default function ApiOverview() {
   return (
     <div className="min-w-0">
       <nav aria-label="Breadcrumb" className="text-sm text-mute"><Link href="/docs" className="hover:text-ink">Docs</Link> <span aria-hidden>/</span> <span className="text-ink">API reference</span></nav>
-      <h1 className="mt-2 font-display text-4xl font-semibold">JobWatch API</h1>
+      <h1 className="mt-2 font-display text-4xl font-semibold">Argus API</h1>
       <p className="mt-3 max-w-[760px] text-[17px] text-mute">
         Everything in the app is available over a JSON REST API: jobs, runs, incidents, alerting, on-call, analytics, access control and audit.
         {" "}{count} endpoints in {groups.length} areas, generated from the API&apos;s own OpenAPI description so the reference always matches the server.
@@ -59,7 +59,7 @@ export default function ApiOverview() {
           <h2 id="quick-start" className="!mt-0">Quick start</h2>
           <p>Create a key under <b>Settings → API keys</b> with the role it needs, keep it in a secret store, and send it in the <code>X-API-Key</code> header.
             The example lists the jobs that are failing.</p>
-          <p>Code samples on these pages use <code>app.example.com</code>; choose <b>Use your JobWatch hosts</b> above to show your own.</p>
+          <p>Code samples on these pages use <code>app.example.com</code>; choose <b>Use your Argus hosts</b> above to show your own.</p>
         </div>
         <Snippet label="List failing jobs" code={`curl "${APP_BASE}/api/v1/jobs?status=failed" \\\n  -H "X-API-Key: $JOBWATCH_API_KEY"`} />
       </div>
@@ -125,7 +125,7 @@ export default function ApiOverview() {
           <li>Timestamps are ISO 8601 in UTC. Identifiers are UUIDs. Secrets (ping URLs, keys, tokens, invitation links) appear only in the response that creates them.</li>
           <li>Every change made through the API is recorded in the <Link href="/docs/api/audit">audit log</Link> with the key or user that made it.</li>
         </ul>
-        <p>Managing JobWatch as code? The <Link href="/docs/terraform">Terraform provider</Link> and <Link href="/docs/kubernetes">Kubernetes annotations</Link> use this API.</p>
+        <p>Managing Argus as code? The <Link href="/docs/terraform">Terraform provider</Link> and <Link href="/docs/kubernetes">Kubernetes annotations</Link> use this API.</p>
       </div>
 
       <h2 id="resources" className="mt-12 font-display text-[1.45rem] font-semibold">Endpoints by area</h2>

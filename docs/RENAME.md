@@ -1,9 +1,17 @@
-# Rename: CronSentinel → WeCrew JobWatch
+# Product renames (display strings only)
 
-Commit `chore(rename)` changes **display strings only** — no logic, no identifiers.
+Commits named `chore(rename)` change **display strings only** — no logic, no identifiers.
 
-## Changed
-Product name in UI copy, page titles, landing/onboarding/status pages, email + Slack message headers, docs, Helm chart descriptions, agent `User-Agent` (`JobWatch/<ver>`).
+## History
+
+| From | To |
+|---|---|
+| CronSentinel | WeCrew JobWatch |
+| JobWatch | WeCrew **Argus** (product name **Argus**) |
+
+## Latest (JobWatch → Argus)
+
+Product name in UI copy, page titles, landing/onboarding/status pages, email + Slack message headers, docs, Helm chart descriptions, outbound `User-Agent` (`Argus/<ver>`, `Argus-Signals/1`, …). HTTP headers `X-JobWatch-*` and schema `jobwatch.signal/1` are unchanged (integration contract).
 
 ## Deliberately NOT changed (would be logic/infra changes, not a rename)
 | Identifier | Value | Why |

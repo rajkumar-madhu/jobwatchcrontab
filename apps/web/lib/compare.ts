@@ -1,12 +1,12 @@
 // Competitive comparison shared by /welcome (summary) and /compare (full). Checked against each
 // vendor's public pricing and docs pages on 1 October 2026 (SOURCES below). Vendors change plans often: every cell is
 // a claim we must be able to defend, so uncertain capabilities are "partial" with a note, never "yes".
-// JobWatch cells must match what the code ships (see tests/e2e/pages.spec.ts brand review).
+// Argus cells must match what the code ships (see tests/e2e/pages.spec.ts brand review).
 export type Cell = "yes" | "no" | "partial" | string;
 export type Vendor = { key: string; name: string; note?: string };
 
 export const VENDORS: Vendor[] = [
-  { key: "jw", name: "JobWatch" },
+  { key: "jw", name: "Argus" },
   { key: "hc", name: "Healthchecks.io" },
   { key: "cr", name: "Cronitor" },
   { key: "bs", name: "Better Stack" },
@@ -22,7 +22,7 @@ export const GROUPS: Group[] = [
     { label: "Cron-expression schedules", help: "Knows when each run is due, not only how long since the last ping",
       cells: { jw: "yes", hc: "yes", cr: "yes", bs: "partial", se: "yes", uk: "no" }, note: "Better Stack's heartbeat docs describe an expected interval plus grace; its own comparison pages also claim cron syntax. Uptime Kuma push monitors are interval-only." },
     { label: "Every expected run tracked as its own record", help: "A missed 04:15 run is a row you can see, count and report on",
-      cells: { jw: "yes", hc: "partial", cr: "partial", bs: "no", se: "partial", uk: "no" }, note: "Others alert on a missed run; JobWatch also keeps each slot for SLA and history." },
+      cells: { jw: "yes", hc: "partial", cr: "partial", bs: "no", se: "partial", uk: "no" }, note: "Others alert on a missed run; Argus also keeps each slot for SLA and history." },
     { label: "Start, success and failure signals with exit code", cells: { jw: "yes", hc: "yes", cr: "yes", bs: "partial", se: "yes", uk: "no" } },
     { label: "Run output captured with the failure", cells: { jw: "yes", hc: "yes", cr: "yes", bs: "no", se: "partial", uk: "no" },
       note: "Healthchecks.io keeps the ping body; Sentry links errors rather than job output." },
@@ -43,15 +43,15 @@ export const GROUPS: Group[] = [
     { label: "Multi-tenant isolation enforced by the database", cells: { jw: "yes", hc: "no", cr: "no", bs: "no", se: "no", uk: "no" },
       note: "Not publicly documented by the others; they may isolate tenants another way." },
     { label: "Role-based access", cells: { jw: "yes", hc: "yes", cr: "partial", bs: "yes", se: "yes", uk: "no" },
-      note: "JobWatch: six roles. Healthchecks.io: owner, manager, user, read-only. Cronitor: admin, user and read-only on Business." },
+      note: "Argus: six roles. Healthchecks.io: owner, manager, user, read-only. Cronitor: admin, user and read-only on Business." },
     { label: "Audit log and full data export", cells: { jw: "yes", hc: "partial", cr: "partial", bs: "partial", se: "yes", uk: "no" },
-      note: "JobWatch also streams the audit log to a SIEM (signed webhook or Splunk HEC) on Business and Enterprise." },
+      note: "Argus also streams the audit log to a SIEM (signed webhook or Splunk HEC) on Business and Enterprise." },
     { label: "Single sign-on (SAML or OIDC)", cells: { jw: "yes", hc: "no", cr: "partial", bs: "yes", se: "yes", uk: "no" },
-      note: "JobWatch: SAML and OIDC with verified domains and enforcement, on Business and Enterprise. Cronitor: SAML on Business at $5 per user per month extra. Sentry: SAML on Business." },
+      note: "Argus: SAML and OIDC with verified domains and enforcement, on Business and Enterprise. Cronitor: SAML on Business at $5 per user per month extra. Sentry: SAML on Business." },
     { label: "Directory sync (SCIM)", cells: { jw: "yes", hc: "no", cr: "partial", bs: "partial", se: "yes", uk: "no" },
-      note: "JobWatch: users and groups, with directory groups mapped to roles (owners are never changed). Sentry: SCIM on Business. Cronitor and Better Stack: not confirmed in the public pages we checked." },
+      note: "Argus: users and groups, with directory groups mapped to roles (owners are never changed). Sentry: SCIM on Business. Cronitor and Better Stack: not confirmed in the public pages we checked." },
     { label: "PagerDuty and Opsgenie, resolved on recovery", cells: { jw: "yes", hc: "yes", cr: "partial", bs: "yes", se: "yes", uk: "yes" },
-      note: "JobWatch closes the PagerDuty incident or Opsgenie alert when the job recovers. Cronitor: on-call integrations on Business, not the free plan. JobWatch and Better Stack also run on-call schedules and escalations themselves." },
+      note: "Argus closes the PagerDuty incident or Opsgenie alert when the job recovers. Cronitor: on-call integrations on Business, not the free plan. Argus and Better Stack also run on-call schedules and escalations themselves." },
   ] },
   { title: "Price shape", rows: [
     { label: "How you are charged", cells: { jw: "Per plan, unlimited users", hc: "Per plan, unlimited users", cr: "$2 per monitor plus $5 per user", bs: "$20 per extra 10 heartbeats, plus responders", se: "$0.78 per extra monitor", uk: "Free, you run it" } },

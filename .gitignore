@@ -10,6 +10,7 @@ __pycache__/
 # env / secrets
 .env
 .env.*
+docker-compose.override.yml
 !.env.example
 *.pem
 *.key

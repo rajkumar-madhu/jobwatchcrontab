@@ -5,7 +5,7 @@
 # What this does and does not set up:
 #   - Creates (or updates, if already there) the "cronsentinel" realm and its one client.
 #   - Rotates the client secret and prints it — put it straight into KEYCLOAK_CLIENT_SECRET.
-#   - Does NOT create any users, groups, or roles. JobWatch does not read them: every
+#   - Does NOT create any users, groups, or roles. Argus does not read them: every
 #     authorization decision comes from the app's own `memberships` table (see
 #     cronsentinel/routers/auth.py — the callback looks up org_id/role by email, never by a
 #     Keycloak claim). Keycloak's only job here is proving identity (sub, email, name); teach
@@ -77,7 +77,7 @@ if [[ -n "${KEYCLOAK_SMTP_HOST:-}" ]]; then
 import json, os
 e = os.environ.get
 cfg = {"host": e("KEYCLOAK_SMTP_HOST"), "port": e("KEYCLOAK_SMTP_PORT", "587"), "from": e("KEYCLOAK_SMTP_FROM"),
-       "fromDisplayName": e("KEYCLOAK_SMTP_FROM_NAME", "JobWatch"), "starttls": e("KEYCLOAK_SMTP_STARTTLS", "true"),
+       "fromDisplayName": e("KEYCLOAK_SMTP_FROM_NAME", "Argus"), "starttls": e("KEYCLOAK_SMTP_STARTTLS", "true"),
        "ssl": e("KEYCLOAK_SMTP_SSL", "false"), "auth": "true" if e("KEYCLOAK_SMTP_USER") else "false"}
 if e("KEYCLOAK_SMTP_USER"):
     cfg.update(user=e("KEYCLOAK_SMTP_USER"), password=e("KEYCLOAK_SMTP_PASSWORD", ""))

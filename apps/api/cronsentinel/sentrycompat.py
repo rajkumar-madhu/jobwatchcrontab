@@ -15,7 +15,7 @@ Sentry is source-available; everything here follows its own code, not guesses:
   envelope      relay-server/src/envelope: header line, then items of <item header>\\n<payload>, where the
                 payload is `length` bytes, or up to the next newline when the header has no length
 
-JobWatch serves all of this under /sentry on the ingest host, so a DSN of
+Argus serves all of this under /sentry on the ingest host, so a DSN of
 https://<key>@<ingest>/sentry/<project id> makes an SDK post to <ingest>/sentry/api/<project id>/envelope/.
 """
 import base64
@@ -184,7 +184,7 @@ def parse_envelope(data: bytes) -> tuple[dict, list[tuple[dict, bytes]]]:
 
 
 def checkin_fields(payload: dict) -> dict | None:
-    """A Sentry check-in → HeartbeatBody keyword arguments, or None if it carries nothing JobWatch
+    """A Sentry check-in → HeartbeatBody keyword arguments, or None if it carries nothing Argus
     records (missed/unknown status, which Sentry also refuses from clients)."""
     status = STATUSES.get(str(payload.get("status") or "").lower())
     if status is None:

@@ -2,7 +2,7 @@
 
 Three independent integrations, each needing only a Datadog **API key** (Organization Settings →
 API Keys) and your **site** (US1 `datadoghq.com`, US3, US5, EU1 `datadoghq.eu`, AP1, AP2, UK1,
-US1-FED `ddog-gov.com`, US2-FED). JobWatch only calls Datadog's own hosts for that site.
+US1-FED `ddog-gov.com`, US2-FED). Argus only calls Datadog's own hosts for that site.
 
 ## 1. Alerts as Datadog events: Alerting → Add channel → Datadog
 Every alert becomes an event in the Datadog event stream: the full alert subject as title, the alert

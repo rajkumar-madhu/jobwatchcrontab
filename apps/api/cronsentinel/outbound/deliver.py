@@ -19,7 +19,7 @@ from ..db import system_session
 log = structlog.get_logger()
 MAX_ATTEMPTS = 6
 AUTO_DISABLE_AFTER = 20
-UA = "JobWatch-Signals/1"
+UA = "Argus-Signals/1"
 NATS_CONNECT_TIMEOUT_S = 5
 
 

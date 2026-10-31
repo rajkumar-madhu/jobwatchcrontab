@@ -39,7 +39,7 @@ curl -fsS -X POST "$INGEST/api/v1/heartbeat/$TOKEN" -H 'Content-Type: applicatio
 ```
 
 **With Cronitor-style URLs** (`/cronitor/p/<key>/<monitor>`), use `metric=name:value`, as with Cronitor.
-Cronitor monitors imported into JobWatch keep their per-run assertions as run checks.
+Cronitor monitors imported into Argus keep their per-run assertions as run checks.
 
 ## What you see
 The run shows its metrics; a run that broke a check shows **"Exited successfully but failed its run

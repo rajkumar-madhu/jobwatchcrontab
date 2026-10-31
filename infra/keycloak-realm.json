@@ -38,7 +38,7 @@
     },
     {
       "clientId": "jobwatch-admin",
-      "name": "JobWatch identity-provider admin (R43)",
+      "name": "Argus identity-provider admin (R43)",
       "enabled": true,
       "publicClient": false,
       "protocol": "openid-connect",

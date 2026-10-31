@@ -1,6 +1,6 @@
 # Security overview
 
-How JobWatch protects your data and your systems. Engineering detail lives in the repository.
+How Argus protects your data and your systems. Engineering detail lives in the repository.
 
 ## Tenant isolation
 Every row belongs to an organization, and PostgreSQL row-level security is enforced on every tenant
@@ -38,7 +38,7 @@ CSRF token; sign-out is protected the same way.
 
 ## Outbound calls
 Webhooks, SMTP servers, SIEM endpoints and import sources are resolved and checked before connecting,
-so nobody can point JobWatch at internal addresses; TLS certificates are verified. Datadog, PagerDuty
+so nobody can point Argus at internal addresses; TLS certificates are verified. Datadog, PagerDuty
 and Opsgenie are called only on their own fixed hosts.
 
 ## Agents

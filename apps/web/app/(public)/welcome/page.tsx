@@ -18,7 +18,7 @@ const SIXTY = `# the job you would least like to find out about in a week
             ${INGEST}/ping/<token>`;
 
 const WAYS: { title: string; body: string; code: string }[] = [
-  { title: "Start with one line", body: "Paste a crontab entry at sign-up: JobWatch takes the schedule from it and gives the line back with a ping appended. Nothing to install, nothing running as root.",
+  { title: "Start with one line", body: "Paste a crontab entry at sign-up: Argus takes the schedule from it and gives the line back with a ping appended. Nothing to install, nothing running as root.",
     code: `15 2 * * *  /opt/jobs/pg-backup.sh \\\n  && curl -fsS -m 10 --retry 5 \\\n     ${INGEST}/ping/<token>` },
   { title: "Add the agent where it earns its place", body: "When a failure needs more than \"it didn't run\": exit codes, stdout and stderr, duration, and what the host's disk, memory and load looked like during the run. Read-only on your crontabs; queues on disk when offline.",
     code: "curl -fsSL $JOBWATCH/install.sh \\\n  | sudo bash -s -- --server $JOBWATCH --token $BOOTSTRAP\n\n# then wrap a job\njobwatch-run -- /opt/jobs/backup.sh" },
@@ -43,7 +43,7 @@ const ENTERPRISE: { icon: typeof KeyRound; title: string; items: [string, string
 ];
 
 const DEPLOY: { icon: typeof Cloud; title: string; body: string; points: string[] }[] = [
-  { icon: Cloud, title: "JobWatch Cloud", body: "We run it. Your organization is isolated in the database, and ingest runs on its own host with its own limits.",
+  { icon: Cloud, title: "Argus Cloud", body: "We run it. Your organization is isolated in the database, and ingest runs on its own host with its own limits.",
     points: ["Start in minutes", "Upgrades and backups handled", "Single sign-on and SCIM on Business"] },
   { icon: Building2, title: "Self-hosted", body: "The whole platform in your Kubernetes cluster with the Helm chart. Every record stays in your network and your region.",
     points: ["Air-gapped friendly: no third-party requests", "Your database, your encryption keys", "Bring your own model for the copilot"] },
@@ -63,13 +63,13 @@ const PLANS: Plan[] = [
 const FAQ: [string, string][] = [
   ["Does the agent change my crontabs?", "No. Discovery is read-only. You decide per job whether to wrap it with jobwatch-run for exit codes and output."],
   ["What happens if a server loses its network?", "The agent keeps events on disk and sends them in order when it reconnects. The server de-duplicates, so nothing is counted twice."],
-  ["Moving from Healthchecks.io or Cronitor?", "Import your checks with an API key. Ping URLs keep working: change hc-ping.com or cronitor.link to your JobWatch ingest host and the same paths, including start/fail signals, exit codes and Cronitor's state, series and metric parameters, keep working."],
+  ["Moving from Healthchecks.io or Cronitor?", "Import your checks with an API key. Ping URLs keep working: change hc-ping.com or cronitor.link to your Argus ingest host and the same paths, including start/fail signals, exit codes and Cronitor's state, series and metric parameters, keep working."],
   ["Can I use it without installing anything?", "Yes. Every job has a ping URL. One curl at the end of a script detects failures and missed runs."],
-  ["What if JobWatch itself has an outage?", "Runs that fell inside our outage are marked unobserved instead of missed, and you are not alerted for them. The dashboard tells you it happened."],
+  ["What if Argus itself has an outage?", "Runs that fell inside our outage are marked unobserved instead of missed, and you are not alerted for them. The dashboard tells you it happened."],
   ["Where does my data live?", "In your own deployment if you self-host, or in an isolated tenant on ours. Environment variable values are never collected."],
   ["Does the AI change anything on my systems?", "No. It reads telemetry and suggests what to check. Every action stays with a person."],
   ["Do you support single sign-on, SCIM and MFA?", "Yes: SAML 2.0 and OpenID Connect from verified domains, with optional enforcement; SCIM provisioning with groups mapped to roles; and organization-wide multi-factor sign-in for password users."],
-  ["Is JobWatch SOC 2 certified?", "Not yet. We answer security questionnaires and walk your team through the controls, and you can self-host the whole platform so no data leaves your network. See the security page."],
+  ["Is Argus SOC 2 certified?", "Not yet. We answer security questionnaires and walk your team through the controls, and you can self-host the whole platform so no data leaves your network. See the security page."],
   ["How are Enterprise plans bought?", "Through sales: the deployment, payment method and contract terms are agreed with you."],
 ];
 
@@ -126,7 +126,7 @@ export default function Landing() {
           <div className="mx-auto max-w-[860px] text-center">
             <h1 className="font-display text-[42px] font-semibold leading-[1.03] sm:text-[64px]">Know the moment a scheduled job doesn&apos;t run.</h1>
             <p className="mx-auto mt-6 max-w-[640px] text-[17px] leading-relaxed text-mute sm:text-lg">
-              JobWatch expects every run before it is due: cron, systemd timers, Kubernetes CronJobs, backups and pipelines.
+              Argus expects every run before it is due: cron, systemd timers, Kubernetes CronJobs, backups and pipelines.
               Silence turns into an alert on time, and failures arrive with the output that explains them.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -204,7 +204,7 @@ export default function Landing() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="font-display text-3xl font-semibold">How it compares</h2>
-              <p className="mt-3 max-w-[640px] text-mute">From each vendor&apos;s public pricing and documentation, October 2026. The full table also lists where JobWatch is behind.</p>
+              <p className="mt-3 max-w-[640px] text-mute">From each vendor&apos;s public pricing and documentation, October 2026. The full table also lists where Argus is behind.</p>
             </div>
             <Link href="/compare" className="btn">See the full comparison</Link>
           </div>

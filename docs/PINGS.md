@@ -15,7 +15,7 @@ curl -fsS https://ingest.example.com/heartbeat/<token>/start       # the run sta
 curl -fsS https://ingest.example.com/heartbeat/<token>/success     # the run succeeded
 curl -fsS https://ingest.example.com/heartbeat/<token>/fail        # the run failed
 ```
-Sending `start` lets JobWatch measure duration and flag runs that start but never finish. A `success`
+Sending `start` lets Argus measure duration and flag runs that start but never finish. A `success`
 or `fail` without a run id pairs with the job's most recent open `start`.
 
 ## JSON heartbeat API
@@ -54,7 +54,7 @@ with `state=run|complete|fail|tick|ok`, `series`, `metric=name:value`, `message`
 Monitors imported from Sentry keep Sentry's check-in credential, served under `/sentry/`:
 - `GET` or `POST /sentry/api/<project id>/cron/<slug>/<key>/` with `status=in_progress|ok|error`,
   `check_in_id`, `duration` (seconds) and `environment`, or the same fields as a JSON body. The key can
-  also go in an `X-Sentry-Auth` header. JobWatch answers `202`, as Sentry does.
+  also go in an `X-Sentry-Auth` header. Argus answers `202`, as Sentry does.
 - `POST /sentry/api/<project id>/envelope/`, which is what Sentry SDKs send when their DSN is
   `https://<key>@ingest.example.com/sentry/<project id>`. gzip, deflate and brotli bodies are accepted;
   only `check_in` items are read.
@@ -66,4 +66,4 @@ Monitor slugs are matched the way Sentry matches them (`My Job` and `my-job` are
 - An unknown token answers `404`. Repeatedly guessing tokens from one address is rate limited.
 - On Sentry envelopes, an over-limit answer also carries `X-Sentry-Rate-Limits`, so SDKs back off
   check-ins only.
-- Pings are acknowledged once they are durably queued, so a JobWatch worker restart never loses one.
+- Pings are acknowledged once they are durably queued, so a Argus worker restart never loses one.

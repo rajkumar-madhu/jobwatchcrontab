@@ -41,7 +41,7 @@ def event(r) -> dict:
 def send(kind: str, cfg: dict, events: list[dict], timeout: float = 15) -> None:
     if kind == "webhook":
         body = json.dumps({"source": "jobwatch", "type": "audit", "events": events}, separators=(",", ":")).encode()
-        headers = {"Content-Type": "application/json", "User-Agent": "JobWatch-AuditStream/1",
+        headers = {"Content-Type": "application/json", "User-Agent": "Argus-AuditStream/1",
                    "X-JobWatch-Delivery": f"{events[0]['id']}-{events[-1]['id']}" if events else "test"}
         if cfg.get("secret"):
             headers["X-JobWatch-Signature"] = "sha256=" + hmac.new(cfg["secret"].encode(), body, hashlib.sha256).hexdigest()

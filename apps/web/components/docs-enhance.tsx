@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Server } from "lucide-react";
 
 /* R61 — Datadog-docs-style helpers for the static docs pages:
-   - "Your JobWatch" host selector (like Datadog's site selector): code samples show your own ingest and
+   - "Your Argus" host selector (like Datadog's site selector): code samples show your own ingest and
      app hosts instead of the example ones; remembered in this browser only.
    - a copy button on every code block. */
 
@@ -34,7 +34,7 @@ export function HostSelector() {
   return (
     <div className="relative">
       <button className="btn py-1 text-xs" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <Server size={13} aria-hidden />{set ? `Samples use ${h.ingest || h.app}` : "Use your JobWatch hosts"}
+        <Server size={13} aria-hidden />{set ? `Samples use ${h.ingest || h.app}` : "Use your Argus hosts"}
       </button>
       {open && (
         <div className="overlay absolute right-0 z-20 mt-2 w-80 border border-line bg-panel p-4 text-sm">

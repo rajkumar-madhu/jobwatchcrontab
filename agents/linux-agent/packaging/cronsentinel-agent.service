@@ -1,5 +1,5 @@
 [Unit]
-Description=JobWatch Agent
+Description=Argus Agent
 After=network-online.target
 Wants=network-online.target
 

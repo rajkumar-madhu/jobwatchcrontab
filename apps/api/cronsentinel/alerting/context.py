@@ -6,7 +6,7 @@ the dashboard to learn where it ran, which environment, and what went wrong. Eve
   subject   ✕ [HIGH] FAILED · nightly-db-backup on prod-db-01 (production) — exit 2 after 4m 12s
   details   job, status change, server/cluster, environment, workspace, team, tags, schedule, the run
             that triggered it (exit code, duration, broken run checks, last error line) or, for a
-            missed run, the slot that was expected, plus a link to the job in JobWatch
+            missed run, the slot that was expected, plus a link to the job in Argus
 
 The lookup is one query per alert from ids already in the payload, so every sender (Slack, Teams,
 email, Discord, Telegram, webhooks, PagerDuty, Opsgenie) gets the same facts. Output is redacted
@@ -161,7 +161,7 @@ def details(p: dict, c: dict) -> list[tuple[str, str]]:
             ("Metrics", ", ".join(f"{k}={v:g}" for k, v in c["metrics"].items()) if c.get("metrics") else None),
             ("Last error", c.get("last_error")),
             ("Incident", p.get("incident_id")), ("Run", p.get("execution_id")),
-            ("Open in JobWatch", c.get("link"))]
+            ("Open in Argus", c.get("link"))]
     return [(k, str(v)) for k, v in rows if v not in (None, "", "None")]
 
 

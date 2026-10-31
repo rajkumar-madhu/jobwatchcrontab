@@ -1,5 +1,5 @@
 name: "Install notes"
-description: "You tried JobWatch on a real server. Tell us what was confusing, slow or wrong — this is the most useful issue you can open."
+description: "You tried Argus on a real server. Tell us what was confusing, slow or wrong — this is the most useful issue you can open."
 title: "Install notes: "
 labels: ["install-notes"]
 body:

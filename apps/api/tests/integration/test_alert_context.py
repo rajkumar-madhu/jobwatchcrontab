@@ -48,7 +48,7 @@ def test_subject_and_body_carry_where_and_why(world):
     assert body["Server"] == "prod-db-01" and body["Environment"] == "production" and body["Team"] == "Data"
     assert body["Tags"] == "prod, db" and "0 2 * * *, Asia/Kolkata" in body["Schedule"]
     assert body["Started"] == "2026-10-05 02:00 IST" and body["Duration"] == "4m 12s" and body["Exit code"] == "0"
-    assert body["Metrics"] == "size_bytes=0" and body["Open in JobWatch"].endswith(f"/jobs/{world['job']}")
+    assert body["Metrics"] == "size_bytes=0" and body["Open in Argus"].endswith(f"/jobs/{world['job']}")
     assert "hunter2secret" not in body["Last error"] and body["Last error"].startswith("pg_dump: error")   # redacted
 
 

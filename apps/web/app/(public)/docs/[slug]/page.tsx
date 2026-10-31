@@ -13,7 +13,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const d = listDocs().find((x) => x.slug === slug);
-  return { title: d ? `${d.title} · JobWatch docs` : "JobWatch docs", description: d?.summary };
+  return { title: d ? `${d.title} · Argus docs` : "Argus docs", description: d?.summary };
 }
 
 export default async function DocPage({ params }: { params: Promise<{ slug: string }> }) {

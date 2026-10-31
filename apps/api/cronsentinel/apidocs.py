@@ -44,7 +44,7 @@ TAGS: list[tuple[str, str, str]] = [
     ("copilot", "AI copilot", "Ask questions about failures. Read-only; sees redacted telemetry."),
     ("organization", "Organization", "The signed-in identity, workspaces, data export and deletion."),
     ("billing", "Billing", "Plan, usage and the hosted checkout and billing portal."),
-    ("platform", "Platform", "The health of JobWatch's own monitoring of your organization."),
+    ("platform", "Platform", "The health of Argus's own monitoring of your organization."),
     ("public", "Public", "Endpoints that need no authentication."),
     ("auth", "Browser sign-in", "Redirect-based sign-in used by the web app. Not for API clients."),
 ]
@@ -211,7 +211,7 @@ DOCS: dict[str, tuple[str, str]] = {
     "POST /api/v1/billing/checkout": ("Start a checkout", "Returns a hosted checkout URL for the chosen plan."),
     "POST /api/v1/billing/portal": ("Open the billing portal", "Returns a URL to the hosted billing portal for invoices and payment methods."),
     # Platform
-    "GET /api/v1/platform/monitoring-gaps": ("List monitoring gaps", "Periods when JobWatch itself was not watching your schedules, and how many expected runs could not be checked. Shown so you never mistake our outage for your jobs being fine."),
+    "GET /api/v1/platform/monitoring-gaps": ("List monitoring gaps", "Periods when Argus itself was not watching your schedules, and how many expected runs could not be checked. Shown so you never mistake our outage for your jobs being fine."),
     # Public
     "GET /public/status/{slug}": ("Get a public status page", "The data behind a public status page. No authentication."),
     "GET /auth/invite/{token}": ("Preview an invitation", "Who sent an invitation, to which organization and with which role. Rate limited per address."),
@@ -288,7 +288,7 @@ FIELD_DOCS: dict[str, str] = {
     "host": "Host the run was reported from.",
     "metrics": "Numbers the run reported, for example `{\"rows\": 1200, \"size_bytes\": 4200000000}`. Used by assertions and unusual-run detection.",
     "anomalies": "What was unusual about the run: the metric or duration, its value, the typical value and a message.",
-    "skew_ms": "Difference between the reporting host's clock and JobWatch's, in milliseconds.",
+    "skew_ms": "Difference between the reporting host's clock and Argus's, in milliseconds.",
     "stdout_tail": "The end of the run's standard output, redacted.",
     "stderr_tail": "The end of the run's standard error, redacted.",
     "assertion_failures": "Assertions the run failed.",
@@ -504,8 +504,8 @@ def _clean(text: str) -> str:
 
 
 def build(app, ingest_app=None) -> dict:
-    spec = get_openapi(title="JobWatch API", version=app.version, routes=app.routes,
-                       description="REST API for WeCrew JobWatch. See /docs/api in the web app for the full reference.")
+    spec = get_openapi(title="Argus API", version=app.version, routes=app.routes,
+                       description="REST API for WeCrew Argus. See /docs/api in the web app for the full reference.")
     roles = route_roles(app)
     if ingest_app is not None:
         ing = get_openapi(title="ingest", version=app.version, routes=ingest_app.routes)

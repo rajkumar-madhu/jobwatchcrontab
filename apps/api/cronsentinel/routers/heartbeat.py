@@ -168,7 +168,7 @@ async def healthchecks_compat(token: str, request: Request, action: str = "", ri
 # Semantics from Cronitor's Telemetry API docs: state run|complete|fail|tick|ok (none = tick), series
 # pairs run with complete/fail, metric=name:value (duration in seconds, count, error_count, custom),
 # message (≤2000 chars), status_code, host, env. POST bodies are ignored, as Cronitor does.
-# One deliberate difference: Cronitor auto-creates a monitor for an unknown key; JobWatch answers 404.
+# One deliberate difference: Cronitor auto-creates a monitor for an unknown key; Argus answers 404.
 
 _CR_STATES = {"run": "start", "complete": "success", "fail": "fail", "tick": "success", "ok": "success", "": "success"}
 

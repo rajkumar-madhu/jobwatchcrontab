@@ -6,11 +6,11 @@ export const dynamic = "force-static";
 
 export function GET() {
   const docs = listDocs();
-  const lines = ["# WeCrew JobWatch", "", "> Monitoring for scheduled jobs: cron, systemd timers, Kubernetes CronJobs, backups and pipelines. " +
-    "JobWatch expects every run before it is due and alerts on failed, late and missed runs.", ""];
+  const lines = ["# WeCrew Argus", "", "> Monitoring for scheduled jobs: cron, systemd timers, Kubernetes CronJobs, backups and pipelines. " +
+    "Argus expects every run before it is due and alerts on failed, late and missed runs.", ""];
   for (const g of GROUPS) {
     const list = docs.filter((d) => d.group === g);
-    if (g === "Reference") { lines.push("## Reference", "", "- [API reference](/docs/api): every endpoint of the JobWatch API, by area", ""); continue; }
+    if (g === "Reference") { lines.push("## Reference", "", "- [API reference](/docs/api): every endpoint of the Argus API, by area", ""); continue; }
     if (!list.length) continue;
     lines.push(`## ${g}`, "", ...list.map((d) => `- [${d.title}](/docs/${d.slug}): ${d.summary}`), "");
   }

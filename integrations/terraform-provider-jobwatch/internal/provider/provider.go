@@ -1,4 +1,4 @@
-// Package provider implements the JobWatch Terraform provider (R64).
+// Package provider implements the Argus Terraform provider (R64).
 package provider
 
 import (
@@ -32,10 +32,10 @@ func (p *jobwatchProvider) Metadata(_ context.Context, _ provider.MetadataReques
 
 func (p *jobwatchProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manage WeCrew JobWatch jobs and maintenance windows.",
+		Description: "Manage WeCrew Argus jobs and maintenance windows.",
 		Attributes: map[string]schema.Attribute{
 			"api_url": schema.StringAttribute{Optional: true,
-				Description: "JobWatch app URL, e.g. https://app.example.com. Defaults to JOBWATCH_API_URL."},
+				Description: "Argus app URL, e.g. https://app.example.com. Defaults to JOBWATCH_API_URL."},
 			"api_key": schema.StringAttribute{Optional: true, Sensitive: true,
 				Description: "API key (Settings → API keys; role devops or higher). Defaults to JOBWATCH_API_KEY."},
 		},
@@ -56,7 +56,7 @@ func (p *jobwatchProvider) Configure(ctx context.Context, req provider.Configure
 		key = cfg.APIKey.ValueString()
 	}
 	if url == "" || key == "" {
-		resp.Diagnostics.AddError("JobWatch provider is not configured",
+		resp.Diagnostics.AddError("Argus provider is not configured",
 			"Set api_url and api_key in the provider block, or JOBWATCH_API_URL and JOBWATCH_API_KEY in the environment.")
 		return
 	}

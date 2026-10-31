@@ -55,7 +55,7 @@ export function UnusualRuns({ jobId, sensitivity, action }: { jobId: string; sen
     <section className="mb-5 rounded-md border border-line px-4 py-3" aria-labelledby="unusual-h">
       <h2 id="unusual-h" className="text-sm font-medium">Unusual runs</h2>
       <p className="mt-1 max-w-3xl text-xs text-mute">
-        JobWatch learns this job&apos;s usual duration and metrics from its last 50 successful runs and flags a run that is far outside them:
+        Argus learns this job&apos;s usual duration and metrics from its last 50 successful runs and flags a run that is far outside them:
         much slower, finished almost instantly, or reported far less (or more) than usual, such as a backup of a few kilobytes. It starts after 10 runs.
       </p>
       <div className="mt-3 flex flex-wrap items-end gap-4 text-sm">

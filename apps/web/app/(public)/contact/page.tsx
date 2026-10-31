@@ -43,7 +43,7 @@ export default function Contact() {
       <main className="mx-auto grid max-w-[1200px] gap-12 px-6 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="min-w-0">
           <p className="text-sm text-mute">Contact sales</p>
-          <h1 className="mt-2 font-display text-[40px] font-semibold leading-tight text-balance">Talk to us about JobWatch for your organization</h1>
+          <h1 className="mt-2 font-display text-[40px] font-semibold leading-tight text-balance">Talk to us about Argus for your organization</h1>
           <p className="mt-4 max-w-[520px] text-lg text-mute">For larger rollouts, single sign-on and directory sync, private deployments and security reviews.</p>
           <ul className="mt-10 space-y-6">{WHAT.map(([t, d]) => (
             <li key={t} className="flex gap-3"><span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/15 text-accent"><Check size={14} aria-hidden /></span>

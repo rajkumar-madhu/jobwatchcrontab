@@ -1,7 +1,7 @@
 {
   "realm": "cronsentinel",
   "enabled": true,
-  "displayName": "WeCrew JobWatch",
+  "displayName": "WeCrew Argus",
   "sslRequired": "external",
   "registrationAllowed": true,
   "resetPasswordAllowed": true,
@@ -19,7 +19,7 @@
   "clients": [
     {
       "clientId": "cronsentinel-web",
-      "name": "JobWatch web",
+      "name": "Argus web",
       "description": "Confidential, server-side authorization-code client. Backs apps/api/cronsentinel/routers/auth.py: the API exchanges the code for tokens itself, so the secret never reaches a browser.",
       "enabled": true,
       "protocol": "openid-connect",
@@ -62,7 +62,7 @@
     },
     {
       "clientId": "jobwatch-admin",
-      "name": "JobWatch identity-provider admin (R43)",
+      "name": "Argus identity-provider admin (R43)",
       "enabled": true,
       "publicClient": false,
       "protocol": "openid-connect",

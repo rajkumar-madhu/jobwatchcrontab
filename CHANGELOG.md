@@ -33,7 +33,7 @@ teams pay.
 API 1,072 passed (69 skipped); vitest 30; Playwright 144 passed, 2 skipped. New: `test_razorpay.py` (5),
 netguard IPv6 case, pricing-section and billing-page toggles.
 
-# R74 — one line in a crontab, open source, and JobWatch watching itself
+# R74 — one line in a crontab, open source, and Argus watching itself
 
 The 26 Oct brainstorm converged on one move: lead with the path that needs nothing installed, open
 the repository so strangers can read what they are asked to run as root, and be able to answer
@@ -60,7 +60,7 @@ the repository so strangers can read what they are asked to run as root, and be 
   `CONTRIBUTING.md` (tests, change rules, contribution licence incl. commercial dual-licensing grant),
   root `SECURITY.md` (disclosure address and response times). README rewritten to open with the
   crontab line, then why, then self-host.
-- **JobWatch monitors itself** (`cronsentinel/selfmonitor.py`, `docs/SELF_MONITORING.md`). With
+- **Argus monitors itself** (`cronsentinel/selfmonitor.py`, `docs/SELF_MONITORING.md`). With
   `SELF_MONITOR_ORG_ID` set and `python -m cronsentinel.cli selfmonitor --org <id>` run once, the
   reconciler, schedule-generator and scorer passes are jobs `jobwatch/<service>` in that org: history,
   uptime, and alerts through the ordinary rules. A pass that raises is a failed run with the traceback
@@ -136,7 +136,7 @@ The live-site issues found in the October product brief, fixed in code.
 # R70 — the job page explains a failure: host context and a log viewer
 
 When a scheduled job fails, the job page now says what happened, where, and shows the evidence —
-the way an engineer debugs it in Datadog — without leaving JobWatch.
+the way an engineer debugs it in Datadog — without leaving Argus.
 
 ## Upgrade notes
 - **Migration 0029**: `servers.facts` (JSONB) and `servers.facts_updated_at`; an index on
@@ -201,7 +201,7 @@ for security-conscious buyers and for the people who live in the product every d
   authenticator app; Google and GitHub sign-in are refused for that organization; the check fails
   closed. SSO members get MFA from their identity provider.
 - **Sign-in and sign-up**: new two-panel layout listing real controls; SSO-first flow with the MFA
-  prompt explained; work-email advice; invitation mode ("Join Acme on JobWatch", read-only email,
+  prompt explained; work-email advice; invitation mode ("Join Acme on Argus", read-only email,
   clear message for used, revoked or expired links); a six-step onboarding with a Kubernetes install
   command and an "Invite your team" step.
 - **Landing page**: enterprise hero and checklist, an Enterprise section (identity, data, operations,
@@ -228,7 +228,7 @@ desktop and phone).
 
 # R68 — unusual runs: slow, instant or empty runs caught without writing rules
 
-A run can exit 0 and still be wrong. Run checks (R54) catch that when someone writes the rule. JobWatch
+A run can exit 0 and still be wrong. Run checks (R54) catch that when someone writes the rule. Argus
 now also learns each job's normal duration and metrics from its own history and flags runs far outside
 them, such as a backup that took 3 seconds instead of 20 minutes or wrote 1.2 KB instead of 4 GB.
 
@@ -300,7 +300,7 @@ them, such as a backup that took 3 seconds instead of 20 minutes or wrote 1.2 KB
 
 # R67 — Sentry Crons import and Sentry-compatible check-ins
 
-Teams on Sentry Crons can move to JobWatch by changing one host: the DSN their SDK uses for crons, or
+Teams on Sentry Crons can move to Argus by changing one host: the DSN their SDK uses for crons, or
 the base of their HTTP check-in URLs.
 
 ## Upgrade notes
@@ -352,7 +352,7 @@ the base of their HTTP check-in URLs.
 
 # R66 — on-call schedules and escalation policies
 
-JobWatch now decides who gets paged and keeps paging until someone acknowledges, instead of only
+Argus now decides who gets paged and keeps paging until someone acknowledges, instead of only
 handing off to PagerDuty or Opsgenie.
 
 ## Upgrade notes
@@ -393,7 +393,7 @@ handing off to PagerDuty or Opsgenie.
 - **Deleting an alert channel that a policy delivers through** returned a 500 (a database
   constraint). It now answers 409 and names the policy. Found by the router sweep once its seed included a policy.
 - `test_slot_inside_a_recorded_gap_is_unobserved_not_missed` asserted that its slot was the only one in
-  the shared test database. A JobWatch-side gap is platform-wide, so other tests' slots counted too.
+  the shared test database. A Argus-side gap is platform-wide, so other tests' slots counted too.
   It now checks its own slot exactly and that the gap counted it.
 - Test fixtures now use full-length random emails (4–6 hex characters collided across runs).
 
@@ -456,7 +456,7 @@ handing off to PagerDuty or Opsgenie.
 
 # R64 — Terraform / OpenTofu provider
 
-`integrations/terraform-provider-jobwatch` (Go, HashiCorp plugin framework v1.13): manage JobWatch as
+`integrations/terraform-provider-jobwatch` (Go, HashiCorp plugin framework v1.13): manage Argus as
 code. Works with Terraform and OpenTofu.
 
 ## What ships
@@ -467,7 +467,7 @@ code. Works with Terraform and OpenTofu.
   daily / weekly with weekdays, scope by tags / job ids / environment ids. No in-place edit (the API
   has none): any change replaces the window. Import by id.
 - **Clean plans by design**:
-  - run checks that differ only in spacing are equal (JobWatch collapses spaces);
+  - run checks that differ only in spacing are equal (Argus collapses spaces);
   - the same instant written with another offset is not a change;
   - weekday case and order are kept;
   - recurrence is read back from the stored rule, so real drift shows;
@@ -558,7 +558,7 @@ reasoning in the test. Product behaviour unchanged (early binding tolerates cloc
 
 ---
 
-# R62 — the agent installer is served by JobWatch: one real install command
+# R62 — the agent installer is served by Argus: one real install command
 
 Closes the gap found while writing the docs (R59): the app showed
 `curl -fsSL https://<server>/install.sh | … --server https://<ingest> …`, a placeholder command, and the
@@ -600,11 +600,11 @@ installer's download location defaulted to `downloads.example.com`.
 
 # R61 — /docs restyled after Datadog's documentation
 
-Datadog's docs structure, adapted to JobWatch (its own design, not Datadog's branding).
+Datadog's docs structure, adapted to Argus (its own design, not Datadog's branding).
 
 ## What ships
 - **Guides | API reference tabs** in a docs header bar, as Datadog splits Docs and API.
-- **"Use your JobWatch hosts" selector** (Datadog's site-selector idea): enter your ingest host (and
+- **"Use your Argus hosts" selector** (Datadog's site-selector idea): enter your ingest host (and
   optionally app host) once; every code sample on every docs page uses it instead of
   `ingest.example.com` / `<ingest>` / `app.example.com`. Remembered in this browser only; "Use the
   examples" resets.
@@ -631,7 +631,7 @@ Datadog's docs structure, adapted to JobWatch (its own design, not Datadog's bra
 
 # R60 — visual refresh: the "timetable" design system
 
-JobWatch is about time slots and whether expected runs happened, so the palette and details borrow
+Argus is about time slots and whether expected runs happened, so the palette and details borrow
 from station departure boards and signage instead of generic SaaS teal-on-grey.
 
 ## What changed
@@ -682,7 +682,7 @@ from station departure boards and signage instead of generic SaaS teal-on-grey.
 - **API reference** generated from the same OpenAPI document the web client's types come from,
   grouped by area, with methods, paths, query parameters and body markers.
 - **New guides:** Quick start, Pings and heartbeat API, Kubernetes, Import (Healthchecks.io, Cronitor),
-  Single sign-on, Security overview, How JobWatch works; **Linux agent rewritten**.
+  Single sign-on, Security overview, How Argus works; **Linux agent rewritten**.
 - Published as-is: Alerts, Run checks, SCIM, Audit-log streaming, Datadog, Deploying.
 - **Not published:** the development log, product design document, rename notes, the R19 load-test
   log, and the older `SECURITY.md` / `ARCHITECTURE.md` / `DEPLOYMENT.md` engineering notes (kept in
@@ -693,7 +693,7 @@ from station departure boards and signage instead of generic SaaS teal-on-grey.
 ## Corrections made while writing the guides
 - The old `AGENT.md` said the agent had never been compiled or tested (it has been, since R39) and
   described key hashing and the passive mode inaccurately; rewritten from the code.
-- **`install.sh` is not served by JobWatch** (the app shows it with a placeholder host). The release
+- **`install.sh` is not served by Argus** (the app shows it with a placeholder host). The release
   now ships `install.sh` next to the agent binaries and `SHA256SUMS`, and the Linux agent guide gives
   a working command against your GitHub release (`CS_DOWNLOAD_BASE` / `CS_AGENT_VERSION`).
 - Claims checked against code before publishing: UI labels (Install an agent / Get install command),
@@ -731,7 +731,7 @@ from station departure boards and signage instead of generic SaaS teal-on-grey.
   slices; "Check API key" uses Datadog's validate endpoint.
 - **Landing page:** an integrations grid (29 integrations, names only; notes that some depend on the
   plan). The Integrations page text no longer claims signal destinations are the only way data
-  leaves JobWatch.
+  leaves Argus.
 - `docs/DATADOG.md` covers setup, tags, metrics and an example monitor.
 
 ## Verification
@@ -780,7 +780,7 @@ The gap `/compare` named after R56: the audit log was only in the app and in exp
 
 ---
 
-# R56 — SCIM groups: directory groups map to JobWatch roles
+# R56 — SCIM groups: directory groups map to Argus roles
 
 Item 4 of the research report (enterprise identity): SCIM covered people only, so everyone a
 directory provisioned got one default role. Groups now sync, and owners map groups to roles.
@@ -788,7 +788,7 @@ directory provisioned got one default role. Groups now sync, and owners map grou
 ## Upgrade notes
 - **Migration 0021** adds `scim_groups`, `scim_group_members` (row-level security like every tenant
   table) and `scim_users.role_from_group`.
-- In your directory's JobWatch app, enable group push. No JobWatch configuration beyond mapping roles.
+- In your directory's Argus app, enable group push. No Argus configuration beyond mapping roles.
 
 ## What ships
 - **SCIM `/Groups`** (was an empty stub): list (filters `displayName eq`, `externalId eq`,
@@ -937,8 +937,8 @@ their schedules were not cron, so they had no expected runs and silence went unn
 
 # R52 — more incident.io-style sections on the landing page
 
-Added the incident.io homepage sections JobWatch can fill honestly; skipped the ones it cannot
-(customer logos, testimonials, G2 badges, event promos), because JobWatch has none of those yet.
+Added the incident.io homepage sections Argus can fill honestly; skipped the ones it cannot
+(customer logos, testimonials, G2 badges, event promos), because Argus has none of those yet.
 
 - **"Where you work" layer** at the top of the platform diagram (web app, Slack and Teams, email,
   webhooks and API, status pages), after incident.io's interfaces row.
@@ -948,7 +948,7 @@ Added the incident.io homepage sections JobWatch can fill honestly; skipped the 
   a real screenshot of a copilot answer, labelled as demo data.
 - **"Built for the jobs that fail quietly"** — six use-case cards (backups, ETL, billing, Kubernetes
   CronJobs, certificate renewals, nightly CI) in place of a customer-story grid: what goes wrong, and
-  what JobWatch does about it.
+  what Argus does about it.
 - **Closing band:** full-width dark call to action replacing the plain closing section.
 
 ## Claim corrected before shipping
@@ -966,12 +966,12 @@ overflow or page errors; landing reviewed in light, dark and phone captures. No 
 # R51 — landing page, sign-up and sign-in rebuilt (layout inspired by incident.io)
 
 ## Landing page (`/welcome`)
-Structure borrowed from incident.io's homepage; words, visuals and claims are JobWatch's own.
+Structure borrowed from incident.io's homepage; words, visuals and claims are Argus's own.
 - Announcement bar for the migration path (Healthchecks.io and Cronitor import).
 - Centered hero with a **real product screenshot** (the overview page rendered from the demo data in
   `tools/ui-review`) and the schedule tape overlapping it.
 - "Works with" strip (names only, no third-party logos).
-- **Without / With JobWatch** toggle: the same nine-day silent backup failure, caught in 15 minutes.
+- **Without / With Argus** toggle: the same nine-day silent backup failure, caught in 15 minutes.
 - **Platform layers:** where jobs run → detection → response → foundation.
 - **Product tour** with tabbed real screenshots: Overview / Jobs / Run detail; Alerting / Incidents;
   Status page. Images are WebP, ~310 KB in total, statically imported (no `public/` dir needed in
@@ -979,7 +979,7 @@ Structure borrowed from incident.io's homepage; words, visuals and claims are Jo
 - Kept: three ways to connect, security controls, comparison summary, pricing, FAQ (now mentions
   Cronitor), final call to action. Removed the older "how a run becomes an alert" section, which the
   before/after block replaces. Every "Start" button now goes to `/signup`.
-- No customer logos, testimonials or ratings: JobWatch has none yet, so none are shown.
+- No customer logos, testimonials or ratings: Argus has none yet, so none are shown.
 
 ## Sign-up (`/signup`) and sign-in (`/login`)
 - Split layout: form on the left; on wide screens a panel showing the product (schedule tape and
@@ -1034,7 +1034,7 @@ First item of the next-round research report (Cronitor migration path).
   `series` pairing start and end into one run, `metric=duration:<s>` → run duration,
   other `metric=` values kept on the run, `message`, `status_code`, `host`, `env`.
   Migrating a script is `cronitor.link/` → `<ingest>/cronitor/`. Unknown monitors get 404
-  (Cronitor would auto-create one; JobWatch does not, on purpose).
+  (Cronitor would auto-create one; Argus does not, on purpose).
 - The import router was refactored so both importers share one code path (limits, de-duplication,
   token reuse, cache invalidation); the Healthchecks live tests passed unchanged afterwards.
 - Ping tokens may now be up to 200 characters (telemetry key + monitor key).
@@ -1117,7 +1117,7 @@ Steps are in `docs/DEPLOY.md`.
   - interval checks → a cron that fires every period when one exists (1 min … 1 day, 1 week), with
     grace = period + grace because interval checks keep their own phase; flagged "Schedule converted";
   - intervals with no cron equivalent (e.g. 90 min) → imported without a schedule, flagged "Needs a schedule";
-  - systemd OnCalendar checks → reported, not imported (JobWatch schedules are cron);
+  - systemd OnCalendar checks → reported, not imported (Argus schedules are cron);
   - paused, tags and description carried over; names already in the workspace are left alone, so
     re-running the import is safe; the plan's job limit is respected.
 - **Ping URLs keep working.** With a read-write key, each job keeps its Healthchecks UUID as its
@@ -1226,7 +1226,7 @@ a second Keycloak realm acting as a customer's identity provider, through real b
   The `idp` claim from the realm mapper arrives in real tokens.
 - Returning user signs in after SSO was disabled and re-enabled (the bug below).
 - An IdP user asserting an address outside the org's verified domains is refused at the callback.
-- SCIM-provisioned user links to the same record on first SSO sign-in and keeps the role set in JobWatch;
+- SCIM-provisioned user links to the same record on first SSO sign-in and keeps the role set in Argus;
   after an Entra-style SCIM deactivation, SSO sign-in is refused.
 - SAML with signed assertions: attribute mappers supply email and name; user lands in the org.
 
@@ -1265,7 +1265,7 @@ on failure, cleaning up its orgs and IdPs. Use it on staging after Keycloak upgr
 ## SCIM 2.0 (RFC 7643/7644), users only
 - Endpoints: ServiceProviderConfig, ResourceTypes, Schemas, `GET/POST /Users`, `GET/PUT/PATCH/DELETE
   /Users/{id}`, filters `userName eq`, `externalId eq`, `emails eq`. Groups answer with an empty list
-  (writes 501): roles are assigned in JobWatch. Errors use the SCIM error schema and
+  (writes 501): roles are assigned in Argus. Errors use the SCIM error schema and
   `application/scim+json`. Kept out of the web API's OpenAPI document (it is an IdP-facing protocol).
 - Handles both PATCH dialects: Okta (`{"op":"replace","value":{"active":false}}`) and Entra ID
   (`{"op":"Replace","path":"active","value":"False"}` with string booleans).
@@ -1328,7 +1328,7 @@ on failure, cleaning up its orgs and IdPs. Use it on staging after Keycloak upgr
 ## What ships
 - **Settings → Single sign-on** (admins): connect an OpenID Connect provider (issuer, client ID,
   secret; endpoints are read from its discovery document) or SAML 2.0 (entity ID, SSO URL, signing
-  certificate). JobWatch creates the identity provider in Keycloak and shows the redirect/ACS URL to
+  certificate). Argus creates the identity provider in Keycloak and shows the redirect/ACS URL to
   register. The client secret is stored encrypted and never returned.
 - **Verified email domains:** add a domain, publish the TXT record, press Check DNS. Public mailbox
   domains (gmail.com etc.) are refused, and a domain can be verified by one organization only.
@@ -1360,7 +1360,7 @@ on failure, cleaning up its orgs and IdPs. Use it on staging after Keycloak upgr
 - **Not tested against a live Keycloak or a real Okta/Entra/ADFS.** Keycloak's Admin API and the
   broker flow were exercised against mocks built from Keycloak's documented representations. Before
   offering SSO to customers, run one end-to-end sign-in per protocol on staging.
-- Not built: SCIM provisioning (deprovisioning still happens in JobWatch). Listed as a gap on `/compare`.
+- Not built: SCIM provisioning (deprovisioning still happens in Argus). Listed as a gap on `/compare`.
 
 ---
 
@@ -1369,7 +1369,7 @@ on failure, cleaning up its orgs and IdPs. Use it on staging after Keycloak upgr
 ## Upgrade notes
 - **Migration 0017** adds `pagerduty` and `opsgenie` to the Team and Business plans (Enterprise
   already has everything). Downgrade removes them.
-- No configuration needed on the JobWatch side. Customers create a channel with a PagerDuty
+- No configuration needed on the Argus side. Customers create a channel with a PagerDuty
   Events API v2 integration key or an Opsgenie API integration key, and choose region `us` or `eu`.
 
 ## What ships
@@ -1431,9 +1431,9 @@ on failure, cleaning up its orgs and IdPs. Use it on staging after Keycloak upgr
 - **Landing page (`/welcome`)** rebuilt around a schedule tape: five job types over 24 hours showing
   runs that happened, failed, ran late and never started, with a "now" line. Then: three ways to
   connect, how a missed run becomes an alert, security controls, comparison summary, pricing, FAQ.
-- **New `/compare` page:** JobWatch vs Healthchecks.io, Cronitor, Better Stack, Sentry Crons and
+- **New `/compare` page:** Argus vs Healthchecks.io, Cronitor, Better Stack, Sentry Crons and
   Uptime Kuma across detection, onboarding, enterprise operation and pricing shape; head-to-head
-  filter; "Where JobWatch is behind" (SSO, on-call integrations, licence, track record) and "When to
+  filter; "Where Argus is behind" (SSO, on-call integrations, licence, track record) and "When to
   choose something else". Data in `apps/web/lib/compare.ts`.
 - **Comparison verified 1 October 2026** against vendor pages, with a Sources list on `/compare`.
   Corrections made: Cronitor on-call integrations are Business-only (now partial); Cronitor SSO is a

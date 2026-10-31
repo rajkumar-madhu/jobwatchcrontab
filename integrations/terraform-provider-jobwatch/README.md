@@ -1,6 +1,6 @@
 # terraform-provider-jobwatch
 
-Manage JobWatch jobs and maintenance windows as code with the `wecrew/jobwatch` provider. It works
+Manage Argus jobs and maintenance windows as code with the `wecrew/jobwatch` provider. It works
 with Terraform and OpenTofu.
 
 ## Configure
@@ -51,7 +51,7 @@ output "backup_ping_url" {
 | `ping_token_hint` (computed) | The token's last characters, to recognise it without exposing it. |
 
 > [!IMPORTANT]
-> JobWatch shows a ping URL only once, at creation, so the provider keeps it in Terraform state.
+> Argus shows a ping URL only once, at creation, so the provider keeps it in Terraform state.
 > Protect your state accordingly (an encrypted remote backend). Jobs brought in with
 > `terraform import jobwatch_job.x <job id>` have no `ping_url`: keep using the existing one, or
 > choose **New ping URL** in the app.
@@ -79,7 +79,7 @@ A job or window deleted in the app is recreated on the next `apply`.
 ```bash
 go mod tidy && go vet ./... && go test ./... && go build -o terraform-provider-jobwatch .
 ```
-`e2e/run.sh` runs the provider against a real JobWatch API with OpenTofu or Terraform (apply, a clean
+`e2e/run.sh` runs the provider against a real Argus API with OpenTofu or Terraform (apply, a clean
 plan, update, window replacement, drift detection and repair, import, destroy):
 ```bash
 PROVIDER_BIN=./terraform-provider-jobwatch TF=tofu JOBWATCH_API_URL=http://localhost:8000 JOBWATCH_API_KEY=… e2e/run.sh

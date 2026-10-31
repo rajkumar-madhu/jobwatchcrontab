@@ -30,7 +30,7 @@ export default function Signup() {
   }, []);
 
   const free = !invite && email.includes("@") && isFreeMail(email);
-  const title = invite ? `Join ${invite.organization} on JobWatch` : "Start monitoring free";
+  const title = invite ? `Join ${invite.organization} on Argus` : "Start monitoring free";
   const subtitle = invite
     ? <>{invite.invited_by ?? "An administrator"} invited <b className="text-ink">{invite.email}</b> as {ROLE[invite.role] ?? invite.role}. Create your account with this email to join.</>
     : <>5 jobs free, no card. Upgrade, or self-host the whole platform with Helm, whenever you like.</>;
@@ -55,7 +55,7 @@ export default function Signup() {
       <ul className="mt-6 space-y-1.5 text-xs text-mute">
         {invite ? <li>Signing in with a different email will not join you to {invite.organization}.</li> : <>
           <li>Your first job can be pinging within two minutes of signing up.</li>
-          <li>If your company already uses JobWatch with single sign-on, you will join its organization.</li></>}
+          <li>If your company already uses Argus with single sign-on, you will join its organization.</li></>}
         <li>We will ask you to confirm your email before you can sign in.</li>
       </ul>
     </AuthShell>

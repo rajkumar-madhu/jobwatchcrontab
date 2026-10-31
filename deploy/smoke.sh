@@ -17,7 +17,7 @@ check() {  # name, url, expected status, optional body substring
 check "API reachable"         "$APP/auth/session"     401
 check "API uses the database" "$APP/public/status/smoke-missing-$(date +%s)" 404
 check "SCIM routed to the API" "$APP/scim/v2/ServiceProviderConfig" 200 urn:ietf:params:scim
-check "web app"               "$APP/welcome"          200 JobWatch
+check "web app"               "$APP/welcome"          200 Argus
 check "ingest health"         "$INGEST/healthz"       200 ok
 check "ingest serves pings"   "$INGEST/ping/smoke-unknown-token-$(date +%s)" 404
 check "Healthchecks paths"    "$INGEST/hc/00000000-0000-0000-0000-000000000000" 404

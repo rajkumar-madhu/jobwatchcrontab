@@ -359,7 +359,7 @@ export function publicSpec(): unknown {
     const kept = Object.fromEntries(Object.entries<any>(ops).filter(([, o]) => !o["x-internal"]));
     if (Object.keys(kept).length) paths[p] = kept;
   }
-  return { ...sp, servers: [{ url: APP_BASE, description: "Your JobWatch app host" }], paths, tags: sp.tags.filter((t: any) => t.name !== "auth") };
+  return { ...sp, servers: [{ url: APP_BASE, description: "Your Argus app host" }], paths, tags: sp.tags.filter((t: any) => t.name !== "auth") };
 }
 
 export function apiNav(): { slug: string; name: string; ops: { id: string; method: string; summary: string; path: string }[] }[] {

@@ -1,7 +1,7 @@
 "use client";
 /* R51 landing sections. Layout ideas taken from incident.io's homepage (big product view in the hero,
    before/after, a layered platform map, product areas with tabbed screenshots); the words and the
-   screenshots are JobWatch's own — real app pages rendered from the demo data in tools/ui-review. */
+   screenshots are Argus's own — real app pages rendered from the demo data in tools/ui-review. */
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -27,7 +27,7 @@ export function ProductFrame({ src, alt, priority = false, url = "jobwatch.wecre
 }
 
 export function HeroProduct() {
-  return <ProductFrame src={shotOverview} priority alt="JobWatch overview: jobs that need attention, run counts by state, the last seven days and open incidents" />;
+  return <ProductFrame src={shotOverview} priority alt="Argus overview: jobs that need attention, run counts by state, the last seven days and open incidents" />;
 }
 
 const WORKS_WITH = ["Linux cron", "systemd timers", "Kubernetes CronJobs", "GitHub Actions", "GitLab CI", "Jenkins", "Airflow",
@@ -52,7 +52,7 @@ const BEFORE: [string, string][] = [
   ["Day 9, 14:10", "A restore is needed. The newest backup is nine days old."],
 ];
 const AFTER: [string, string][] = [
-  ["Mon 02:00", "JobWatch already expects the 02:00 run, with a 15-minute grace window."],
+  ["Mon 02:00", "Argus already expects the 02:00 run, with a 15-minute grace window."],
   ["Mon 02:15", "No start signal: the run is marked missed and #ops on Slack is alerted. PagerDuty pages the on-call owner."],
   ["Mon 02:40", "The fix ships; the next run succeeds and the page resolves on its own."],
 ];
@@ -65,14 +65,14 @@ export function BeforeAfter() {
       <div className="mx-auto grid max-w-[1200px] gap-12 px-6 py-20 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div>
           <h2 className="font-display text-3xl font-semibold sm:text-4xl">The failure you don&apos;t see is the one that runs nothing</h2>
-          <p className="mt-4 text-[17px] text-mute">Error tracking catches jobs that crash. It cannot see a job that never started: a deleted crontab line, a host that was replaced, a CronJob stuck behind a concurrency policy. JobWatch expects every run, so silence is a signal.</p>
+          <p className="mt-4 text-[17px] text-mute">Error tracking catches jobs that crash. It cannot see a job that never started: a deleted crontab line, a host that was replaced, a CronJob stuck behind a concurrency policy. Argus expects every run, so silence is a signal.</p>
         </div>
         <div className="card p-2">
           <div className="grid grid-cols-2 gap-1 rounded-lg bg-raised/60 p-1" role="tablist" aria-label="Compare">
             {(["before", "after"] as const).map((t) => (
               <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
                 className={`rounded-md px-3 py-2 text-sm font-medium transition ${tab === t ? "bg-panel text-ink shadow-sm" : "text-mute hover:text-ink"}`}>
-                {t === "before" ? "Without JobWatch" : "With JobWatch"}
+                {t === "before" ? "Without Argus" : "With Argus"}
               </button>))}
           </div>
           <ol className="space-y-0 p-4" role="tabpanel">
@@ -184,7 +184,7 @@ const COPILOT_POINTS = [
   "Can use a model you host yourself, so nothing leaves your network",
 ];
 
-/** The AI section — incident.io's "built on Nexus" slot, filled with what JobWatch's copilot actually does. */
+/** The AI section — incident.io's "built on Nexus" slot, filled with what Argus's copilot actually does. */
 export function CopilotSection() {
   return (
     <section className="border-b border-line bg-panel/40">
@@ -216,22 +216,22 @@ const USES: { title: string; risk: string; catch: string }[] = [
   { title: "Certificates and renewals", risk: "The renewal timer was disabled during a migration; the certificate expires on a Sunday.",
     catch: "The agent reads each systemd timer's schedule and random delay, so a renewal that does not run is flagged weeks before expiry." },
   { title: "Nightly builds and CI schedules", risk: "A scheduled pipeline is silently turned off, and the nightly artifact is a month old.",
-    catch: "One ping step at the end of the pipeline; JobWatch expects it every night." },
+    catch: "One ping step at the end of the pipeline; Argus expects it every night." },
 ];
 
-/** incident.io's customer-story grid, re-cast as the work JobWatch is built for (no invented customers). */
+/** incident.io's customer-story grid, re-cast as the work Argus is built for (no invented customers). */
 export function UseCases() {
   return (
     <section className="border-b border-line">
       <div className="mx-auto max-w-[1200px] px-6 py-20">
         <h2 className="max-w-[760px] font-display text-3xl font-semibold sm:text-4xl">Built for the jobs that fail quietly</h2>
-        <p className="mt-4 max-w-[680px] text-[17px] text-mute">Scheduled work is where silent failures live. These are the jobs teams put on JobWatch first.</p>
+        <p className="mt-4 max-w-[680px] text-[17px] text-mute">Scheduled work is where silent failures live. These are the jobs teams put on Argus first.</p>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {USES.map((u) => (
             <article key={u.title} className="card flex flex-col p-5">
               <h3 className="font-display text-lg font-medium">{u.title}</h3>
               <p className="mt-2 text-sm text-mute">{u.risk}</p>
-              <p className="mt-4 border-t border-line pt-4 text-sm"><span className="font-medium text-accent">JobWatch: </span>{u.catch}</p>
+              <p className="mt-4 border-t border-line pt-4 text-sm"><span className="font-medium text-accent">Argus: </span>{u.catch}</p>
             </article>))}
         </div>
       </div>

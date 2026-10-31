@@ -1,4 +1,4 @@
-"""R4 — signal destinations (the only door out of JobWatch)."""
+"""R4 — signal destinations (the only door out of Argus)."""
 import json
 from uuid import UUID
 

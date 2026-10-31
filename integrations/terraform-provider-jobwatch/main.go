@@ -1,4 +1,4 @@
-// terraform-provider-jobwatch — manage WeCrew JobWatch jobs and maintenance windows as code (R64).
+// terraform-provider-jobwatch — manage WeCrew Argus jobs and maintenance windows as code (R64).
 package main
 
 import (

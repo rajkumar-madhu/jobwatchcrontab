@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "JobWatch API",
-    "description": "REST API for WeCrew JobWatch. See /docs/api in the web app for the full reference.",
+    "title": "Argus API",
+    "description": "REST API for WeCrew Argus. See /docs/api in the web app for the full reference.",
     "version": "0.1.0"
   },
   "paths": {
@@ -8170,7 +8170,7 @@
             }
           }
         },
-        "description": "Periods when JobWatch itself was not watching your schedules, and how many expected runs could not be checked. Shown so you never mistake our outage for your jobs being fine.",
+        "description": "Periods when Argus itself was not watching your schedules, and how many expected runs could not be checked. Shown so you never mistake our outage for your jobs being fine.",
         "x-min-role": "viewer",
         "security": [
           {
@@ -13416,7 +13416,7 @@
               }
             ],
             "title": "Skew Ms",
-            "description": "Difference between the reporting host's clock and JobWatch's, in milliseconds."
+            "description": "Difference between the reporting host's clock and Argus's, in milliseconds."
           },
           "revoked_at": {
             "anyOf": [
@@ -13552,7 +13552,7 @@
               }
             ],
             "title": "Skew Ms",
-            "description": "Difference between the reporting host's clock and JobWatch's, in milliseconds."
+            "description": "Difference between the reporting host's clock and Argus's, in milliseconds."
           },
           "revoked_at": {
             "anyOf": [
@@ -14490,7 +14490,7 @@
           "skew_ms": {
             "type": "integer",
             "title": "Skew Ms",
-            "description": "Difference between the reporting host's clock and JobWatch's, in milliseconds."
+            "description": "Difference between the reporting host's clock and Argus's, in milliseconds."
           },
           "metrics": {
             "additionalProperties": true,
@@ -14794,7 +14794,7 @@
               }
             ],
             "title": "Skew Ms",
-            "description": "Difference between the reporting host's clock and JobWatch's, in milliseconds."
+            "description": "Difference between the reporting host's clock and Argus's, in milliseconds."
           },
           "heartbeat_interval_s": {
             "type": "integer",
@@ -17577,7 +17577,7 @@
           "updated_at"
         ],
         "title": "ScimGroupOut",
-        "description": "R56: a directory group and the JobWatch role it grants (None = no effect on roles)."
+        "description": "R56: a directory group and the Argus role it grants (None = no effect on roles)."
       },
       "ScimTokenIn": {
         "properties": {
@@ -19616,7 +19616,7 @@
     {
       "name": "platform",
       "x-displayName": "Platform",
-      "description": "The health of JobWatch's own monitoring of your organization."
+      "description": "The health of Argus's own monitoring of your organization."
     },
     {
       "name": "public",

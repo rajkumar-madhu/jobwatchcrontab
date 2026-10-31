@@ -2,7 +2,7 @@
    fonts.googleapis.com, so air-gapped / self-hosted deploys make no third-party request. */
 @tailwind base; @tailwind components; @tailwind utilities;
 
-/* R60 design system — "timetable". JobWatch is about time slots and whether expected runs happened,
+/* R60 design system — "timetable". Argus is about time slots and whether expected runs happened,
    so the palette borrows from departure boards and station signage: navy ink, signage blue for the one
    primary action and the "now" marker, and status colours tuned so each passes WCAG 4.5:1 as text on
    every surface in every theme (checked numerically). Running is violet so it never reads as a link.

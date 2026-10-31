@@ -51,7 +51,7 @@ def test_live_import_then_ping_with_unchanged_paths(clients, org, monkeypatch):
     from cronsentinel.config import settings
     monkeypatch.setattr(settings, "outbound_allow_private", True)   # the test server is on localhost
     req = {"api_key": os.environ["HC_LIVE_KEY"], "base_url": os.environ["HC_LIVE_URL"], "workspace_id": str(org["ws"])}
-    # a script already pointed at JobWatch pings before the import: 404, and cached as unknown for 60 s
+    # a script already pointed at Argus pings before the import: 404, and cached as unknown for 60 s
     assert ingest.get(f"/hc/{os.environ['HC_LIVE_BACKUP_UUID']}").status_code == 404
     dry = api.post("/api/v1/import/healthchecks", headers=h, json={**req, "dry_run": True})
     assert dry.status_code == 200, dry.text

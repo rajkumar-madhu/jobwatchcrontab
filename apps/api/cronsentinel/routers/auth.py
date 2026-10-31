@@ -186,7 +186,7 @@ def callback(code: str, state: str):
         raise HTTPException(401, "id_token has no email claim (is the 'email' scope granted?)")
     # Users are matched by email, so an unverified email must never sign anyone in: with any IdP or
     # self-registration path that issues unverified addresses, typing a victim's email would have
-    # taken over the victim's JobWatch user and every org membership attached to it.
+    # taken over the victim's Argus user and every org membership attached to it.
     if claims.get("email_verified") is not True:
         raise HTTPException(403, "email address is not verified with the identity provider")
     idp = claims.get("idp") or None   # set by the realm's identity_provider session-note mapper (R43)

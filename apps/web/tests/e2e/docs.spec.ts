@@ -7,7 +7,7 @@ const PAGES = ["quickstart", "pings", "linux-agent", "kubernetes", "import", "al
 test("docs index lists every page and links resolve", async ({ page, request }) => {
   test.setTimeout(120_000);   // crawls every docs page and checks each link
   await page.goto("/docs");
-  await expect(page.getByRole("heading", { name: "JobWatch documentation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Argus documentation" })).toBeVisible();
   for (const slug of PAGES) await expect(page.locator(`main a[href="/docs/${slug}"], a[href="/docs/${slug}"]`).first()).toBeAttached();
   // every internal /docs link on every page answers 200
   const seen = new Set<string>();
@@ -38,7 +38,7 @@ test("search finds pages by section heading", async ({ page, isMobile }) => {
 
 test("API reference: overview covers auth, errors, pagination and limits; areas list every endpoint", async ({ page, request }) => {
   await page.goto("/docs/api");
-  await expect(page.getByRole("heading", { level: 1, name: "JobWatch API" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Argus API" })).toBeVisible();
   for (const h of ["Authentication", "Roles", "Errors", "Pagination", "Rate limits", "Versioning and compatibility"]) await expect(page.getByRole("heading", { name: h, exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /OpenAPI 3.1 description/ })).toHaveAttribute("href", "/docs/api/openapi.json");
   const spec = await (await request.get("/docs/api/openapi.json")).json();
@@ -70,7 +70,7 @@ test("an endpoint shows role, parameters, body, errors and samples in three lang
 
 test("API samples follow the saved hosts", async ({ page }) => {
   await page.goto("/docs/api/pings");
-  await page.getByRole("button", { name: "Use your JobWatch hosts" }).click();
+  await page.getByRole("button", { name: "Use your Argus hosts" }).click();
   await page.getByLabel("Ingest host").fill("ingest.acme.io");
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.locator("#report-a-successful-run pre").first()).toContainText("ingest.acme.io");
@@ -101,7 +101,7 @@ test("your-hosts selector rewrites code samples and is remembered", async ({ pag
   await page.goto("/docs/pings");
   const sample = page.locator(".doc-content pre code").first();
   await expect(sample).toContainText("ingest.example.com");
-  await page.getByRole("button", { name: "Use your JobWatch hosts" }).click();
+  await page.getByRole("button", { name: "Use your Argus hosts" }).click();
   await page.getByLabel("Ingest host").fill("https://ingest.acme.io/");
   await page.getByRole("button", { name: "Done" }).click();
   await expect(sample).toContainText("ingest.acme.io");
@@ -117,7 +117,7 @@ test("llms.txt indexes every docs page", async ({ request }) => {
   const r = await request.get("/llms.txt");
   expect(r.status()).toBe(200);
   const body = await r.text();
-  expect(body).toContain("# WeCrew JobWatch");
+  expect(body).toContain("# WeCrew Argus");
   for (const s of ["quickstart", "pings", "linux-agent", "datadog", "deploy"]) expect(body).toContain(`(/docs/${s})`);
   expect(body).toContain("(/docs/api)");
 });

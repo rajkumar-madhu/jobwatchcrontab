@@ -13,7 +13,7 @@ other subscription first (409 otherwise).
 
 ## Prices
 
-Set by migration 0030 from the October 2026 go-to-market research (`reports/JobWatch B2B go to market.md`
+Set by migration 0030 from the October 2026 go-to-market research (`reports/Argus B2B go to market.md`
 in the founder's files). Priced by jobs, never by seats.
 
 | Plan | Jobs | History | USD / month | USD / year | INR / month | INR / year |
@@ -55,7 +55,7 @@ create the matching Price / Plan in the processor and store its id in the same r
 
 State machine: `activated` / `charged` / `resumed` → plan granted, status `active`; `pending` / `halted` →
 `past_due`, plan kept while Razorpay retries the mandate; `cancelled` / `completed` / `expired` → `free`.
-Events for subscriptions JobWatch did not create are acknowledged and ignored.
+Events for subscriptions Argus did not create are acknowledged and ignored.
 
 ## Stripe setup
 

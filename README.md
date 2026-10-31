@@ -1,7 +1,7 @@
-# JobWatch
+# Argus
 
 **Know the moment a scheduled job doesn't run.** Cron, systemd timers, Kubernetes CronJobs, backups,
-pipelines: JobWatch expects every run before it is due, turns silence into an alert on time, and
+pipelines: Argus expects every run before it is due, turns silence into an alert on time, and
 delivers failures with the output and the host state that explain them.
 
 Hosted at [jobwatch.wecrew.in](https://jobwatch.wecrew.in) (5 jobs free, no card) or self-hosted with
@@ -15,7 +15,7 @@ the Helm chart in this repository. Server: AGPL-3.0. Agents: Apache-2.0. See [Li
 ```cron
 # before
 15 2 * * *  /opt/jobs/pg-backup.sh
-# after — JobWatch learns the schedule from the first few pings and alerts when one is missing or late
+# after — Argus learns the schedule from the first few pings and alerts when one is missing or late
 15 2 * * *  /opt/jobs/pg-backup.sh && curl -fsS -m 10 --retry 5 https://ingest.jobwatch.wecrew.in/ping/<token>
 ```
 
@@ -38,14 +38,14 @@ The agent is read-only on your crontabs, stdlib-only Go, and queues on disk when
 
 - **Expected before due.** Slots are generated from the schedule ahead of time, so "it didn't run"
   is detected at the deadline, not at the next successful run.
-- **Honest about its own outages.** Runs that fell inside a JobWatch outage are *unobserved*, not
+- **Honest about its own outages.** Runs that fell inside a Argus outage are *unobserved*, not
   *missed*; you are not paged for our downtime, and the dashboard says it happened.
 - **Failures come with evidence.** Exit code meaning, the matching stderr lines, and what the host
   looked like during the run (disk, memory, load, I/O wait). See [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
 - **Built to pass a security review.** Row-level tenant isolation in Postgres, hashed tokens,
   encrypted integration secrets, redacted output, SAML/OIDC + SCIM + MFA, audit log streaming.
   [docs/SECURITY.md](docs/SECURITY.md)
-- **It monitors itself.** The reconciler, generator and scorer are JobWatch jobs in our own org.
+- **It monitors itself.** The reconciler, generator and scorer are Argus jobs in our own org.
   [docs/SELF_MONITORING.md](docs/SELF_MONITORING.md)
 
 ## Self-host
@@ -94,4 +94,4 @@ changes. The agents (`agents/`) are **Apache-2.0**, because they run on your pro
 copyleft licence has no business there. Commercial licences for the server are available for
 organisations that cannot use the AGPL: contact@wecrew.in.
 
-JobWatch is built by [WeCrew](https://wecrew.in), Chennai.
+Argus is built by [WeCrew](https://wecrew.in), Chennai.

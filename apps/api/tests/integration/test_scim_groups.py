@@ -29,7 +29,7 @@ def test_okta_group_push_and_role_mapping(scim, org):  # noqa: F811
     c, h, dom, owner = scim
     ana, raj = _user(c, h, dom, "ana"), _user(c, h, dom, "raj")
     assert _role(org["id"], ana) == "viewer"
-    g = c.post("/scim/v2/Groups", headers=h, json={"schemas": [GROUP], "displayName": "JobWatch SRE", "members": [{"value": ana}]})
+    g = c.post("/scim/v2/Groups", headers=h, json={"schemas": [GROUP], "displayName": "Argus SRE", "members": [{"value": ana}]})
     assert g.status_code == 201 and g.json()["members"] == [{"value": ana, "display": f"ana@{dom}"}]
     gid = g.json()["id"]
     assert _role(org["id"], ana) == "viewer"                     # unmapped group: no effect
@@ -40,8 +40,8 @@ def test_okta_group_push_and_role_mapping(scim, org):  # noqa: F811
     assert _role(org["id"], raj) == "sre"
     c.patch(f"/scim/v2/Groups/{gid}", headers=h, json={"Operations": [{"op": "remove", "path": f'members[value eq "{ana}"]'}]})
     assert _role(org["id"], ana) == "viewer"                     # left the only mapped group → default role
-    r = c.patch(f"/scim/v2/Groups/{gid}", headers=h, json={"Operations": [{"op": "replace", "value": {"id": gid, "displayName": "JobWatch Ops"}}]})
-    assert r.json()["displayName"] == "JobWatch Ops"
+    r = c.patch(f"/scim/v2/Groups/{gid}", headers=h, json={"Operations": [{"op": "replace", "value": {"id": gid, "displayName": "Argus Ops"}}]})
+    assert r.json()["displayName"] == "Argus Ops"
     assert c.get("/scim/v2/Groups", headers=h, params={"filter": 'displayName eq "jobwatch ops"'}).json()["totalResults"] == 1
 
 

@@ -90,7 +90,7 @@ export function HostPanel({ ctx, source, lastHost, currentJobId }: { ctx: HostCo
         <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-mute">Host</div>
         {source === "ping" ? (<>
           <p>Reported by ping URL{lastHost && <>; the last run came from <span className="font-mono">{lastHost}</span></>}.</p>
-          <p className="mt-2 text-mute">Install the JobWatch agent on that server to see its health next to the run: CPU, memory, disk and load at the moment a job fails, plus the other jobs on the same box.</p>
+          <p className="mt-2 text-mute">Install the Argus agent on that server to see its health next to the run: CPU, memory, disk and load at the moment a job fails, plus the other jobs on the same box.</p>
           <Link href="/agents" className="btn mt-3">Install an agent</Link>
         </>) : <p className="text-mute">No host information.</p>}
       </aside>);

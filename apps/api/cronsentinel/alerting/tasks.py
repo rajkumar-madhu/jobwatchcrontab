@@ -50,7 +50,7 @@ def _send_slack(cfg, title, body, p):
     color = {"critical": "#dc2626", "high": "#ea580c", "medium": "#d97706", "low": "#2563eb"}[p["severity"]]
     if p["condition"] == "recovered": color = "#16a34a"
     rows = alert_context.details(p, p.get("context") or {})
-    fields = [{"title": k, "value": v, "short": len(v) < 40 and k not in ("Last error", "Failed checks", "Open in JobWatch")} for k, v in rows]
+    fields = [{"title": k, "value": v, "short": len(v) < 40 and k not in ("Last error", "Failed checks", "Open in Argus")} for k, v in rows]
     netguard.post(cfg["webhook_url"], json={"text": title, "attachments": [{"color": color, "fallback": body, "fields": fields}]},
                   timeout=10).raise_for_status()
 
@@ -76,7 +76,7 @@ def _send_telegram(cfg, title, body, p):
 
 def _send_webhook(cfg, title, body, p):
     raw = json.dumps({"event": "job.status.changed", "title": title, **p}).encode()
-    headers = {"Content-Type": "application/json", "User-Agent": "JobWatch/0.1"}
+    headers = {"Content-Type": "application/json", "User-Agent": "Argus/0.1"}
     if cfg.get("secret"):
         headers["X-JobWatch-Signature"] = "sha256=" + hmac.new(cfg["secret"].encode(), raw, hashlib.sha256).hexdigest()
     netguard.post(cfg["url"], content=raw, headers=headers, timeout=10).raise_for_status()

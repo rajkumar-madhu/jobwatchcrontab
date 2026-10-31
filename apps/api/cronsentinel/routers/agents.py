@@ -39,7 +39,7 @@ def install_script():
 
     from .. import agentinstall
     if (why := agentinstall.problem()):
-        return PlainTextResponse(f"JobWatch cannot serve the agent installer: {why}\n", status_code=503)
+        return PlainTextResponse(f"Argus cannot serve the agent installer: {why}\n", status_code=503)
     return PlainTextResponse(agentinstall.render(), media_type="text/x-shellscript",
                              headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 _r = redis.Redis.from_url(settings.redis_url, decode_responses=True)

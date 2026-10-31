@@ -14,7 +14,7 @@ export function SiteNav() {
       <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-6 px-6 py-3.5">
         <Link href="/welcome" className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-accent"><Activity size={15} aria-hidden /></span>
-          <span className="font-display text-[15px] font-semibold">WeCrew JobWatch</span>
+          <span className="font-display text-[15px] font-semibold">WeCrew Argus</span>
         </Link>
         <nav className="hidden items-center gap-5 text-sm lg:flex" aria-label="Site">
           {LINKS.map(([h, l]) => <Link key={h} href={h} className="text-mute hover:text-ink">{l}</Link>)}
@@ -49,7 +49,7 @@ export function SiteFooter() {
     <footer className="border-t border-line">
       <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-12 text-sm sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
         <div>
-          <div className="font-display font-semibold">WeCrew JobWatch</div>
+          <div className="font-display font-semibold">WeCrew Argus</div>
           <p className="mt-2 max-w-xs text-mute">Monitoring for scheduled work. Run it on our cloud or inside your own network.</p>
         </div>
         {FOOT.map(([h, links]) => (

@@ -541,7 +541,7 @@ class ScimTokensOut(BaseModel):
 
 
 class ScimGroupOut(BaseModel):
-    """R56: a directory group and the JobWatch role it grants (None = no effect on roles)."""
+    """R56: a directory group and the Argus role it grants (None = no effect on roles)."""
     id: UUID
     display_name: str
     role: str | None = None

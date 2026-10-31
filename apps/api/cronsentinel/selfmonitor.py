@@ -1,8 +1,8 @@
-"""R74 — JobWatch monitors its own scheduled work.
+"""R74 — Argus monitors its own scheduled work.
 
 The platform already records worker heartbeats internally (workers/platform_health.py) so that its
 own outages are not counted against customers' jobs. That is invisible to the operator. This module
-makes the platform's recurring passes ordinary JobWatch jobs in one organisation — the operator's —
+makes the platform's recurring passes ordinary Argus jobs in one organisation — the operator's —
 so they appear on the dashboard, carry history and uptime, and alert through the same Slack /
 PagerDuty / email rules as everything else. The honest answer to "do you use it yourself?".
 

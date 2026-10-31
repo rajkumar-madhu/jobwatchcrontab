@@ -12,7 +12,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ group: string }> }) {
   const g = apiGroup((await params).group);
-  return { title: g ? `${g.name} · API reference · JobWatch docs` : "API reference", description: g?.description };
+  return { title: g ? `${g.name} · API reference · Argus docs` : "API reference", description: g?.description };
 }
 
 export default async function ApiGroupPage({ params }: { params: Promise<{ group: string }> }) {

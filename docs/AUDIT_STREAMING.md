@@ -5,7 +5,7 @@ Business and Enterprise owners can send every audit-log event to a SIEM as it ha
 
 ## Delivery
 - **In order, at least once.** Each destination keeps its own position in the audit log. If the SIEM
-  is down, events wait in JobWatch and are delivered when it is back (retry backoff from 10 s up to
+  is down, events wait in Argus and are delivered when it is back (retry backoff from 10 s up to
   15 minutes); nothing is dropped. Use the event `id` to drop the occasional duplicate.
 - Up to 500 events per request, checked every 5 seconds by the outbound-exporter worker (no extra
   service to run). Several exporter replicas never send the same batch twice.

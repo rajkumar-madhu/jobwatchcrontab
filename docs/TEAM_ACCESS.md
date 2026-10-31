@@ -6,7 +6,7 @@ here is under **Settings → Team** and **Settings → Sign-in security**, and i
 
 ## Invite people (admins)
 1. Enter the person's email and choose a role, then **Send invite**.
-2. Copy the link that appears and send it to them. **It is shown once**: JobWatch stores only a hash.
+2. Copy the link that appears and send it to them. **It is shown once**: Argus stores only a hash.
 3. They open the link, create an account (or sign in) **with that email address**, and join with the
    role you chose.
 
@@ -32,7 +32,7 @@ Turn on **Require multi-factor sign-in**. Then:
 
 - Members who sign in with a **password** must also enter a code from an authenticator app. The next
   time they sign in, they are asked to set one up.
-- Sign-in with **Google or GitHub** is refused for this organization, because JobWatch cannot see
+- Sign-in with **Google or GitHub** is refused for this organization, because Argus cannot see
   whether those accounts use a second factor.
 - Members who sign in through your **identity provider** get multi-factor authentication from it.
   See [single sign-on](sso).
